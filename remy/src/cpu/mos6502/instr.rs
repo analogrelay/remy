@@ -2,7 +2,6 @@ use std::error;
 
 use mem;
 
-use cpu::mos6502;
 use cpu::mos6502::{Mos6502,Operand,OperandError};
 
 pub enum Instruction {
@@ -86,6 +85,45 @@ impl Instruction {
 				Ok(())
 			}
 			_ => Err(ExecError::InstructionNotImplemented)
+		}
+	}
+}
+
+#[cfg(test)]
+mod test {
+	mod instruction {
+		use mem;
+		use cpu::mos6502;
+		use cpu::mos6502::{Instruction,Operand,Mos6502};
+
+		#[test]
+		pub fn adc_adds_regularly_when_carry_not_set() {
+			let mut cpu = init_cpu();
+			assert!(Instruction::ADC(Operand::Immediate(1)).exec(&mut cpu).is_ok());
+			assert_eq!(cpu.registers.a, 43);
+		}
+
+		#[test]
+		pub fn adc_adds_carry_value_when_carry_flag_is_set() {
+			let mut cpu = init_cpu();
+			cpu.registers.set_flags(mos6502::FLAGS_CARRY); // Set carry
+			assert!(Instruction::ADC(Operand::Immediate(1)).exec(&mut cpu).is_ok());
+			assert_eq!(cpu.registers.a, 44);	
+		}
+
+		#[test]
+		pub fn adc_sets_flags_when_overflow() {
+			let mut cpu = init_cpu();
+			assert!(Instruction::ADC(Operand::Immediate(255)).exec(&mut cpu).is_ok());
+			assert_eq!(cpu.registers.a, 41);
+			assert!(cpu.registers.carry());
+		}
+
+		fn init_cpu() -> Mos6502<mem::FixedMemory<u16>> {
+			let mut cpu = Mos6502::with_fixed_memory(32);
+			cpu.registers.a = 42;
+
+			cpu
 		}
 	}
 }

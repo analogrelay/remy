@@ -75,7 +75,7 @@ mod test {
         #[test]
         pub fn get_absolute_returns_value_from_memory_address() {
             let mut cpu = Mos6502::with_fixed_memory(10);
-            cpu.mem.set_u8(4, 42);
+            assert!(cpu.mem.set_u8(4, 42).is_ok());
             let val = Operand::Absolute(4).get(&cpu).unwrap();
             assert_eq!(val, 42);
         }
@@ -83,7 +83,7 @@ mod test {
         #[test]
         pub fn get_indexed_x_adds_x_to_address() {
             let mut cpu = Mos6502::with_fixed_memory(10);
-            cpu.mem.set_u8(4, 42);
+            assert!(cpu.mem.set_u8(4, 42).is_ok());
             cpu.registers.x = 2;
             let val = Operand::Indexed(2, RegisterName::X).get(&cpu).unwrap();
             assert_eq!(val, 42);
@@ -92,7 +92,7 @@ mod test {
         #[test]
         pub fn get_indexed_y_adds_y_to_address() {
             let mut cpu = Mos6502::with_fixed_memory(10);
-            cpu.mem.set_u8(4, 42);
+            assert!(cpu.mem.set_u8(4, 42).is_ok());
             cpu.registers.y = 2;
             let val = Operand::Indexed(2, RegisterName::Y).get(&cpu).unwrap();
             assert_eq!(val, 42);
@@ -101,8 +101,8 @@ mod test {
         #[test]
         pub fn get_preindexed_indirect_works() {
             let mut cpu = Mos6502::with_fixed_memory(10);
-            cpu.mem.set_u8(9, 42); // Value
-            cpu.mem.set_u16(7, 9); // Indirect Memory Address
+            assert!(cpu.mem.set_u8(9, 42).is_ok()); // Value
+            assert!(cpu.mem.set_u16(7, 9).is_ok()); // Indirect Memory Address
             cpu.registers.x = 2;
             let val = Operand::PreIndexedIndirect(5).get(&cpu).unwrap();
             assert_eq!(val, 42);
@@ -111,8 +111,8 @@ mod test {
         #[test]
         pub fn get_postindexed_indirect_works() {
             let mut cpu = Mos6502::with_fixed_memory(10);
-            cpu.mem.set_u8(9, 42); // Value
-            cpu.mem.set_u16(7, 7); // Indirect Memory Address
+            assert!(cpu.mem.set_u8(9, 42).is_ok()); // Value
+            assert!(cpu.mem.set_u16(7, 7).is_ok()); // Indirect Memory Address
             cpu.registers.y = 2;
             let val = Operand::PostIndexedIndirect(7).get(&cpu).unwrap();
             assert_eq!(val, 42);
@@ -121,8 +121,8 @@ mod test {
         #[test]
         pub fn get_u16_indirect_reads_indirect_u16_value() {
             let mut cpu = Mos6502::with_fixed_memory(10);
-            cpu.mem.set_u16(8, 1024); // Value
-            cpu.mem.set_u16(2, 8);    // Indirect Memory Address
+            assert!(cpu.mem.set_u16(8, 1024).is_ok()); // Value
+            assert!(cpu.mem.set_u16(2, 8).is_ok());    // Indirect Memory Address
             let val = Operand::Indirect(2).get_u16(&cpu).unwrap();
             assert_eq!(val, 1024);
         }
@@ -145,7 +145,7 @@ mod test {
 
         #[test]
         pub fn get_u16_returns_error_if_given_u8_operand() {
-            let mut cpu = Mos6502::with_fixed_memory(10);
+            let cpu = Mos6502::with_fixed_memory(10);
 
             assert_eq!(Operand::Accumulator.get_u16(&cpu).unwrap_err(), OperandError::OperandSizeMismatch);
             assert_eq!(Operand::Immediate(42).get_u16(&cpu).unwrap_err(), OperandError::OperandSizeMismatch);
@@ -158,14 +158,14 @@ mod test {
 
         #[test]
         pub fn get_returns_error_if_given_relative_operand() {
-            let mut cpu = Mos6502::with_fixed_memory(10);
+            let cpu = Mos6502::with_fixed_memory(10);
             let val = Operand::Relative(-1).get(&cpu).unwrap_err();
             assert_eq!(val, OperandError::OperandSizeMismatch);
         }
 
         #[test]
         pub fn get_returns_error_if_given_indirect_operand() {
-            let mut cpu = Mos6502::with_fixed_memory(10);
+            let cpu = Mos6502::with_fixed_memory(10);
             let val = Operand::Indirect(1).get(&cpu).unwrap_err();
             assert_eq!(val, OperandError::OperandSizeMismatch);
         }

@@ -1,6 +1,6 @@
 pub use self::instr::{Instruction,ExecError};
 pub use self::operand::{Operand,OperandError};
-pub use self::cpu::{RegisterName,Mos6502,Mos6502Registers};
+pub use self::cpu::*;
 
 mod cpu;
 mod instr;

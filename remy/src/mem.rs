@@ -31,7 +31,7 @@ pub struct FixedMemory<A: num::Int> {
 }
 
 impl<A: num::Int> FixedMemory<A> {
-    fn with_size_and_endian(size: A, endian: Endianness) -> FixedMemory<A> {
+    pub fn with_size_and_endian(size: A, endian: Endianness) -> FixedMemory<A> {
         unsafe {
             let buf = heap::allocate(num::NumCast::from(size).unwrap(), 0);
             ptr::zero_memory(buf, num::NumCast::from(size).unwrap());

@@ -9,21 +9,40 @@ pub enum RegisterName {
     Y
 }
 
-pub struct Mos6502<'a> {
+pub struct Mos6502<M: mem::Memory<u16>> {
     pub registers: Mos6502Registers,
-    pub mem: Box<mem::Memory<u16>+'a>
+    pub mem: M
+}
+
+impl Mos6502<mem::FixedMemory<u16>> {
+    pub fn with_fixed_memory(size: u16) -> Mos6502<mem::FixedMemory<u16>> {
+        Mos6502::new(mem::FixedMemory::with_size_and_endian(size, mem::Endianness::LittleEndian))
+    }
+}
+
+impl<M: mem::Memory<u16>> Mos6502<M> {
+    pub fn new(mem: M) -> Mos6502<M> {
+        Mos6502 {
+            registers: Mos6502Registers::new(),
+            mem: mem
+        }
+    }
 }
 
 pub struct Mos6502Registers {
     pub a: u8,
     pub x: u8,
     pub y: u8,
-    pub sp: u8,
+    pub sp: u16,
     pub pc: u16,
     pub flags: u8
 }
 
 impl Mos6502Registers {
+    pub fn new() -> Mos6502Registers {
+        Mos6502Registers { a: 0, x: 0, y: 0, sp: 0, pc: 0, flags: 0 }
+    }
+
     pub fn get(&self, r: RegisterName) -> u8 {
         match r {
             RegisterName::A => self.a,

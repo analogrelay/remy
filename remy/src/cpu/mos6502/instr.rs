@@ -1,5 +1,7 @@
 use std::error;
 
+use mem;
+
 use cpu::mos6502;
 use cpu::mos6502::{Mos6502,Operand,OperandError};
 
@@ -75,7 +77,7 @@ impl error::FromError<OperandError> for ExecError {
 }
 
 impl Instruction {
-	pub fn exec(self, cpu: &mut Mos6502) -> Result<(), ExecError> {
+	pub fn exec<M: mem::Memory<u16>>(self, cpu: &mut Mos6502<M>) -> Result<(), ExecError> {
 		match self {
 			Instruction::ADC(op) => {
 				let (a, c) = ::util::add_u8_with_carry(cpu.registers.a, try!(op.get(cpu)), cpu.registers.carry());

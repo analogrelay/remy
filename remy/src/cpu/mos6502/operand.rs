@@ -29,11 +29,11 @@ impl error::FromError<mem::MemoryError> for OperandError {
 }
 
 impl Operand {
-	pub fn get(self, cpu: &Mos6502) -> Result<u8, OperandError> {
+	pub fn get<M: mem::Memory<u16>>(self, cpu: &Mos6502<M>) -> Result<u8, OperandError> {
 		Ok(try!(self.get_u16(cpu)) as u8)
 	}
 
-	pub fn get_u16(self, cpu: &Mos6502) -> Result<u16, OperandError> {
+	pub fn get_u16<M: mem::Memory<u16>>(self, cpu: &Mos6502<M>) -> Result<u16, OperandError> {
 		Ok(match self {
 			Operand::Accumulator =>					cpu.registers.a as u16,
 			Operand::Immediate(n) => 				n as u16,
@@ -47,3 +47,17 @@ impl Operand {
 	}
 }
 
+#[cfg(test)]
+mod test {
+	mod operand {
+		use cpu::mos6502::{Mos6502,Operand};
+
+		#[test]
+		pub fn get_accumulator_returns_value_of_accumulator() {
+			let mut cpu = Mos6502::with_fixed_memory(10);
+			cpu.registers.a = 42;
+			let val = Operand::Accumulator.get(&cpu).unwrap();
+			assert_eq!(val, 42);
+		}
+	}
+}

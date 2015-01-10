@@ -51,7 +51,7 @@ impl Mos6502Registers {
 
 #[cfg(test)]
 mod test {
-    mod Mos6502Registers {
+    mod mos6502_registers {
         mod set_arith_flags {
             use cpu::mos6502::Mos6502Registers;
 

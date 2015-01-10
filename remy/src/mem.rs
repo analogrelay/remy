@@ -135,12 +135,12 @@ impl<A: num::Int> Memory<A> for FixedMemory<A> {
 
 #[cfg(test)]
 mod test {
-    mod FixedMemory {
+    mod fixed_memory {
         use mem::{FixedMemory,Memory,Endianness};
 
         #[test]
         pub fn can_read_and_write_u8_value() {
-            let mut mem : FixedMemory<u16> = FixedMemory::with_size_and_endian(10, Endianness::LittleEndian);
+            let mut mem = FixedMemory::with_size_and_endian(10u16, Endianness::LittleEndian);
             assert!(mem.set_u8(4, 42).is_ok());
             let val = mem.get_u8(4).unwrap();
             assert_eq!(val, 42);
@@ -148,7 +148,7 @@ mod test {
 
         #[test]
         pub fn can_read_and_write_u16_value() {
-            let mut mem : FixedMemory<u16> = FixedMemory::with_size_and_endian(10, Endianness::LittleEndian);
+            let mut mem = FixedMemory::with_size_and_endian(10u16, Endianness::LittleEndian);
             assert!(mem.set_u16(4, 1024).is_ok());
             let val = mem.get_u16(4).unwrap();
             assert_eq!(val, 1024);
@@ -156,7 +156,7 @@ mod test {
 
         #[test]
         pub fn can_read_and_write_u32_value() {
-            let mut mem : FixedMemory<u16> = FixedMemory::with_size_and_endian(10, Endianness::LittleEndian);
+            let mut mem = FixedMemory::with_size_and_endian(10u16, Endianness::LittleEndian);
             assert!(mem.set_u32(4, 75536).is_ok());
             let val = mem.get_u32(4).unwrap();
             assert_eq!(val, 75536);
@@ -164,7 +164,7 @@ mod test {
 
         #[test]
         pub fn can_write_u32_and_read_as_u8_le() {
-            let mut mem : FixedMemory<u16> = FixedMemory::with_size_and_endian(10, Endianness::LittleEndian);
+            let mut mem = FixedMemory::with_size_and_endian(10u16, Endianness::LittleEndian);
             assert!(mem.set_u32(4, 75536).is_ok());
             let val1 = mem.get_u8(4).unwrap();
             let val2 = mem.get_u8(5).unwrap();
@@ -178,7 +178,7 @@ mod test {
 
         #[test]
         pub fn can_write_u32_and_read_as_u8_be() {
-            let mut mem : FixedMemory<u16> = FixedMemory::with_size_and_endian(10, Endianness::BigEndian);
+            let mut mem = FixedMemory::with_size_and_endian(10u16, Endianness::BigEndian);
             assert!(mem.set_u32(4, 75536).is_ok());
             let val1 = mem.get_u8(4).unwrap();
             let val2 = mem.get_u8(5).unwrap();

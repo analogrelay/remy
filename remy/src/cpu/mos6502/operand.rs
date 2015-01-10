@@ -20,7 +20,8 @@ pub enum Operand {
 #[derive(Show,PartialEq)]
 pub enum OperandError {
     ErrorAccessingMemory(mem::MemoryError),
-    OperandSizeMismatch
+    OperandSizeMismatch,
+    ReadOnlyOperand
 }
 
 impl error::FromError<mem::MemoryError> for OperandError {
@@ -30,9 +31,9 @@ impl error::FromError<mem::MemoryError> for OperandError {
 }
 
 impl Operand {
-    pub fn get<M: mem::Memory<u16>>(self, cpu: &Mos6502<M>) -> Result<u8, OperandError> {
-        Ok(match self {
-            Operand::Accumulator                =>  cpu.registers.a,
+    pub fn get<M: mem::Memory<u16>>(&self, cpu: &Mos6502<M>) -> Result<u8, OperandError> {
+        Ok(match *self {
+            Operand::Accumulator                => cpu.registers.a,
             Operand::Immediate(n)               => n,
             Operand::Absolute(addr)             => try!(cpu.mem.get_u8(addr)),
             Operand::Indexed(addr, r)           => try!(cpu.mem.get_u8(addr + cpu.registers.get(r) as u16)),
@@ -42,11 +43,20 @@ impl Operand {
         })
     }
 
-    pub fn get_u16<M: mem::Memory<u16>>(self, cpu: &Mos6502<M>) -> Result<u16, OperandError> {
-        match self {
+    pub fn get_u16<M: mem::Memory<u16>>(&self, cpu: &Mos6502<M>) -> Result<u16, OperandError> {
+        match *self {
             Operand::Indirect(addr)     => Ok(try!(cpu.mem.get_u16(try!(cpu.mem.get_u16(addr))))),
             Operand::Relative(offset)   => Ok(((cpu.registers.pc as isize) + (offset as isize)) as u16),
             _                           => Err(OperandError::OperandSizeMismatch)
+        }
+    }
+
+    pub fn set<M: mem::Memory<u16>>(&self, cpu: &mut Mos6502<M>, val: u8) -> Result<(), OperandError> {
+        match *self {
+            Operand::Accumulator        => Ok(cpu.registers.a = val),
+            Operand::Absolute(addr)     => Ok(try!(cpu.mem.set_u8(addr, val))),
+            Operand::Indexed(addr, r)   => Ok(try!(cpu.mem.set_u8(addr + cpu.registers.get(r) as u16, val))),
+            _                           => Err(OperandError::ReadOnlyOperand)
         }
     }
 }
@@ -56,6 +66,40 @@ mod test {
     mod operand {
         use mem::Memory;
         use cpu::mos6502::{Mos6502,Operand,OperandError,RegisterName};
+
+        #[test]
+        pub fn set_accumulator_puts_value_in_accumulator() {
+            let mut cpu = Mos6502::with_fixed_memory(10);
+            cpu.registers.a = 42;
+            assert!(Operand::Accumulator.set(&mut cpu, 24).is_ok());
+            assert_eq!(cpu.registers.a, 24);
+        }
+
+        #[test]
+        pub fn set_absolute_puts_value_in_memory_location() {
+            let mut cpu = Mos6502::with_fixed_memory(10);
+            assert!(Operand::Absolute(2).set(&mut cpu, 24).is_ok());
+            let val = cpu.mem.get_u8(2).unwrap();
+            assert_eq!(val, 24);
+        }
+
+        #[test]
+        pub fn set_indexed_x_puts_value_in_memory_location() {
+            let mut cpu = Mos6502::with_fixed_memory(10);
+            cpu.registers.x = 1;
+            assert!(Operand::Indexed(2, RegisterName::X).set(&mut cpu, 24).is_ok());
+            let val = cpu.mem.get_u8(3).unwrap();
+            assert_eq!(val, 24);
+        }
+
+        #[test]
+        pub fn set_indexed_y_puts_value_in_memory_location() {
+            let mut cpu = Mos6502::with_fixed_memory(10);
+            cpu.registers.y = 1;
+            assert!(Operand::Indexed(2, RegisterName::Y).set(&mut cpu, 24).is_ok());
+            let val = cpu.mem.get_u8(3).unwrap();
+            assert_eq!(val, 24);
+        }
 
         #[test]
         pub fn get_accumulator_returns_value_of_accumulator() {

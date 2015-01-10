@@ -92,8 +92,23 @@ impl Instruction {
 				if res == 0 {
 					cpu.registers.set_flags(mos6502::FLAGS_ZERO);
 				}
-				else if res & mos6502::FLAGS_SIGN.bits != 0 {
+				else if res & 0x80 != 0 {
 					cpu.registers.set_flags(mos6502::FLAGS_SIGN);
+				}
+				Ok(())
+			},
+			Instruction::ASL(op) => {
+				let b = try!(op.get(cpu));
+				if b & 0x80 != 0 {
+					cpu.registers.set_flags(mos6502::FLAGS_CARRY);
+				}
+				let r = (b << 1) & 0xFE;
+				op.set(cpu, r);
+				if r & 0x80 != 0 {
+					cpu.registers.set_flags(mos6502::FLAGS_SIGN);
+				}
+				if r == 0 {
+					cpu.registers.set_flags(mos6502::FLAGS_ZERO);
 				}
 				Ok(())
 			}
@@ -154,6 +169,41 @@ mod test {
 			assert!(Instruction::AND(Operand::Immediate(0xFF)).exec(&mut cpu).is_ok());
 			assert_eq!(cpu.registers.a, 0xFF);
 			assert_eq!(cpu.registers.get_flags(), mos6502::FLAGS_SIGN | mos6502::FLAGS_RESERVED);
+		}
+
+		#[test]
+		pub fn asl_shifts_value_left() {
+			let mut cpu = init_cpu();
+			cpu.registers.a = 0x0F;
+			assert!(Instruction::ASL(Operand::Accumulator).exec(&mut cpu).is_ok());
+			assert_eq!(cpu.registers.a, 0x1E);
+		}
+
+		#[test]
+		pub fn asl_sets_carry_if_bit_7_is_set_before_shifting() {
+			let mut cpu = init_cpu();
+			cpu.registers.a = 0x81;
+			assert!(Instruction::ASL(Operand::Accumulator).exec(&mut cpu).is_ok());
+			assert_eq!(cpu.registers.a, 0x02);
+			assert_eq!(cpu.registers.get_flags(), mos6502::FLAGS_CARRY | mos6502::FLAGS_RESERVED);
+		}
+
+		#[test]
+		pub fn asl_sets_sign_if_bit_7_is_set_after_shifting() {
+			let mut cpu = init_cpu();
+			cpu.registers.a = 0x40;
+			assert!(Instruction::ASL(Operand::Accumulator).exec(&mut cpu).is_ok());
+			assert_eq!(cpu.registers.a, 0x80);
+			assert_eq!(cpu.registers.get_flags(), mos6502::FLAGS_SIGN | mos6502::FLAGS_RESERVED);
+		}
+
+		#[test]
+		pub fn asl_sets_zero_if_value_is_zero_after_shifting() {
+			let mut cpu = init_cpu();
+			cpu.registers.a = 0x00;
+			assert!(Instruction::ASL(Operand::Accumulator).exec(&mut cpu).is_ok());
+			assert_eq!(cpu.registers.a, 0x00);
+			assert_eq!(cpu.registers.get_flags(), mos6502::FLAGS_ZERO | mos6502::FLAGS_RESERVED);
 		}
 
 		fn init_cpu() -> Mos6502<mem::FixedMemory<u16>> {

@@ -2,7 +2,7 @@ use std::num;
 
 use mem;
 
-#[derive(Show)]
+#[derive(Show,Copy)]
 pub enum RegisterName {
     A,
     X,
@@ -83,8 +83,16 @@ impl Mos6502Registers {
         self.flags
     }
 
+    pub fn clear_flags(&mut self, flags: Mos6502Flags) {
+        self.flags = self.flags & (!flags)
+    }
+
     pub fn set_flags(&mut self, flags: Mos6502Flags) {
-        self.flags = (flags | FLAGS_RESERVED);
+        self.flags = self.flags | flags;
+    }
+
+    pub fn replace_flags(&mut self, flags: Mos6502Flags) {
+        self.flags = flags | FLAGS_RESERVED;
     }
 
     pub fn set_arith_flags<I: num::Int + num::FromPrimitive>(&mut self, val: I, carry: bool) {
@@ -106,7 +114,7 @@ impl Mos6502Registers {
                 FLAGS_NONE
             };
 
-        self.set_flags(flags);
+        self.replace_flags(flags);
     }
 }
 

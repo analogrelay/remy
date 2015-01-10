@@ -3,7 +3,7 @@ use std::rt::heap;
 use std::ptr;
 use std::intrinsics::offset;
 
-#[derive(Show)]
+#[derive(Show,PartialEq)]
 pub enum MemoryError {
     OutOfBounds
 }

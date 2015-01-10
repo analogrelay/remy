@@ -2,6 +2,7 @@ use std::error;
 
 use mem;
 
+use cpu::mos6502;
 use cpu::mos6502::{Mos6502,Operand,OperandError};
 
 pub enum Instruction {
@@ -83,6 +84,18 @@ impl Instruction {
 				cpu.registers.a = a;
 				cpu.registers.set_arith_flags(a, c);
 				Ok(())
+			},
+			Instruction::AND(op) => {
+				let opv = try!(op.get(cpu));
+				let res = cpu.registers.a & opv;
+				cpu.registers.a = res;
+				if res == 0 {
+					cpu.registers.set_flags(mos6502::FLAGS_ZERO);
+				}
+				else if res & mos6502::FLAGS_SIGN.bits != 0 {
+					cpu.registers.set_flags(mos6502::FLAGS_SIGN);
+				}
+				Ok(())
 			}
 			_ => Err(ExecError::InstructionNotImplemented)
 		}
@@ -117,6 +130,30 @@ mod test {
 			assert!(Instruction::ADC(Operand::Immediate(255)).exec(&mut cpu).is_ok());
 			assert_eq!(cpu.registers.a, 41);
 			assert_eq!(cpu.registers.get_flags(), mos6502::FLAGS_CARRY | mos6502::FLAGS_RESERVED);
+		}
+
+		#[test]
+		pub fn and_ands_value_with_accumulator() {
+			let mut cpu = init_cpu();
+			assert!(Instruction::AND(Operand::Immediate(24)).exec(&mut cpu).is_ok());
+			assert_eq!(cpu.registers.a, 42 & 24);
+		}
+
+		#[test]
+		pub fn and_sets_zero_flag_if_result_is_zero() {
+			let mut cpu = init_cpu();
+			assert!(Instruction::AND(Operand::Immediate(0)).exec(&mut cpu).is_ok());
+			assert_eq!(cpu.registers.a, 0);
+			assert_eq!(cpu.registers.get_flags(), mos6502::FLAGS_ZERO | mos6502::FLAGS_RESERVED);
+		}
+
+		#[test]
+		pub fn and_sets_sign_flag_if_result_has_bit_7_set() {
+			let mut cpu = init_cpu();
+			cpu.registers.a = 0xFF;
+			assert!(Instruction::AND(Operand::Immediate(0xFF)).exec(&mut cpu).is_ok());
+			assert_eq!(cpu.registers.a, 0xFF);
+			assert_eq!(cpu.registers.get_flags(), mos6502::FLAGS_SIGN | mos6502::FLAGS_RESERVED);
 		}
 
 		fn init_cpu() -> Mos6502<mem::FixedMemory<u16>> {

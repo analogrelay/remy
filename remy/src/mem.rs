@@ -107,3 +107,8 @@ impl Memory<u16> for SixteenBitMemory {
         }
     }
 }
+
+#[cfg(test)]
+mod test {
+    
+}

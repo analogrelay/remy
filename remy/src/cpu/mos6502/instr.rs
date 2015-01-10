@@ -116,7 +116,7 @@ mod test {
 			let mut cpu = init_cpu();
 			assert!(Instruction::ADC(Operand::Immediate(255)).exec(&mut cpu).is_ok());
 			assert_eq!(cpu.registers.a, 41);
-			assert!(cpu.registers.carry());
+			assert_eq!(cpu.registers.get_flags(), mos6502::FLAGS_CARRY | mos6502::FLAGS_RESERVED);
 		}
 
 		fn init_cpu() -> Mos6502<mem::FixedMemory<u16>> {

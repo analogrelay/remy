@@ -5,6 +5,7 @@ use mem;
 
 use std::error;
 
+#[derive(Show)]
 pub enum Operand {
 	Accumulator,
 	Immediate(u8),
@@ -16,6 +17,7 @@ pub enum Operand {
 	Relative(i8)
 }
 
+#[derive(Show)]
 pub enum OperandError {
 	ErrorAccessingMemory(mem::MemoryError)
 }
@@ -40,7 +42,7 @@ impl Operand {
 			Operand::Indirect(addr) =>				try!(cpu.mem.get_u16(addr)) as u16,
 			Operand::PreIndexedIndirect(addr) =>	try!(cpu.mem.get_u8(try!(cpu.mem.get_u16(addr as u16 + cpu.registers.x as u16)))) as u16,
 			Operand::PostIndexedIndirect(addr) =>	try!(cpu.mem.get_u8(try!(cpu.mem.get_u16(addr as u16)) + cpu.registers.y as u16)) as u16,
-			Operand::Relative(offset) => 			((cpu.registers.pc as int) + (offset as int)) as u16
+			Operand::Relative(offset) => 			((cpu.registers.pc as isize) + (offset as isize)) as u16
 		})
 	}
 }
@@ -104,6 +106,7 @@ pub enum Instruction {
 	TYA,
 }
 
+#[derive(Show)]
 pub enum ExecError {
 	FailedToRetrieveOperand(OperandError),
 	InstructionNotImplemented

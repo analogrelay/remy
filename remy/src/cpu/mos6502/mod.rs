@@ -4,6 +4,7 @@ use std::num;
 
 mod instr;
 
+#[derive(Show)]
 enum RegisterName {
     A,
     X,

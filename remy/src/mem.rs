@@ -24,17 +24,17 @@ pub enum Endianness {
     LittleEndian
 }
 
-pub struct FixedMemory {
+pub struct FixedMemory<A: num::Int> {
     data: *mut u8,
-    size: u16,
+    size: A,
     endian: Endianness
 }
 
-impl FixedMemory {
-    fn with_size_and_endian(size: u16, endian: Endianness) -> FixedMemory {
+impl<A: num::Int> FixedMemory<A> {
+    fn with_size_and_endian(size: A, endian: Endianness) -> FixedMemory<A> {
         unsafe {
-            let buf = heap::allocate(size as usize, 0);
-            ptr::zero_memory(buf, size as usize);
+            let buf = heap::allocate(num::NumCast::from(size).unwrap(), 0);
+            ptr::zero_memory(buf, num::NumCast::from(size).unwrap());
 
             FixedMemory {
                 data: buf,
@@ -59,74 +59,74 @@ impl FixedMemory {
     }
 }
 
-impl Memory<u16> for FixedMemory {
-    fn get_u8(&self, addr: u16) -> Result<u8, MemoryError> {
+impl<A: num::Int> Memory<A> for FixedMemory<A> {
+    fn get_u8(&self, addr: A) -> Result<u8, MemoryError> {
         if addr >= self.size {
             Err(MemoryError::OutOfBounds)
         }
         else {
             unsafe {
-                let val = ptr::read(offset(self.data, addr as isize));
+                let val = ptr::read(offset(self.data, num::NumCast::from(addr).unwrap()));
                 Ok(self.from_mem_endian(val))
             }
         }
     }
 
-    fn set_u8(&mut self, addr: u16, val: u8) -> Result<(), MemoryError> {
+    fn set_u8(&mut self, addr: A, val: u8) -> Result<(), MemoryError> {
         if addr >= self.size {
             Err(MemoryError::OutOfBounds)
         }
         else {
             unsafe {
-                ptr::write(offset(self.data, addr as isize) as *mut u8, self.to_mem_endian(val));
+                ptr::write(offset(self.data, num::NumCast::from(addr).unwrap()) as *mut u8, self.to_mem_endian(val));
                 Ok(())
             }
         }
     }
 
-    fn get_u16(&self, addr: u16) -> Result<u16, MemoryError> {
+    fn get_u16(&self, addr: A) -> Result<u16, MemoryError> {
         if addr >= self.size {
             Err(MemoryError::OutOfBounds)
         }
         else {
             unsafe {
-                let val = ptr::read(offset(self.data, addr as isize) as *const u16);
+                let val = ptr::read(offset(self.data, num::NumCast::from(addr).unwrap()) as *const u16);
                 Ok(self.from_mem_endian(val))
             }
         }
     }
 
-    fn set_u16(&mut self, addr: u16, val: u16) -> Result<(), MemoryError> {
+    fn set_u16(&mut self, addr: A, val: u16) -> Result<(), MemoryError> {
         if addr >= self.size {
             Err(MemoryError::OutOfBounds)
         }
         else {
             unsafe {
-                ptr::write(offset(self.data, addr as isize) as *mut u16, self.to_mem_endian(val));
+                ptr::write(offset(self.data, num::NumCast::from(addr).unwrap()) as *mut u16, self.to_mem_endian(val));
                 Ok(())
             }
         }
     }
 
-    fn get_u32(&self, addr: u16) -> Result<u32, MemoryError> {
+    fn get_u32(&self, addr: A) -> Result<u32, MemoryError> {
         if addr >= self.size {
             Err(MemoryError::OutOfBounds)
         }
         else {
             unsafe {
-                let val = ptr::read(offset(self.data, addr as isize) as *const u32);
+                let val = ptr::read(offset(self.data, num::NumCast::from(addr).unwrap()) as *const u32);
                 Ok(self.from_mem_endian(val))
             }
         }
     }
 
-    fn set_u32(&mut self, addr: u16, val: u32) -> Result<(), MemoryError> {
+    fn set_u32(&mut self, addr: A, val: u32) -> Result<(), MemoryError> {
         if addr >= self.size {
             Err(MemoryError::OutOfBounds)
         }
         else {
             unsafe {
-                ptr::write(offset(self.data, addr as isize) as *mut u32, self.to_mem_endian(val));
+                ptr::write(offset(self.data, num::NumCast::from(addr).unwrap()) as *mut u32, self.to_mem_endian(val));
                 Ok(())
             }
         }
@@ -140,7 +140,7 @@ mod test {
 
         #[test]
         pub fn can_read_and_write_u8_value() {
-            let mut mem = FixedMemory::with_size_and_endian(10, Endianness::LittleEndian);
+            let mut mem : FixedMemory<u16> = FixedMemory::with_size_and_endian(10, Endianness::LittleEndian);
             assert!(mem.set_u8(4, 42).is_ok());
             let val = mem.get_u8(4).unwrap();
             assert_eq!(val, 42);
@@ -148,7 +148,7 @@ mod test {
 
         #[test]
         pub fn can_read_and_write_u16_value() {
-            let mut mem = FixedMemory::with_size_and_endian(10, Endianness::LittleEndian);
+            let mut mem : FixedMemory<u16> = FixedMemory::with_size_and_endian(10, Endianness::LittleEndian);
             assert!(mem.set_u16(4, 1024).is_ok());
             let val = mem.get_u16(4).unwrap();
             assert_eq!(val, 1024);
@@ -156,7 +156,7 @@ mod test {
 
         #[test]
         pub fn can_read_and_write_u32_value() {
-            let mut mem = FixedMemory::with_size_and_endian(10, Endianness::LittleEndian);
+            let mut mem : FixedMemory<u16> = FixedMemory::with_size_and_endian(10, Endianness::LittleEndian);
             assert!(mem.set_u32(4, 75536).is_ok());
             let val = mem.get_u32(4).unwrap();
             assert_eq!(val, 75536);
@@ -164,7 +164,7 @@ mod test {
 
         #[test]
         pub fn can_write_u32_and_read_as_u8_le() {
-            let mut mem = FixedMemory::with_size_and_endian(10, Endianness::LittleEndian);
+            let mut mem : FixedMemory<u16> = FixedMemory::with_size_and_endian(10, Endianness::LittleEndian);
             assert!(mem.set_u32(4, 75536).is_ok());
             let val1 = mem.get_u8(4).unwrap();
             let val2 = mem.get_u8(5).unwrap();
@@ -178,7 +178,7 @@ mod test {
 
         #[test]
         pub fn can_write_u32_and_read_as_u8_be() {
-            let mut mem = FixedMemory::with_size_and_endian(10, Endianness::BigEndian);
+            let mut mem : FixedMemory<u16> = FixedMemory::with_size_and_endian(10, Endianness::BigEndian);
             assert!(mem.set_u32(4, 75536).is_ok());
             let val1 = mem.get_u8(4).unwrap();
             let val2 = mem.get_u8(5).unwrap();

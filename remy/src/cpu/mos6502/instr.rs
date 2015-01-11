@@ -126,6 +126,12 @@ impl Instruction {
 					try!(cpu.pc.advance(offset))
 				}
 				Ok(())
+			},
+			Instruction::BCS(offset) => {
+				if cpu.registers.has_flags(mos6502::FLAGS_CARRY) {
+					try!(cpu.pc.advance(offset))
+				}
+				Ok(())
 			}
 			_ => Err(ExecError::InstructionNotImplemented)
 		}
@@ -234,6 +240,21 @@ mod test {
 		pub fn bcc_advances_pc_by_specified_amount_if_carry_flag_clear() {
 			let mut cpu = init_cpu();
 			assert!(Instruction::BCC(1).exec(&mut cpu).is_ok());
+			assert_eq!(cpu.pc.get(), 43);
+		}
+
+		#[test]
+		pub fn bcs_does_not_modify_pc_if_carry_flag_unset() {
+			let mut cpu = init_cpu();
+			assert!(Instruction::BCS(1).exec(&mut cpu).is_ok());
+			assert_eq!(cpu.pc.get(), 42);
+		}
+
+		#[test]
+		pub fn bcs_advances_pc_by_specified_amount_if_carry_flag_set() {
+			let mut cpu = init_cpu();
+			cpu.registers.set_flags(mos6502::FLAGS_CARRY);
+			assert!(Instruction::BCS(1).exec(&mut cpu).is_ok());
 			assert_eq!(cpu.pc.get(), 43);
 		}
 

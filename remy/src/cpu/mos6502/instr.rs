@@ -162,13 +162,25 @@ impl Instruction {
 				}
 
 				Ok(())
-			}
+			},
 			Instruction::BMI(offset) => {
 				if cpu.registers.has_flags(mos6502::FLAGS_SIGN) {
 					try!(cpu.pc.advance(offset))
 				}
 				Ok(())	
 			},
+			Instruction::BNE(offset) => {
+				if !cpu.registers.has_flags(mos6502::FLAGS_ZERO) {
+					try!(cpu.pc.advance(offset))
+				}
+				Ok(())	
+			},
+			Instruction::BPL(offset) => {
+				if !cpu.registers.has_flags(mos6502::FLAGS_SIGN) {
+					try!(cpu.pc.advance(offset))
+				}
+				Ok(())	
+			}
 			_ => Err(ExecError::InstructionNotImplemented)
 		}
 	}
@@ -372,6 +384,36 @@ mod test {
 		pub fn bmi_does_not_modify_pc_if_sign_flag_unset() {
 			let mut cpu = init_cpu();
 			assert!(Instruction::BMI(1).exec(&mut cpu).is_ok());
+			assert_eq!(cpu.pc.get(), 42);
+		}
+
+		#[test]
+		pub fn bne_advances_pc_by_specified_amount_if_zero_flag_unset() {
+			let mut cpu = init_cpu();
+			assert!(Instruction::BNE(1).exec(&mut cpu).is_ok());
+			assert_eq!(cpu.pc.get(), 43);
+		}
+
+		#[test]
+		pub fn bne_does_not_modify_pc_if_zero_flag_set() {
+			let mut cpu = init_cpu();
+			cpu.registers.set_flags(mos6502::FLAGS_ZERO);
+			assert!(Instruction::BNE(1).exec(&mut cpu).is_ok());
+			assert_eq!(cpu.pc.get(), 42);
+		}
+
+		#[test]
+		pub fn bpl_advances_pc_by_specified_amount_if_sign_flag_unset() {
+			let mut cpu = init_cpu();
+			assert!(Instruction::BPL(1).exec(&mut cpu).is_ok());
+			assert_eq!(cpu.pc.get(), 43);
+		}
+
+		#[test]
+		pub fn bpl_does_not_modify_pc_if_sign_flag_set() {
+			let mut cpu = init_cpu();
+			cpu.registers.set_flags(mos6502::FLAGS_SIGN);
+			assert!(Instruction::BPL(1).exec(&mut cpu).is_ok());
 			assert_eq!(cpu.pc.get(), 42);
 		}
 

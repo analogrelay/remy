@@ -138,6 +138,30 @@ impl Instruction {
 					try!(cpu.pc.advance(offset))
 				}
 				Ok(())	
+			},
+			Instruction::BIT(op) => {
+				let m = try!(op.get(cpu));
+				let t = cpu.registers.a & m;
+				
+				if m & 0x80 != 0 {
+					cpu.registers.set_flags(mos6502::FLAGS_SIGN);
+				} else {
+					cpu.registers.clear_flags(mos6502::FLAGS_SIGN);
+				}
+
+				if m & 0x40 != 0 {
+					cpu.registers.set_flags(mos6502::FLAGS_OVERFLOW);
+				} else {
+					cpu.registers.clear_flags(mos6502::FLAGS_OVERFLOW);
+				}
+
+				if t == 0 {
+					cpu.registers.set_flags(mos6502::FLAGS_ZERO);
+				} else {
+					cpu.registers.clear_flags(mos6502::FLAGS_ZERO);
+				}
+
+				Ok(())
 			}
 			_ => Err(ExecError::InstructionNotImplemented)
 		}
@@ -277,6 +301,57 @@ mod test {
 			let mut cpu = init_cpu();
 			assert!(Instruction::BEQ(1).exec(&mut cpu).is_ok());
 			assert_eq!(cpu.pc.get(), 42);
+		}
+
+		#[test]
+		pub fn bit_sets_sign_bit_if_bit_7_of_operand_is_set() {
+			let mut cpu = init_cpu();
+			cpu.registers.a = 0xFF;
+			assert!(Instruction::BIT(Operand::Immediate(0x80)).exec(&mut cpu).is_ok());
+			assert_eq!(cpu.registers.get_flags(), mos6502::FLAGS_SIGN | mos6502::FLAGS_RESERVED);
+		}
+
+		#[test]
+		pub fn bit_clears_sign_bit_if_bit_7_of_operand_is_not_set() {
+			let mut cpu = init_cpu();
+			cpu.registers.a = 0xFF;
+			cpu.registers.set_flags(mos6502::FLAGS_SIGN | mos6502::FLAGS_RESERVED);
+			assert!(Instruction::BIT(Operand::Immediate(0x01)).exec(&mut cpu).is_ok());
+			assert_eq!(cpu.registers.get_flags(), mos6502::FLAGS_RESERVED);
+		}
+
+		#[test]
+		pub fn bit_sets_overflow_bit_if_bit_6_of_operand_is_set() {
+			let mut cpu = init_cpu();
+			cpu.registers.a = 0xFF;
+			assert!(Instruction::BIT(Operand::Immediate(0x40)).exec(&mut cpu).is_ok());
+			assert_eq!(cpu.registers.get_flags(), mos6502::FLAGS_OVERFLOW | mos6502::FLAGS_RESERVED);
+		}
+
+		#[test]
+		pub fn bit_clears_overflow_bit_if_bit_6_of_operand_is_not_set() {
+			let mut cpu = init_cpu();
+			cpu.registers.a = 0xFF;
+			cpu.registers.set_flags(mos6502::FLAGS_OVERFLOW | mos6502::FLAGS_RESERVED);
+			assert!(Instruction::BIT(Operand::Immediate(0x01)).exec(&mut cpu).is_ok());
+			assert_eq!(cpu.registers.get_flags(), mos6502::FLAGS_RESERVED);
+		}
+
+		#[test]
+		pub fn bit_sets_zero_flag_if_result_of_masking_operand_with_a_is_zero() {
+			let mut cpu = init_cpu();
+			cpu.registers.a = 0x02;
+			assert!(Instruction::BIT(Operand::Immediate(0x01)).exec(&mut cpu).is_ok());
+			assert_eq!(cpu.registers.get_flags(), mos6502::FLAGS_ZERO | mos6502::FLAGS_RESERVED);
+		}
+
+		#[test]
+		pub fn bit_clears_zero_flag_if_result_of_masking_operand_with_a_is_nonzero() {
+			let mut cpu = init_cpu();
+			cpu.registers.a = 0x02;
+			cpu.registers.set_flags(mos6502::FLAGS_ZERO | mos6502::FLAGS_RESERVED);
+			assert!(Instruction::BIT(Operand::Immediate(0x03)).exec(&mut cpu).is_ok());
+			assert_eq!(cpu.registers.get_flags(), mos6502::FLAGS_RESERVED);
 		}
 
 		fn init_cpu() -> Mos6502<mem::FixedMemory<u16>> {

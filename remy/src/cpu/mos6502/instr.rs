@@ -132,6 +132,12 @@ impl Instruction {
 					try!(cpu.pc.advance(offset))
 				}
 				Ok(())
+			},
+			Instruction::BEQ(offset) => {
+				if cpu.registers.has_flags(mos6502::FLAGS_ZERO) {
+					try!(cpu.pc.advance(offset))
+				}
+				Ok(())	
 			}
 			_ => Err(ExecError::InstructionNotImplemented)
 		}
@@ -256,6 +262,21 @@ mod test {
 			cpu.registers.set_flags(mos6502::FLAGS_CARRY);
 			assert!(Instruction::BCS(1).exec(&mut cpu).is_ok());
 			assert_eq!(cpu.pc.get(), 43);
+		}
+
+		#[test]
+		pub fn beq_advances_pc_by_specified_amount_if_zero_flag_set() {
+			let mut cpu = init_cpu();
+			cpu.registers.set_flags(mos6502::FLAGS_ZERO);
+			assert!(Instruction::BEQ(1).exec(&mut cpu).is_ok());
+			assert_eq!(cpu.pc.get(), 43);
+		}
+
+		#[test]
+		pub fn beq_does_not_modify_pc_if_zero_flag_unset() {
+			let mut cpu = init_cpu();
+			assert!(Instruction::BEQ(1).exec(&mut cpu).is_ok());
+			assert_eq!(cpu.pc.get(), 42);
 		}
 
 		fn init_cpu() -> Mos6502<mem::FixedMemory<u16>> {

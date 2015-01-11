@@ -2,6 +2,8 @@ use std::error;
 
 use mem;
 
+use pc;
+
 use cpu::mos6502;
 use cpu::mos6502::{Mos6502,Operand,OperandError};
 
@@ -9,9 +11,9 @@ pub enum Instruction {
 	ADC(Operand),
 	AND(Operand),
 	ASL(Operand),
-	BCC(Operand),
-	BCS(Operand),
-	BEQ(Operand),
+	BCC(i8),
+	BCS(i8),
+	BEQ(i8),
 	BIT(Operand),
 	BMI(Operand),
 	BNE(Operand),
@@ -67,12 +69,19 @@ pub enum Instruction {
 #[derive(Show)]
 pub enum ExecError {
 	FailedToRetrieveOperand(OperandError),
+	ErrorAdjustingProgramCounter(pc::ProgramCounterError),
 	InstructionNotImplemented
 }
 
 impl error::FromError<OperandError> for ExecError {
 	fn from_error(err: OperandError) -> ExecError {
 		ExecError::FailedToRetrieveOperand(err)
+	}
+}
+
+impl error::FromError<pc::ProgramCounterError> for ExecError {
+	fn from_error(err: pc::ProgramCounterError) -> ExecError {
+		ExecError::ErrorAdjustingProgramCounter(err)
 	}
 }
 
@@ -111,6 +120,12 @@ impl Instruction {
 					cpu.registers.set_flags(mos6502::FLAGS_ZERO);
 				}
 				Ok(())
+			},
+			Instruction::BCC(offset) => {
+				if !cpu.registers.has_flags(mos6502::FLAGS_CARRY) {
+					try!(cpu.pc.advance(offset))
+				}
+				Ok(())
 			}
 			_ => Err(ExecError::InstructionNotImplemented)
 		}
@@ -119,7 +134,8 @@ impl Instruction {
 
 #[cfg(test)]
 mod test {
-	mod instruction {
+	mod mos6502_instruction {
+		use pc;
 		use mem;
 		use cpu::mos6502;
 		use cpu::mos6502::{Instruction,Operand,Mos6502};
@@ -206,9 +222,25 @@ mod test {
 			assert_eq!(cpu.registers.get_flags(), mos6502::FLAGS_ZERO | mos6502::FLAGS_RESERVED);
 		}
 
+		#[test]
+		pub fn bcc_does_not_modify_pc_if_carry_flag_set() {
+			let mut cpu = init_cpu();
+			cpu.registers.set_flags(mos6502::FLAGS_CARRY);
+			assert!(Instruction::BCC(1).exec(&mut cpu).is_ok());
+			assert_eq!(cpu.pc.get(), 42);
+		}
+
+		#[test]
+		pub fn bcc_advances_pc_by_specified_amount_if_carry_flag_clear() {
+			let mut cpu = init_cpu();
+			assert!(Instruction::BCC(1).exec(&mut cpu).is_ok());
+			assert_eq!(cpu.pc.get(), 43);
+		}
+
 		fn init_cpu() -> Mos6502<mem::FixedMemory<u16>> {
 			let mut cpu = Mos6502::with_fixed_memory(32);
 			cpu.registers.a = 42;
+			cpu.pc.set(42);
 
 			cpu
 		}

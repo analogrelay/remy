@@ -2,6 +2,8 @@ use std::error;
 
 use mem;
 
+use pc;
+
 use cpu::mos6502;
 use cpu::mos6502::Mos6502;
 
@@ -13,8 +15,7 @@ pub enum Operand {
     Indexed(u16, mos6502::RegisterName),
     Indirect(u16),
     PreIndexedIndirect(u8),
-    PostIndexedIndirect(u8),
-    Relative(i8)
+    PostIndexedIndirect(u8)
 }
 
 #[derive(Show,PartialEq)]
@@ -46,7 +47,6 @@ impl Operand {
     pub fn get_u16<M: mem::Memory<u16>>(&self, cpu: &Mos6502<M>) -> Result<u16, OperandError> {
         match *self {
             Operand::Indirect(addr)     => Ok(try!(cpu.mem.get_u16(try!(cpu.mem.get_u16(addr))))),
-            Operand::Relative(offset)   => Ok(((cpu.registers.pc as isize) + (offset as isize)) as u16),
             _                           => Err(OperandError::OperandSizeMismatch)
         }
     }
@@ -172,22 +172,6 @@ mod test {
         }
 
         #[test]
-        pub fn get_u16_relative_adds_positive_value_to_pc() {
-            let mut cpu = Mos6502::with_fixed_memory(10);
-            cpu.registers.pc = 1024;
-            let val = Operand::Relative(1).get_u16(&cpu).unwrap();
-            assert_eq!(val, 1025);
-        }
-
-        #[test]
-        pub fn get_u16_relative_adds_negative_value_to_pc() {
-            let mut cpu = Mos6502::with_fixed_memory(10);
-            cpu.registers.pc = 1024;
-            let val = Operand::Relative(-1).get_u16(&cpu).unwrap();
-            assert_eq!(val, 1023);
-        }
-
-        #[test]
         pub fn get_u16_returns_error_if_given_u8_operand() {
             let cpu = Mos6502::with_fixed_memory(10);
 
@@ -201,14 +185,7 @@ mod test {
         }
 
         #[test]
-        pub fn get_returns_error_if_given_relative_operand() {
-            let cpu = Mos6502::with_fixed_memory(10);
-            let val = Operand::Relative(-1).get(&cpu).unwrap_err();
-            assert_eq!(val, OperandError::OperandSizeMismatch);
-        }
-
-        #[test]
-        pub fn get_returns_error_if_given_indirect_operand() {
+        pub fn get_returns_error_if_given_u16_operand() {
             let cpu = Mos6502::with_fixed_memory(10);
             let val = Operand::Indirect(1).get(&cpu).unwrap_err();
             assert_eq!(val, OperandError::OperandSizeMismatch);

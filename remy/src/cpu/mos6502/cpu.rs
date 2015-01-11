@@ -2,6 +2,10 @@ use std::num;
 
 use mem;
 
+use pc;
+
+use cpu::mos6502;
+
 #[derive(Show,Copy)]
 pub enum RegisterName {
     A,
@@ -11,12 +15,14 @@ pub enum RegisterName {
 
 pub struct Mos6502<M: mem::Memory<u16>> {
     pub registers: Mos6502Registers,
-    pub mem: M
+    pub mem: M,
+    pub pc: pc::ProgramCounter<u16>
 }
 
 impl Mos6502<mem::FixedMemory<u16>> {
     pub fn with_fixed_memory(size: u16) -> Mos6502<mem::FixedMemory<u16>> {
-        Mos6502::new(mem::FixedMemory::with_size_and_endian(size, mem::Endianness::LittleEndian))
+        Mos6502::new(
+            mem::FixedMemory::with_size_and_endian(size, mem::Endianness::LittleEndian))
     }
 }
 
@@ -24,7 +30,8 @@ impl<M: mem::Memory<u16>> Mos6502<M> {
     pub fn new(mem: M) -> Mos6502<M> {
         Mos6502 {
             registers: Mos6502Registers::new(),
-            mem: mem
+            mem: mem,
+            pc: pc::ProgramCounter::new()
         }
     }
 }
@@ -54,17 +61,16 @@ pub struct Mos6502Registers {
     pub x: u8,
     pub y: u8,
     pub sp: u16,
-    pub pc: u16,
     flags: Mos6502Flags
 }
 
 impl Mos6502Registers {
     pub fn new() -> Mos6502Registers {
-        Mos6502Registers { a: 0, x: 0, y: 0, sp: 0, pc: 0, flags: FLAGS_RESERVED }
+        Mos6502Registers { a: 0, x: 0, y: 0, sp: 0, flags: FLAGS_RESERVED }
     }
 
     pub fn with_flags(flags: Mos6502Flags) -> Mos6502Registers {
-        Mos6502Registers { a: 0, x: 0, y: 0, sp: 0, pc: 0, flags: flags | FLAGS_RESERVED }   
+        Mos6502Registers { a: 0, x: 0, y: 0, sp: 0, flags: flags | FLAGS_RESERVED }   
     }
 
     pub fn get(&self, r: RegisterName) -> u8 {
@@ -77,6 +83,10 @@ impl Mos6502Registers {
 
     pub fn carry(&self) -> bool {
         self.flags.intersects(FLAGS_CARRY)
+    }
+
+    pub fn has_flags(&self, flags: Mos6502Flags) -> bool {
+        self.flags.intersects(flags)
     }
 
     pub fn get_flags(&self) -> Mos6502Flags {

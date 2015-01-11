@@ -3,6 +3,8 @@ use std::rt::heap;
 use std::ptr;
 use std::intrinsics::offset;
 
+use Endianness;
+
 #[derive(Show,PartialEq)]
 pub enum MemoryError {
     OutOfBounds
@@ -17,11 +19,6 @@ pub trait Memory<A: num::UnsignedInt> {
 
     fn get_u32(&self, addr: A) -> Result<u32, MemoryError>;
     fn set_u32(&mut self, addr: A, val: u32) -> Result<(), MemoryError>;
-}
-
-pub enum Endianness {
-    BigEndian,
-    LittleEndian
 }
 
 pub struct FixedMemory<A: num::UnsignedInt> {
@@ -136,7 +133,8 @@ impl<A: num::UnsignedInt> Memory<A> for FixedMemory<A> {
 #[cfg(test)]
 mod test {
     mod fixed_memory {
-        use mem::{FixedMemory,Memory,Endianness};
+        use Endianness;
+        use mem::{FixedMemory,Memory};
 
         #[test]
         pub fn can_read_and_write_u8_value() {

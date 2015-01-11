@@ -22,7 +22,7 @@ pub struct Mos6502<M: mem::Memory<u16>> {
 impl Mos6502<mem::FixedMemory<u16>> {
     pub fn with_fixed_memory(size: u16) -> Mos6502<mem::FixedMemory<u16>> {
         Mos6502::new(
-            mem::FixedMemory::with_size_and_endian(size, mem::Endianness::LittleEndian))
+            mem::FixedMemory::with_size_and_endian(size, ::Endianness::LittleEndian))
     }
 }
 

@@ -23,6 +23,10 @@ pub struct FixedMemory<A: num::UnsignedInt+num::ToPrimitive> {
 }
 
 impl<A: num::UnsignedInt+num::ToPrimitive> FixedMemory<A> {
+    pub fn with_size(size: A) -> FixedMemory<A> {
+        FixedMemory::with_size_and_endian(size, Endianness::native())
+    }
+
     pub fn with_size_and_endian(size: A, endian: Endianness) -> FixedMemory<A> {
         unsafe {
             let buf = heap::allocate(num::NumCast::from(size).unwrap(), 0);

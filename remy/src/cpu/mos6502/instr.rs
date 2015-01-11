@@ -15,9 +15,9 @@ pub enum Instruction {
 	BCS(i8),
 	BEQ(i8),
 	BIT(Operand),
-	BMI(Operand),
-	BNE(Operand),
-	BPL(Operand),
+	BMI(i8),
+	BNE(i8),
+	BPL(i8),
 	BRK,
 	BVC(Operand),
 	BVS(Operand),
@@ -163,6 +163,12 @@ impl Instruction {
 
 				Ok(())
 			}
+			Instruction::BMI(offset) => {
+				if cpu.registers.has_flags(mos6502::FLAGS_SIGN) {
+					try!(cpu.pc.advance(offset))
+				}
+				Ok(())	
+			},
 			_ => Err(ExecError::InstructionNotImplemented)
 		}
 	}
@@ -352,6 +358,21 @@ mod test {
 			cpu.registers.set_flags(mos6502::FLAGS_ZERO | mos6502::FLAGS_RESERVED);
 			assert!(Instruction::BIT(Operand::Immediate(0x03)).exec(&mut cpu).is_ok());
 			assert_eq!(cpu.registers.get_flags(), mos6502::FLAGS_RESERVED);
+		}
+
+		#[test]
+		pub fn bmi_advances_pc_by_specified_amount_if_sign_flag_set() {
+			let mut cpu = init_cpu();
+			cpu.registers.set_flags(mos6502::FLAGS_SIGN);
+			assert!(Instruction::BMI(1).exec(&mut cpu).is_ok());
+			assert_eq!(cpu.pc.get(), 43);
+		}
+
+		#[test]
+		pub fn bmi_does_not_modify_pc_if_sign_flag_unset() {
+			let mut cpu = init_cpu();
+			assert!(Instruction::BMI(1).exec(&mut cpu).is_ok());
+			assert_eq!(cpu.pc.get(), 42);
 		}
 
 		fn init_cpu() -> Mos6502<mem::FixedMemory<u16>> {

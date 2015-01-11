@@ -60,7 +60,7 @@ pub struct Mos6502Registers {
     pub a: u8,
     pub x: u8,
     pub y: u8,
-    pub sp: u16,
+    pub sp: u8,
     flags: Mos6502Flags
 }
 

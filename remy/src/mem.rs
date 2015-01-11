@@ -8,7 +8,7 @@ pub enum MemoryError {
     OutOfBounds
 }
 
-pub trait Memory<A: num::Int> {
+pub trait Memory<A: num::UnsignedInt> {
     fn get_u8(&self, addr: A) -> Result<u8, MemoryError>;
     fn set_u8(&mut self, addr: A, val: u8) -> Result<(), MemoryError>;
 
@@ -24,13 +24,13 @@ pub enum Endianness {
     LittleEndian
 }
 
-pub struct FixedMemory<A: num::Int> {
+pub struct FixedMemory<A: num::UnsignedInt> {
     data: *mut u8,
     size: A,
     endian: Endianness
 }
 
-impl<A: num::Int> FixedMemory<A> {
+impl<A: num::UnsignedInt> FixedMemory<A> {
     pub fn with_size_and_endian(size: A, endian: Endianness) -> FixedMemory<A> {
         unsafe {
             let buf = heap::allocate(num::NumCast::from(size).unwrap(), 0);
@@ -44,14 +44,14 @@ impl<A: num::Int> FixedMemory<A> {
         }
     }
 
-    fn to_mem_endian<I: num::Int>(&self, val: I) -> I {
+    fn to_mem_endian<I: num::UnsignedInt>(&self, val: I) -> I {
         match self.endian {
             Endianness::BigEndian => val.to_be(),
             Endianness::LittleEndian => val.to_le()
         }
     }
 
-    fn from_mem_endian<I: num::Int>(&self, val: I) -> I {
+    fn from_mem_endian<I: num::UnsignedInt>(&self, val: I) -> I {
         match self.endian {
             Endianness::BigEndian => num::Int::from_be(val),
             Endianness::LittleEndian => num::Int::from_le(val)
@@ -59,7 +59,7 @@ impl<A: num::Int> FixedMemory<A> {
     }
 }
 
-impl<A: num::Int> Memory<A> for FixedMemory<A> {
+impl<A: num::UnsignedInt> Memory<A> for FixedMemory<A> {
     fn get_u8(&self, addr: A) -> Result<u8, MemoryError> {
         if addr >= self.size {
             Err(MemoryError::OutOfBounds)

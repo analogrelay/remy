@@ -5,11 +5,11 @@ pub enum ProgramCounterError {
 	AdvancedOutOfBounds
 }
 
-pub struct ProgramCounter<S: num::Int> {
+pub struct ProgramCounter<S: num::UnsignedInt + num::FromPrimitive> {
 	pc: S
 }
 
-impl<S: num::Int + num::FromPrimitive> ProgramCounter<S> {
+impl<S: num::UnsignedInt + num::FromPrimitive> ProgramCounter<S> {
 	pub fn new() -> ProgramCounter<S> {
 		ProgramCounter { pc: num::Int::zero() }
 	}

@@ -142,7 +142,7 @@ impl Instruction {
 			Instruction::BIT(op) => {
 				let m = try!(op.get(cpu));
 				let t = cpu.registers.a & m;
-				
+
 				if m & 0x80 != 0 {
 					cpu.registers.set_flags(mos6502::FLAGS_SIGN);
 				} else {
@@ -167,19 +167,19 @@ impl Instruction {
 				if cpu.registers.has_flags(mos6502::FLAGS_SIGN) {
 					try!(cpu.pc.advance(offset))
 				}
-				Ok(())	
+				Ok(())
 			},
 			Instruction::BNE(offset) => {
 				if !cpu.registers.has_flags(mos6502::FLAGS_ZERO) {
 					try!(cpu.pc.advance(offset))
 				}
-				Ok(())	
+				Ok(())
 			},
 			Instruction::BPL(offset) => {
 				if !cpu.registers.has_flags(mos6502::FLAGS_SIGN) {
 					try!(cpu.pc.advance(offset))
 				}
-				Ok(())	
+				Ok(())
 			}
 			_ => Err(ExecError::InstructionNotImplemented)
 		}

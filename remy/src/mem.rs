@@ -2,12 +2,13 @@ use std::num;
 use std::rt::heap;
 use std::ptr;
 use std::intrinsics::offset;
+use std::mem::size_of;
 
 use Endianness;
 
 #[derive(Show,PartialEq)]
 pub enum MemoryError {
-    AddressToLarge,
+    AddressTooLarge,
     OutOfBounds
 }
 
@@ -18,7 +19,7 @@ pub trait Memory<A: num::UnsignedInt> {
 
 pub struct FixedMemory<A: num::UnsignedInt+num::ToPrimitive> {
     data: *mut u8,
-    size: A,
+    size: usize,
     endian: Endianness
 }
 
@@ -34,7 +35,7 @@ impl<A: num::UnsignedInt+num::ToPrimitive> FixedMemory<A> {
 
             FixedMemory {
                 data: buf,
-                size: size,
+                size: num::NumCast::from(size).unwrap(), // TODO: Figure out what to do with this error?
                 endian: endian
             }
         }
@@ -57,28 +58,30 @@ impl<A: num::UnsignedInt+num::ToPrimitive> FixedMemory<A> {
 
 impl<A: num::UnsignedInt+num::ToPrimitive> Memory<A> for FixedMemory<A> {
     fn get<I: num::Int>(&self, addr: A) -> Result<I, MemoryError> {
-        if addr >= self.size {
+        // Get values into native ints
+        let native_addr : usize = try!(num::NumCast::from(addr).ok_or(MemoryError::AddressTooLarge));
+
+        if (native_addr >= self.size) || (native_addr + size_of::<I>() >= self.size) {
             Err(MemoryError::OutOfBounds)
         }
         else {
-            let native_addr : isize = try!(num::NumCast::from(addr).ok_or(MemoryError::AddressToLarge));
-
             unsafe {
-                let value_ptr = offset(self.data, native_addr) as *const I;
+                let value_ptr = offset(self.data, native_addr as isize) as *const I;
                 Ok(self.from_mem_endian(ptr::read(value_ptr)))
             }
         }
     }
 
     fn set<I: num::Int>(&mut self, addr: A, val: I) -> Result<(), MemoryError> {
-        if addr >= self.size {
+        // Get values into native ints
+        let native_addr : usize = try!(num::NumCast::from(addr).ok_or(MemoryError::AddressTooLarge));
+
+        if (native_addr >= self.size) || (native_addr + size_of::<I>() >= self.size) {
             Err(MemoryError::OutOfBounds)
         }
         else {
-            let native_addr : isize = try!(num::NumCast::from(addr).ok_or(MemoryError::AddressToLarge));
-
             unsafe {
-                let value_ptr = offset(self.data, native_addr) as *mut I;
+                let value_ptr = offset(self.data, native_addr as isize) as *mut I;
                 Ok(ptr::write(value_ptr, self.to_mem_endian(val)))
             }
         }
@@ -89,7 +92,7 @@ impl<A: num::UnsignedInt+num::ToPrimitive> Memory<A> for FixedMemory<A> {
 mod test {
     mod fixed_memory {
         use Endianness;
-        use mem::{FixedMemory,Memory};
+        use mem::{FixedMemory,Memory,MemoryError};
 
         #[test]
         pub fn can_read_and_write_u8_value() {
@@ -113,6 +116,12 @@ mod test {
             assert!(mem.set(4, 75536u32).is_ok());
             let val : u32 = mem.get(4).unwrap();
             assert_eq!(val, 75536);
+        }
+
+        #[test]
+        pub fn returns_error_if_writing_would_run_out_of_bounds() {
+            let mut mem = FixedMemory::with_size_and_endian(10u16, Endianness::LittleEndian);
+            assert_eq!(mem.set(9, 75535u32).unwrap_err(), MemoryError::OutOfBounds);
         }
 
         #[test]

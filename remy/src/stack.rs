@@ -91,109 +91,109 @@ mod test {
 	#[test]
 	pub fn push_u8_writes_u8_value_to_current_sp_location() {
 		let mut memory = mem::FixedMemory::with_size(16u8); // Make a 16-byte memory
-		let mut stack = Stack::new(&mut memory, 15); // Start the stack at the end of memory
+		let mut stack = Stack::new(&mut memory, 10); // Start the stack at the end of memory
 
-		assert!(stack.push(42u8).is_ok());
-		assert_eq!(stack.memory.get::<u8>(15).unwrap(), 42);
+		stack.push(42u8).unwrap();
+		assert_eq!(stack.memory.get::<u8>(10).unwrap(), 42);
 	}
 
 	#[test]
 	pub fn push_u8_moves_stack_pointer_down_1_byte() {
 		let mut memory = mem::FixedMemory::with_size(16u8); // Make a 16-byte memory
-		let mut stack = Stack::new(&mut memory, 15); // Start the stack at the end of memory
+		let mut stack = Stack::new(&mut memory, 10); // Start the stack at the end of memory
 
-		assert!(stack.push(42u8).is_ok());
-		assert_eq!(stack.sp, 14);
+		stack.push(42u8).unwrap();
+		assert_eq!(stack.sp, 9);
 	}
 
 	#[test]
 	pub fn push_u16_writes_u16_value_to_current_sp_location() {
 		let mut memory = mem::FixedMemory::with_size(16u8); // Make a 16-byte memory
-		let mut stack = Stack::new(&mut memory, 15); // Start the stack at the end of memory
+		let mut stack = Stack::new(&mut memory, 10); // Start the stack at the end of memory
 
-		assert!(stack.push(1024u16).is_ok());
-		assert_eq!(stack.memory.get::<u16>(15).unwrap(), 1024u16);
+		stack.push(1024u16).unwrap();
+		assert_eq!(stack.memory.get::<u16>(10).unwrap(), 1024u16);
 	}
 
 	#[test]
 	pub fn push_u16_moves_stack_pointer_down_2_bytes() {
 		let mut memory = mem::FixedMemory::with_size(16u8); // Make a 16-byte memory
-		let mut stack = Stack::new(&mut memory, 15); // Start the stack at the end of memory
+		let mut stack = Stack::new(&mut memory, 10); // Start the stack at the end of memory
 
-		assert!(stack.push(1024u16).is_ok());
-		assert_eq!(stack.sp, 13);
+		stack.push(1024u16).unwrap();
+		assert_eq!(stack.sp, 8);
 	}
 
 	#[test]
 	pub fn push_u32_writes_u32_value_to_current_sp_location() {
 		let mut memory = mem::FixedMemory::with_size(16u8); // Make a 16-byte memory
-		let mut stack = Stack::new(&mut memory, 15); // Start the stack at the end of memory
+		let mut stack = Stack::new(&mut memory, 10); // Start the stack at the end of memory
 
-		assert!(stack.push(75536u32).is_ok());
-		assert_eq!(stack.memory.get::<u32>(15).unwrap(), 75536u32);
+		stack.push(75536u32).unwrap();
+		assert_eq!(stack.memory.get::<u32>(10).unwrap(), 75536u32);
 	}
 
 	#[test]
 	pub fn push_u32_moves_stack_pointer_down_4_bytes() {
 		let mut memory = mem::FixedMemory::with_size(16u8); // Make a 16-byte memory
-		let mut stack = Stack::new(&mut memory, 15); // Start the stack at the end of memory
+		let mut stack = Stack::new(&mut memory, 10); // Start the stack at the end of memory
 
-		assert!(stack.push(75536u32).is_ok());
-		assert_eq!(stack.sp, 11);
+		stack.push(75536u32).unwrap();
+		assert_eq!(stack.sp, 6);
 	}
 
 	#[test]
 	pub fn push_i8_writes_i8_value_to_current_sp_location() {
 		let mut memory = mem::FixedMemory::with_size(16u8); // Make a 16-byte memory
-		let mut stack = Stack::new(&mut memory, 15); // Start the stack at the end of memory
+		let mut stack = Stack::new(&mut memory, 10); // Start the stack at the end of memory
 
-		assert!(stack.push(42i8).is_ok());
-		assert_eq!(stack.memory.get::<i8>(15).unwrap(), 42);
+		stack.push(42i8).unwrap();
+		assert_eq!(stack.memory.get::<i8>(10).unwrap(), 42);
 	}
 
 	#[test]
 	pub fn push_i8_moves_stack_pointer_down_1_byte() {
 		let mut memory = mem::FixedMemory::with_size(16u8); // Make a 16-byte memory
-		let mut stack = Stack::new(&mut memory, 15); // Start the stack at the end of memory
+		let mut stack = Stack::new(&mut memory, 10); // Start the stack at the end of memory
 
-		assert!(stack.push(42i8).is_ok());
-		assert_eq!(stack.sp, 14);
+		stack.push(42i8).unwrap();
+		assert_eq!(stack.sp, 9);
 	}
 
 	#[test]
 	pub fn push_i16_writes_i16_value_to_current_sp_location() {
 		let mut memory = mem::FixedMemory::with_size(16u8); // Make a 16-byte memory
-		let mut stack = Stack::new(&mut memory, 15); // Start the stack at the end of memory
+		let mut stack = Stack::new(&mut memory, 10); // Start the stack at the end of memory
 
-		assert!(stack.push(1024i16).is_ok());
-		assert_eq!(stack.memory.get::<i16>(15).unwrap(), 1024i16);
+		stack.push(1024i16).unwrap();
+		assert_eq!(stack.memory.get::<i16>(10).unwrap(), 1024i16);
 	}
 
 	#[test]
 	pub fn push_i16_moves_stack_pointer_down_2_bytes() {
 		let mut memory = mem::FixedMemory::with_size(16u8); // Make a 16-byte memory
-		let mut stack = Stack::new(&mut memory, 15); // Start the stack at the end of memory
+		let mut stack = Stack::new(&mut memory, 10); // Start the stack at the end of memory
 
-		assert!(stack.push(1024i16).is_ok());
-		assert_eq!(stack.sp, 13);
+		stack.push(1024i16).unwrap();
+		assert_eq!(stack.sp, 8);
 	}
 
 	#[test]
 	pub fn push_i32_writes_i32_value_to_current_sp_location() {
 		let mut memory = mem::FixedMemory::with_size(16u8); // Make a 16-byte memory
-		let mut stack = Stack::new(&mut memory, 15); // Start the stack at the end of memory
+		let mut stack = Stack::new(&mut memory, 10); // Start the stack at the end of memory
 
-		assert!(stack.push(75536i32).is_ok());
-		assert_eq!(stack.memory.get::<i32>(15).unwrap(), 75536i32);
+		stack.push(75536i32).unwrap();
+		assert_eq!(stack.memory.get::<i32>(10).unwrap(), 75536i32);
 	}
 
 	#[test]
 	pub fn push_i32_moves_stack_pointer_down_4_bytes() {
 		let mut memory = mem::FixedMemory::with_size(16u8); // Make a 16-byte memory
-		let mut stack = Stack::new(&mut memory, 15); // Start the stack at the end of memory
+		let mut stack = Stack::new(&mut memory, 10); // Start the stack at the end of memory
 
-		assert!(stack.push(75536i32).is_ok());
-		assert_eq!(stack.sp, 11);
+		stack.push(75536i32).unwrap();
+		assert_eq!(stack.sp, 6);
 	}
 
 	#[test]
@@ -217,7 +217,7 @@ mod test {
 		let mut memory = mem::FixedMemory::with_size(16u8); // Make a 16-byte memory
 		let mut stack = Stack::new(&mut memory, 0); // Start the stack at the end of memory
 
-		assert!(stack.pop::<u8>().is_ok());
+		stack.pop::<u8>().unwrap();
 		assert_eq!(stack.sp, 1);
 	}
 
@@ -235,7 +235,7 @@ mod test {
 		let mut memory = mem::FixedMemory::with_size(16u8); // Make a 16-byte memory
 		let mut stack = Stack::new(&mut memory, 0); // Start the stack at the end of memory
 
-		assert!(stack.pop::<i8>().is_ok());
+		stack.pop::<i8>().unwrap();
 		assert_eq!(stack.sp, 1);
 	}
 
@@ -253,7 +253,7 @@ mod test {
 		let mut memory = mem::FixedMemory::with_size(16u8); // Make a 16-byte memory
 		let mut stack = Stack::new(&mut memory, 0); // Start the stack at the end of memory
 
-		assert!(stack.pop::<u16>().is_ok());
+		stack.pop::<u16>().unwrap();
 		assert_eq!(stack.sp, 2);
 	}
 
@@ -271,7 +271,7 @@ mod test {
 		let mut memory = mem::FixedMemory::with_size(16u8); // Make a 16-byte memory
 		let mut stack = Stack::new(&mut memory, 0); // Start the stack at the end of memory
 
-		assert!(stack.pop::<i16>().is_ok());
+		stack.pop::<i16>().unwrap();
 		assert_eq!(stack.sp, 2);
 	}
 
@@ -289,7 +289,7 @@ mod test {
 		let mut memory = mem::FixedMemory::with_size(16u8); // Make a 16-byte memory
 		let mut stack = Stack::new(&mut memory, 0); // Start the stack at the end of memory
 
-		assert!(stack.pop::<u32>().is_ok());
+		stack.pop::<u32>().unwrap();
 		assert_eq!(stack.sp, 4);
 	}
 
@@ -307,7 +307,7 @@ mod test {
 		let mut memory = mem::FixedMemory::with_size(16u8); // Make a 16-byte memory
 		let mut stack = Stack::new(&mut memory, 0); // Start the stack at the end of memory
 
-		assert!(stack.pop::<i32>().is_ok());
+		stack.pop::<i32>().unwrap();
 		assert_eq!(stack.sp, 4);
 	}
 }

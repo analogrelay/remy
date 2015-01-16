@@ -145,28 +145,28 @@ mod test {
         #[test]
         pub fn get_preindexed_indirect_works() {
             let mut cpu = Mos6502::with_fixed_memory(10);
-            assert!(cpu.mem.set(9, 42u8).is_ok()); // Value
-            assert!(cpu.mem.set(7, 9u16).is_ok()); // Indirect Memory Address
+            assert!(cpu.mem.set(8, 42u8).is_ok()); // Value
+            assert!(cpu.mem.set(6, 8u16).is_ok()); // Indirect Memory Address
             cpu.registers.x = 2;
-            let val = Operand::PreIndexedIndirect(5).get(&cpu).unwrap();
+            let val = Operand::PreIndexedIndirect(4).get(&cpu).unwrap();
             assert_eq!(val, 42);
         }
 
         #[test]
         pub fn get_postindexed_indirect_works() {
             let mut cpu = Mos6502::with_fixed_memory(10);
-            assert!(cpu.mem.set(9, 42u8).is_ok()); // Value
-            assert!(cpu.mem.set(7, 7u16).is_ok()); // Indirect Memory Address
+            assert!(cpu.mem.set(8, 42u8).is_ok()); // Value
+            assert!(cpu.mem.set(2, 6u16).is_ok()); // Indirect Memory Address
             cpu.registers.y = 2;
-            let val = Operand::PostIndexedIndirect(7).get(&cpu).unwrap();
+            let val = Operand::PostIndexedIndirect(2).get(&cpu).unwrap();
             assert_eq!(val, 42);
         }
 
         #[test]
         pub fn get_u16_indirect_reads_indirect_u16_value() {
             let mut cpu = Mos6502::with_fixed_memory(10);
-            assert!(cpu.mem.set(8, 1024u16).is_ok()); // Value
-            assert!(cpu.mem.set(2, 8u16).is_ok());    // Indirect Memory Address
+            assert!(cpu.mem.set(7, 1024u16).is_ok()); // Value
+            assert!(cpu.mem.set(2, 7u16).is_ok());    // Indirect Memory Address
             let val = Operand::Indirect(2).get_u16(&cpu).unwrap();
             assert_eq!(val, 1024);
         }

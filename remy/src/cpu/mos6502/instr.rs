@@ -86,7 +86,7 @@ impl error::FromError<pc::ProgramCounterError> for ExecError {
 }
 
 impl Instruction {
-	pub fn exec<M: mem::Memory<u16>>(self, cpu: &mut Mos6502<M>) -> Result<(), ExecError> {
+	pub fn exec<M: mem::Memory>(self, cpu: &mut Mos6502<M>) -> Result<(), ExecError> {
 		match self {
 			Instruction::ADC(op) => {
 				let (a, c) = ::util::add_u8_with_carry(cpu.registers.a, try!(op.get(cpu)), cpu.registers.carry());
@@ -417,7 +417,7 @@ mod test {
 			assert_eq!(cpu.pc.get(), 42);
 		}
 
-		fn init_cpu() -> Mos6502<mem::FixedMemory<u16>> {
+		fn init_cpu() -> Mos6502<mem::FixedMemory> {
 			let mut cpu = Mos6502::with_fixed_memory(32);
 			cpu.registers.a = 42;
 			cpu.pc.set(42);

@@ -32,30 +32,30 @@ impl error::FromError<mem::MemoryError> for OperandError {
 }
 
 impl Operand {
-    pub fn get<M: mem::Memory<u16>>(&self, cpu: &Mos6502<M>) -> Result<u8, OperandError> {
+    pub fn get<M: mem::Memory>(&self, cpu: &Mos6502<M>) -> Result<u8, OperandError> {
         Ok(match *self {
             Operand::Accumulator                => cpu.registers.a,
             Operand::Immediate(n)               => n,
-            Operand::Absolute(addr)             => try!(cpu.mem.get(addr)),
-            Operand::Indexed(addr, r)           => try!(cpu.mem.get(addr + cpu.registers.get(r) as u16)),
-            Operand::PreIndexedIndirect(addr)   => try!(cpu.mem.get(try!(cpu.mem.get(addr as u16 + cpu.registers.x as u16)))),
-            Operand::PostIndexedIndirect(addr)  => try!(cpu.mem.get(try!(cpu.mem.get::<u16>(addr as u16)) + cpu.registers.y as u16)),
+            Operand::Absolute(addr)             => try!(cpu.mem.get(addr as usize)),
+            Operand::Indexed(addr, r)           => try!(cpu.mem.get(addr as usize + cpu.registers.get(r) as usize)),
+            Operand::PreIndexedIndirect(addr)   => try!(cpu.mem.get(try!(cpu.mem.get::<u16>(addr as usize + cpu.registers.x as usize)) as usize)),
+            Operand::PostIndexedIndirect(addr)  => try!(cpu.mem.get(try!(cpu.mem.get::<u16>(addr as usize)) as usize + cpu.registers.y as usize)),
             _                                   => return Err(OperandError::OperandSizeMismatch),
         })
     }
 
-    pub fn get_u16<M: mem::Memory<u16>>(&self, cpu: &Mos6502<M>) -> Result<u16, OperandError> {
+    pub fn get_u16<M: mem::Memory>(&self, cpu: &Mos6502<M>) -> Result<u16, OperandError> {
         match *self {
-            Operand::Indirect(addr)     => Ok(try!(cpu.mem.get(try!(cpu.mem.get(addr))))),
+            Operand::Indirect(addr)     => Ok(try!(cpu.mem.get(try!(cpu.mem.get::<u16>(addr as usize)) as usize))),
             _                           => Err(OperandError::OperandSizeMismatch)
         }
     }
 
-    pub fn set<M: mem::Memory<u16>>(&self, cpu: &mut Mos6502<M>, val: u8) -> Result<(), OperandError> {
+    pub fn set<M: mem::Memory>(&self, cpu: &mut Mos6502<M>, val: u8) -> Result<(), OperandError> {
         match *self {
             Operand::Accumulator        => Ok(cpu.registers.a = val),
-            Operand::Absolute(addr)     => Ok(try!(cpu.mem.set(addr, val))),
-            Operand::Indexed(addr, r)   => Ok(try!(cpu.mem.set(addr + cpu.registers.get(r) as u16, val))),
+            Operand::Absolute(addr)     => Ok(try!(cpu.mem.set(addr as usize, val))),
+            Operand::Indexed(addr, r)   => Ok(try!(cpu.mem.set(addr as usize + cpu.registers.get(r) as usize, val))),
             _                           => Err(OperandError::ReadOnlyOperand)
         }
     }

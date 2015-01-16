@@ -13,20 +13,20 @@ pub enum RegisterName {
     Y
 }
 
-pub struct Mos6502<M: mem::Memory<u16>> {
+pub struct Mos6502<M: mem::Memory> {
     pub registers: Mos6502Registers,
     pub mem: M,
     pub pc: pc::ProgramCounter<u16>
 }
 
-impl Mos6502<mem::FixedMemory<u16>> {
-    pub fn with_fixed_memory(size: u16) -> Mos6502<mem::FixedMemory<u16>> {
+impl Mos6502<mem::FixedMemory> {
+    pub fn with_fixed_memory(size: usize) -> Mos6502<mem::FixedMemory> {
         Mos6502::new(
-            mem::FixedMemory::with_size_and_endian(size, ::Endianness::LittleEndian))
+            mem::FixedMemory::with_size(size))
     }
 }
 
-impl<M: mem::Memory<u16>> Mos6502<M> {
+impl<M: mem::Memory> Mos6502<M> {
     pub fn new(mem: M) -> Mos6502<M> {
         Mos6502 {
             registers: Mos6502Registers::new(),

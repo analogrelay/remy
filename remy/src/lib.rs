@@ -1,10 +1,9 @@
 #![allow(unstable)]
 
-mod cpu;
-mod util;
-mod mem;
-mod pc;
-mod stack;
+pub mod cpu;
+pub mod util;
+pub mod mem;
+pub mod pc;
 
 pub enum Endianness {
     BigEndian,

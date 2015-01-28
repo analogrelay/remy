@@ -27,7 +27,7 @@ impl<S: num::UnsignedInt + num::FromPrimitive> ProgramCounter<S> {
 		let amo = amount.to_i64().unwrap();  // Again, should be safe
 
 		let res = (cur as i64 + amo) as u64;
-		let new = num::FromPrimitive::from_u64(res);
+		let new = num::NumCast::from(res);
 		match new {
 			Some(v) => { self.pc = v; Ok(()) },
 			None    => Err(ProgramCounterError::AdvancedOutOfBounds)
@@ -46,20 +46,23 @@ mod test {
 		assert_eq!(pc.get(), 42);
 	}
 
+	#[test]
 	pub fn advance_by_negative_value_decreases_pc() {
 		let mut pc : ProgramCounter<u8> = ProgramCounter::new();
 		assert!(pc.advance(42).is_ok());
 		assert!(pc.advance(-24).is_ok());
-		assert_eq!(pc.get(), 24);
+		assert_eq!(pc.get(), 18);
 	}
 
+	#[test]
 	pub fn advance_below_zero_causes_error() {
 		let mut pc : ProgramCounter<u8> = ProgramCounter::new();
 		assert!(pc.advance(42).is_ok());
 		assert_eq!(pc.advance(-43).unwrap_err(), ProgramCounterError::AdvancedOutOfBounds);
-		assert_eq!(pc.get(), 0); // PC should be unchanged
+		assert_eq!(pc.get(), 42); // PC should be unchanged
 	}
 
+	#[test]
 	pub fn advance_above_pc_size_zero_causes_error() {
 		let mut pc : ProgramCounter<u8> = ProgramCounter::new();
 		assert!(pc.advance(250).is_ok());

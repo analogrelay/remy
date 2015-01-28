@@ -18,7 +18,7 @@ test: $(foreach cargodir,$(CARGODIRS),test_$(cargodir))
 
 doc: $(foreach cargodir,$(CARGODIRS),doc_$(cargodir))
 
-all: build test doc
+all: build test
 
 travis: all
 

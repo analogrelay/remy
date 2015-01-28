@@ -86,16 +86,16 @@ impl error::FromError<pc::ProgramCounterError> for ExecError {
 }
 
 impl Instruction {
-	pub fn exec<M: mem::Memory>(self, cpu: &mut Mos6502<M>) -> Result<(), ExecError> {
+	pub fn exec<M>(self, cpu: &mut Mos6502<M>) -> Result<(), ExecError> where M: mem::Memory {
 		match self {
 			Instruction::ADC(op) => {
-				let (a, c) = ::util::add_u8_with_carry(cpu.registers.a, try!(op.get(cpu)), cpu.registers.carry());
+				let (a, c) = ::util::add_u8_with_carry(cpu.registers.a, try!(op.get_u8(cpu)), cpu.registers.carry());
 				cpu.registers.a = a;
 				cpu.registers.set_arith_flags(a, c);
 				Ok(())
 			},
 			Instruction::AND(op) => {
-				let opv = try!(op.get(cpu));
+				let opv = try!(op.get_u8(cpu));
 				let res = cpu.registers.a & opv;
 				cpu.registers.a = res;
 				if res == 0 {
@@ -107,12 +107,12 @@ impl Instruction {
 				Ok(())
 			},
 			Instruction::ASL(op) => {
-				let b = try!(op.get(cpu));
+				let b = try!(op.get_u8(cpu));
 				if b & 0x80 != 0 {
 					cpu.registers.set_flags(mos6502::FLAGS_CARRY);
 				}
 				let r = (b << 1) & 0xFE;
-				op.set(cpu, r);
+				op.set_u8(cpu, r);
 				if r & 0x80 != 0 {
 					cpu.registers.set_flags(mos6502::FLAGS_SIGN);
 				}
@@ -137,10 +137,10 @@ impl Instruction {
 				if cpu.registers.has_flags(mos6502::FLAGS_ZERO) {
 					try!(cpu.pc.advance(offset))
 				}
-				Ok(())	
+				Ok(())
 			},
 			Instruction::BIT(op) => {
-				let m = try!(op.get(cpu));
+				let m = try!(op.get_u8(cpu));
 				let t = cpu.registers.a & m;
 
 				if m & 0x80 != 0 {
@@ -180,7 +180,7 @@ impl Instruction {
 					try!(cpu.pc.advance(offset))
 				}
 				Ok(())
-			}
+			},
 			_ => Err(ExecError::InstructionNotImplemented)
 		}
 	}

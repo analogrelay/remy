@@ -6,6 +6,9 @@ use pc;
 
 use cpu::mos6502;
 
+pub const STACK_START   : usize = 0x0100;
+pub const STACK_END     : usize = 0x01FF;
+
 #[derive(Show,Copy)]
 pub enum RegisterName {
     A,
@@ -13,21 +16,20 @@ pub enum RegisterName {
     Y
 }
 
-pub struct Mos6502<M: mem::Memory> {
+pub struct Mos6502<M> where M: mem::Memory {
     pub registers: Mos6502Registers,
     pub mem: M,
     pub pc: pc::ProgramCounter<u16>
 }
 
 impl Mos6502<mem::FixedMemory> {
-    pub fn with_fixed_memory(size: usize) -> Mos6502<mem::FixedMemory> {
-        Mos6502::new(
-            mem::FixedMemory::with_size(size))
+    pub fn with_fixed_memory(size: usize) -> Self {
+        Mos6502::new(mem::FixedMemory::with_size(size))
     }
 }
 
-impl<M: mem::Memory> Mos6502<M> {
-    pub fn new(mem: M) -> Mos6502<M> {
+impl<M> Mos6502<M> where M: mem::Memory {
+    pub fn new(mem: M) -> Self {
         Mos6502 {
             registers: Mos6502Registers::new(),
             mem: mem,
@@ -70,7 +72,7 @@ impl Mos6502Registers {
     }
 
     pub fn with_flags(flags: Mos6502Flags) -> Mos6502Registers {
-        Mos6502Registers { a: 0, x: 0, y: 0, sp: 0, flags: flags | FLAGS_RESERVED }   
+        Mos6502Registers { a: 0, x: 0, y: 0, sp: 0, flags: flags | FLAGS_RESERVED }
     }
 
     pub fn get(&self, r: RegisterName) -> u8 {

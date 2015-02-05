@@ -38,45 +38,33 @@ impl mem::Memory for FixedMemory {
         self.size
     }
 
-    /// Retrieves a value from the memory, using the endianness of the host architecture
-    ///
-    /// When reading multi-byte values, ensure you convert them to the target architecture's
-    /// endianness after reading.
-    ///
-    /// # Arguments
-    ///
-    /// * `addr` - The address to read from
-    fn get_u8(&self, addr: usize) -> Result<u8, mem::MemoryError> {
-        // Translate the address
-        if (addr >= self.size) {
+    fn get(&self, addr: usize, buf: &mut [u8]) -> mem::MemoryResult<()> {
+        if addr + (buf.len() - 1) >= self.size {
+            // The read will take us out of bounds, don't start it.
             Err(mem::MemoryError::OutOfBounds)
         }
         else {
             unsafe {
-                let value_ptr = offset(self.data, addr as isize) as *const u8;
-                Ok(ptr::read(value_ptr))
+                for idx in range(0, buf.len()) {
+                    let value_ptr = offset(self.data, (addr + idx) as isize) as *const u8;
+                    buf[idx] = ptr::read(value_ptr);
+                }
             }
+            Ok(())
         }
     }
 
-    /// Stores a value in the memory, using the endianness of the host architecture
-    ///
-    /// When storing multi-byte values, ensure you convert them from the target architecture's
-    /// endianness to the host architecture's endianness before storing.
-    ///
-    /// # Arguments
-    ///
-    /// * `addr` - The address to write to
-    /// * `val` - The value to write to the memory
-    fn set_u8(&mut self, addr: usize, val: u8) -> Result<(), mem::MemoryError> {
-        if (addr >= self.size) {
+    fn set(&mut self, addr: usize, buf: &[u8]) -> Result<(), mem::MemoryError> {
+        if addr + (buf.len() - 1) >= self.size {
             Err(mem::MemoryError::OutOfBounds)
-        }
-        else {
+        } else {
             unsafe {
-                let value_ptr = offset(self.data, addr as isize) as *mut u8;
-                Ok(ptr::write(value_ptr, val))
+                for idx in range(0, buf.len()) {
+                   let value_ptr = offset(self.data, (addr + idx) as isize) as *mut u8;
+                   ptr::write(value_ptr, buf[idx])
+                }
             }
+            Ok(())
         }
     }
 }
@@ -87,10 +75,44 @@ mod test {
     use mem::{FixedMemory,Memory,MemoryError};
 
     #[test]
-    pub fn can_read_and_write_u8_value() {
-        let mut fm = FixedMemory::with_size(10);
-        fm.set_u8(4, 42u8).unwrap();
-        let val: u8 = fm.get_u8(4).unwrap();
-        assert_eq!(val, 42);
+    pub fn get_and_set_work() {
+        let mut mem = FixedMemory::with_size(10);
+        mem.set(1, &[42, 24, 44, 22]);
+
+        let mut buf = [0, 0, 0, 0];
+        mem.get(1, &mut buf).unwrap();
+
+        assert_eq!([42, 24, 44, 22], buf);
+    }
+
+    #[test]
+    pub fn get_returns_err_if_would_go_out_of_bounds() {
+        let mut mem = FixedMemory::with_size(10);
+        let mut buf = [0, 0, 0, 0];
+        assert_eq!(mem.get(8, &mut buf), Err(MemoryError::OutOfBounds));
+    }
+
+    #[test]
+    pub fn get_does_not_fill_buffer_if_read_would_go_out_of_bounds() {
+        let mut mem = FixedMemory::with_size(10);
+        mem.set(8, &[42]);
+        let mut buf = [0, 0, 0, 0];
+        mem.get(8, &mut buf);
+        assert_eq!([0, 0, 0, 0], buf);
+    }
+
+    #[test]
+    pub fn set_returns_err_if_would_go_out_of_bounds() {
+        let mut mem = FixedMemory::with_size(10);
+        assert_eq!(mem.set(8, &[42, 24, 44, 22]), Err(MemoryError::OutOfBounds));
+    }
+
+    #[test]
+    pub fn set_does_not_write_anything_unless_whole_write_fits() {
+        let mut mem = FixedMemory::with_size(10);
+        mem.set(8, &[42, 24, 44, 22]);
+
+        assert_eq!(0, mem.get_u8(8).unwrap());
+        assert_eq!(0, mem.get_u8(9).unwrap());
     }
 }

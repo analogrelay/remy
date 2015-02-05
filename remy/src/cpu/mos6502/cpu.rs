@@ -18,7 +18,7 @@ pub enum RegisterName {
 
 pub struct Mos6502<M> where M: mem::Memory {
     pub registers: Mos6502Registers,
-    pub mem: mem::MemoryView<M>,
+    pub mem: M,
     pub pc: pc::ProgramCounter<u16>
 }
 
@@ -32,7 +32,7 @@ impl<M> Mos6502<M> where M: mem::Memory {
     pub fn new(mem: M) -> Self {
         Mos6502 {
             registers: Mos6502Registers::new(),
-            mem: mem::MemoryView::little_endian(mem),
+            mem: mem,
             pc: pc::ProgramCounter::new()
         }
     }

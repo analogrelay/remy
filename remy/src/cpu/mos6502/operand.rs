@@ -1,6 +1,7 @@
 use std::error;
 
 use mem;
+use mem::Memory;
 
 use pc;
 
@@ -36,17 +37,17 @@ impl Operand {
         Ok(match *self {
             Operand::Accumulator                => cpu.registers.a,
             Operand::Immediate(n)               => n,
-            Operand::Absolute(addr)             => try!(cpu.mem.read(addr as usize)),
-            Operand::Indexed(addr, r)           => try!(cpu.mem.read(addr as usize + cpu.registers.get(r) as usize)),
-            Operand::PreIndexedIndirect(addr)   => try!(cpu.mem.read(try!(cpu.mem.read::<u16>(addr as usize + cpu.registers.x as usize)) as usize)),
-            Operand::PostIndexedIndirect(addr)  => try!(cpu.mem.read(try!(cpu.mem.read::<u16>(addr as usize)) as usize + cpu.registers.y as usize)),
+            Operand::Absolute(addr)             => try!(cpu.mem.get_u8(addr as usize)),
+            Operand::Indexed(addr, r)           => try!(cpu.mem.get_u8(addr as usize + cpu.registers.get(r) as usize)),
+            Operand::PreIndexedIndirect(addr)   => try!(cpu.mem.get_u8(try!(cpu.mem.get_le_u16(addr as usize + cpu.registers.x as usize)) as usize)),
+            Operand::PostIndexedIndirect(addr)  => try!(cpu.mem.get_u8(try!(cpu.mem.get_le_u16(addr as usize)) as usize + cpu.registers.y as usize)),
             _                                   => return Err(OperandError::OperandSizeMismatch),
         })
     }
 
     pub fn get_u16<M>(&self, cpu: &Mos6502<M>) -> Result<u16, OperandError> where M: mem::Memory {
         match *self {
-            Operand::Indirect(addr)     => Ok(try!(cpu.mem.read(try!(cpu.mem.read::<u16>(addr as usize)) as usize))),
+            Operand::Indirect(addr)     => Ok(try!(cpu.mem.get_le_u16(try!(cpu.mem.get_le_u16(addr as usize)) as usize))),
             _                           => Err(OperandError::OperandSizeMismatch)
         }
     }
@@ -54,8 +55,8 @@ impl Operand {
     pub fn set_u8<M>(&self, cpu: &mut Mos6502<M>, val: u8) -> Result<(), OperandError> where M: mem::Memory {
         match *self {
             Operand::Accumulator        => Ok(cpu.registers.a = val),
-            Operand::Absolute(addr)     => Ok(try!(cpu.mem.write(addr as usize, val))),
-            Operand::Indexed(addr, r)   => Ok(try!(cpu.mem.write(addr as usize + cpu.registers.get(r) as usize, val))),
+            Operand::Absolute(addr)     => Ok(try!(cpu.mem.set_u8(addr as usize, val))),
+            Operand::Indexed(addr, r)   => Ok(try!(cpu.mem.set_u8(addr as usize + cpu.registers.get(r) as usize, val))),
             _                           => Err(OperandError::ReadOnlyOperand)
         }
     }
@@ -80,7 +81,7 @@ mod test {
         pub fn set_absolute_puts_value_in_memory_location() {
             let mut cpu = Mos6502::with_fixed_memory(10);
             assert!(Operand::Absolute(2).set_u8(&mut cpu, 24).is_ok());
-            let val : u8 = cpu.mem.read(2).unwrap();
+            let val : u8 = cpu.mem.get_u8(2).unwrap();
             assert_eq!(val, 24);
         }
 
@@ -89,7 +90,7 @@ mod test {
             let mut cpu = Mos6502::with_fixed_memory(10);
             cpu.registers.x = 1;
             assert!(Operand::Indexed(2, RegisterName::X).set_u8(&mut cpu, 24).is_ok());
-            let val : u8 = cpu.mem.read(3).unwrap();
+            let val : u8 = cpu.mem.get_u8(3).unwrap();
             assert_eq!(val, 24);
         }
 
@@ -98,7 +99,7 @@ mod test {
             let mut cpu = Mos6502::with_fixed_memory(10);
             cpu.registers.y = 1;
             assert!(Operand::Indexed(2, RegisterName::Y).set_u8(&mut cpu, 24).is_ok());
-            let val : u8 = cpu.mem.read(3).unwrap();
+            let val : u8 = cpu.mem.get_u8(3).unwrap();
             assert_eq!(val, 24);
         }
 
@@ -120,7 +121,7 @@ mod test {
         #[test]
         pub fn get_absolute_returns_value_from_memory_address() {
             let mut cpu = Mos6502::with_fixed_memory(10);
-            assert!(cpu.mem.write(4, 42u8).is_ok());
+            assert!(cpu.mem.set_u8(4, 42).is_ok());
             let val = Operand::Absolute(4).get_u8(&cpu).unwrap();
             assert_eq!(val, 42);
         }
@@ -128,7 +129,7 @@ mod test {
         #[test]
         pub fn get_indexed_x_adds_x_to_address() {
             let mut cpu = Mos6502::with_fixed_memory(10);
-            assert!(cpu.mem.write(4, 42u8).is_ok());
+            assert!(cpu.mem.set_u8(4, 42).is_ok());
             cpu.registers.x = 2;
             let val = Operand::Indexed(2, RegisterName::X).get_u8(&cpu).unwrap();
             assert_eq!(val, 42);
@@ -137,7 +138,7 @@ mod test {
         #[test]
         pub fn get_indexed_y_adds_y_to_address() {
             let mut cpu = Mos6502::with_fixed_memory(10);
-            assert!(cpu.mem.write(4, 42u8).is_ok());
+            assert!(cpu.mem.set_u8(4, 42).is_ok());
             cpu.registers.y = 2;
             let val = Operand::Indexed(2, RegisterName::Y).get_u8(&cpu).unwrap();
             assert_eq!(val, 42);
@@ -146,8 +147,8 @@ mod test {
         #[test]
         pub fn get_preindexed_indirect_works() {
             let mut cpu = Mos6502::with_fixed_memory(10);
-            assert!(cpu.mem.write(8, 42u8).is_ok()); // Value
-            assert!(cpu.mem.write(6, 8u16).is_ok()); // Indirect Memory Address
+            assert!(cpu.mem.set_u8(8, 42).is_ok()); // Value
+            assert!(cpu.mem.set_le_u16(6, 8).is_ok()); // Indirect Memory Address
             cpu.registers.x = 2;
             let val = Operand::PreIndexedIndirect(4).get_u8(&cpu).unwrap();
             assert_eq!(val, 42);
@@ -156,8 +157,8 @@ mod test {
         #[test]
         pub fn get_postindexed_indirect_works() {
             let mut cpu = Mos6502::with_fixed_memory(10);
-            assert!(cpu.mem.write(8, 42u8).is_ok()); // Value
-            assert!(cpu.mem.write(2, 6u16).is_ok()); // Indirect Memory Address
+            assert!(cpu.mem.set_u8(8, 42).is_ok()); // Value
+            assert!(cpu.mem.set_le_u16(2, 6).is_ok()); // Indirect Memory Address
             cpu.registers.y = 2;
             let val = Operand::PostIndexedIndirect(2).get_u8(&cpu).unwrap();
             assert_eq!(val, 42);
@@ -166,8 +167,8 @@ mod test {
         #[test]
         pub fn get_u16_indirect_reads_indirect_u16_value() {
             let mut cpu = Mos6502::with_fixed_memory(10);
-            assert!(cpu.mem.write(7, 1024u16).is_ok()); // Value
-            assert!(cpu.mem.write(2, 7u16).is_ok());    // Indirect Memory Address
+            assert!(cpu.mem.set_le_u16(7, 1024).is_ok()); // Value
+            assert!(cpu.mem.set_le_u16(2, 7).is_ok());    // Indirect Memory Address
             let val = Operand::Indirect(2).get_u16(&cpu).unwrap();
             assert_eq!(val, 1024);
         }

@@ -1,6 +1,6 @@
 pub fn add_u8_with_carry(l: u8, r: u8, c: bool) -> (u8, bool) {
 	let mut sum = (l as u16) + (r as u16);
-	
+
 	if c {
 		sum += 1
 	}

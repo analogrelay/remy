@@ -1,2 +1,9 @@
+env:
+  global:
+    - secure: RQAHUeFjcncBCB3Ctw/qksVweGB4Bz8m/HgDTFyr8W9vmrZHoA78SvjkBxgues9ezp31qCApIs98gD17WkAEpPHylHX/4dkaJhgnWgNLeVFvo/vwR1y48vrqE1SblGmGaO/JKVhJdrtcJ16LGuC5Wjl3imhFE0rdqnBlD0/vkAM=
+
 language: rust
 script: make travis
+
+after_script:
+  - curl http://www.rust-ci.org/artifacts/put?t=$RUSTCI_TOKEN | sh

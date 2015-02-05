@@ -1,4 +1,3 @@
-use std::io;
 use std::{isize,usize};
 
 pub use mem::fixed::FixedMemory;
@@ -9,7 +8,7 @@ mod virt;
 
 pub type MemoryResult<T> = Result<T, MemoryError>;
 
-#[derive(Copy,Show,PartialEq)]
+#[derive(Copy,Debug,Eq,PartialEq)]
 /// Represents an error that occurs when accessing a `Memory`
 pub enum MemoryError {
     /// The provided address was outside the bounds of the memory
@@ -20,27 +19,6 @@ pub enum MemoryError {
 
     /// The provided address referred to memory that is not writable
     MemoryNotWritable
-}
-
-#[derive(Copy)]
-/// Describes the [endianness](http://en.wikipedia.org/wiki/Endianness) of a machine
-pub enum Endianness {
-    /// The machine is big-endian. Higher-order bytes of multi-byte numbers are stored first in memory
-    BigEndian,
-
-    /// The machine is little-endian. Lower-order bytes of multi-byte numbers are stored first in memory
-    LittleEndian
-}
-
-impl Endianness {
-    /// Gets an `Endianness` representing the host machine endianness.
-    pub fn host() -> Endianness {
-        if cfg!(target_endian = "big") {
-            Endianness::BigEndian
-        } else {
-            Endianness::LittleEndian
-        }
-    }
 }
 
 /// Represents any memory accessible to a CPU
@@ -222,82 +200,82 @@ pub trait Memory {
 
     #[inline]
     fn set_be_u16(&mut self, addr: usize, val: u16) -> MemoryResult<()> {
-        io::extensions::u64_to_be_bytes(val as u64, 2, |v| self.set(addr, v))
+        ::std::old_io::extensions::u64_to_be_bytes(val as u64, 2, |v| self.set(addr, v))
     }
 
     #[inline]
     fn set_be_u32(&mut self, addr: usize, val: u32) -> MemoryResult<()> {
-        io::extensions::u64_to_be_bytes(val as u64, 4, |v| self.set(addr, v))
+        ::std::old_io::extensions::u64_to_be_bytes(val as u64, 4, |v| self.set(addr, v))
     }
 
     #[inline]
     fn set_be_u64(&mut self, addr: usize, val: u64) -> MemoryResult<()> {
-        io::extensions::u64_to_be_bytes(val, 8, |v| self.set(addr, v))
+        ::std::old_io::extensions::u64_to_be_bytes(val, 8, |v| self.set(addr, v))
     }
 
     #[inline]
     fn set_be_usize(&mut self, addr: usize, val: usize) -> MemoryResult<()> {
-        io::extensions::u64_to_be_bytes(val as u64, usize::BYTES, |v| self.set(addr, v))
+        ::std::old_io::extensions::u64_to_be_bytes(val as u64, usize::BYTES, |v| self.set(addr, v))
     }
 
     #[inline]
     fn set_be_i16(&mut self, addr: usize, val: i16) -> MemoryResult<()> {
-        io::extensions::u64_to_be_bytes(val as u64, 2, |v| self.set(addr, v))
+        ::std::old_io::extensions::u64_to_be_bytes(val as u64, 2, |v| self.set(addr, v))
     }
 
     #[inline]
     fn set_be_i32(&mut self, addr: usize, val: i32) -> MemoryResult<()> {
-        io::extensions::u64_to_be_bytes(val as u64, 4, |v| self.set(addr, v))
+        ::std::old_io::extensions::u64_to_be_bytes(val as u64, 4, |v| self.set(addr, v))
     }
 
     #[inline]
     fn set_be_i64(&mut self, addr: usize, val: i64) -> MemoryResult<()> {
-        io::extensions::u64_to_be_bytes(val as u64, 8, |v| self.set(addr, v))
+        ::std::old_io::extensions::u64_to_be_bytes(val as u64, 8, |v| self.set(addr, v))
     }
 
     #[inline]
     fn set_be_isize(&mut self, addr: usize, val: isize) -> MemoryResult<()> {
-        io::extensions::u64_to_be_bytes(val as u64, isize::BYTES, |v| self.set(addr, v))
+        ::std::old_io::extensions::u64_to_be_bytes(val as u64, isize::BYTES, |v| self.set(addr, v))
     }
 
     #[inline]
     fn set_le_u16(&mut self, addr: usize, val: u16) -> MemoryResult<()> {
-        io::extensions::u64_to_le_bytes(val as u64, 2, |v| self.set(addr, v))
+        ::std::old_io::extensions::u64_to_le_bytes(val as u64, 2, |v| self.set(addr, v))
     }
 
     #[inline]
     fn set_le_u32(&mut self, addr: usize, val: u32) -> MemoryResult<()> {
-        io::extensions::u64_to_le_bytes(val as u64, 4, |v| self.set(addr, v))
+        ::std::old_io::extensions::u64_to_le_bytes(val as u64, 4, |v| self.set(addr, v))
     }
 
     #[inline]
     fn set_le_u64(&mut self, addr: usize, val: u64) -> MemoryResult<()> {
-        io::extensions::u64_to_le_bytes(val, 8, |v| self.set(addr, v))
+        ::std::old_io::extensions::u64_to_le_bytes(val, 8, |v| self.set(addr, v))
     }
 
     #[inline]
     fn set_le_usize(&mut self, addr: usize, val: usize) -> MemoryResult<()> {
-        io::extensions::u64_to_le_bytes(val as u64, usize::BYTES, |v| self.set(addr, v))
+        ::std::old_io::extensions::u64_to_le_bytes(val as u64, usize::BYTES, |v| self.set(addr, v))
     }
 
     #[inline]
     fn set_le_i16(&mut self, addr: usize, val: i16) -> MemoryResult<()> {
-        io::extensions::u64_to_le_bytes(val as u64, 2, |v| self.set(addr, v))
+        ::std::old_io::extensions::u64_to_le_bytes(val as u64, 2, |v| self.set(addr, v))
     }
 
     #[inline]
     fn set_le_i32(&mut self, addr: usize, val: i32) -> MemoryResult<()> {
-        io::extensions::u64_to_le_bytes(val as u64, 4, |v| self.set(addr, v))
+        ::std::old_io::extensions::u64_to_le_bytes(val as u64, 4, |v| self.set(addr, v))
     }
 
     #[inline]
     fn set_le_i64(&mut self, addr: usize, val: i64) -> MemoryResult<()> {
-        io::extensions::u64_to_le_bytes(val as u64, 8, |v| self.set(addr, v))
+        ::std::old_io::extensions::u64_to_le_bytes(val as u64, 8, |v| self.set(addr, v))
     }
 
     #[inline]
     fn set_le_isize(&mut self, addr: usize, val: isize) -> MemoryResult<()> {
-        io::extensions::u64_to_le_bytes(val as u64, isize::BYTES, |v| self.set(addr, v))
+        ::std::old_io::extensions::u64_to_le_bytes(val as u64, isize::BYTES, |v| self.set(addr, v))
     }
 }
 

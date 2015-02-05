@@ -8,6 +8,7 @@ use mem;
 ///
 /// Upon initialization, a memory buffer will be allocated to hold all bytes in the memory
 #[derive(Copy)]
+#[allow(raw_pointer_derive)]
 pub struct FixedMemory {
     data: *mut u8,
     size: usize
@@ -45,7 +46,7 @@ impl mem::Memory for FixedMemory {
         }
         else {
             unsafe {
-                for idx in range(0, buf.len()) {
+                for idx in 0..buf.len() {
                     let value_ptr = offset(self.data, (addr + idx) as isize) as *const u8;
                     buf[idx] = ptr::read(value_ptr);
                 }
@@ -59,7 +60,7 @@ impl mem::Memory for FixedMemory {
             Err(mem::MemoryError::OutOfBounds)
         } else {
             unsafe {
-                for idx in range(0, buf.len()) {
+                for idx in 0..buf.len() {
                    let value_ptr = offset(self.data, (addr + idx) as isize) as *mut u8;
                    ptr::write(value_ptr, buf[idx])
                 }
@@ -71,13 +72,12 @@ impl mem::Memory for FixedMemory {
 
 #[cfg(test)]
 mod test {
-    use mem;
     use mem::{FixedMemory,Memory,MemoryError};
 
     #[test]
     pub fn get_and_set_work() {
         let mut mem = FixedMemory::with_size(10);
-        mem.set(1, &[42, 24, 44, 22]);
+        mem.set(1, &[42, 24, 44, 22]).unwrap();
 
         let mut buf = [0, 0, 0, 0];
         mem.get(1, &mut buf).unwrap();
@@ -87,7 +87,7 @@ mod test {
 
     #[test]
     pub fn get_returns_err_if_would_go_out_of_bounds() {
-        let mut mem = FixedMemory::with_size(10);
+        let mem = FixedMemory::with_size(10);
         let mut buf = [0, 0, 0, 0];
         assert_eq!(mem.get(8, &mut buf), Err(MemoryError::OutOfBounds));
     }
@@ -95,9 +95,9 @@ mod test {
     #[test]
     pub fn get_does_not_fill_buffer_if_read_would_go_out_of_bounds() {
         let mut mem = FixedMemory::with_size(10);
-        mem.set(8, &[42]);
+        mem.set(8, &[42]).unwrap();
         let mut buf = [0, 0, 0, 0];
-        mem.get(8, &mut buf);
+        mem.get(8, &mut buf).unwrap_err();
         assert_eq!([0, 0, 0, 0], buf);
     }
 
@@ -110,7 +110,7 @@ mod test {
     #[test]
     pub fn set_does_not_write_anything_unless_whole_write_fits() {
         let mut mem = FixedMemory::with_size(10);
-        mem.set(8, &[42, 24, 44, 22]);
+        mem.set(8, &[42, 24, 44, 22]).unwrap_err();
 
         assert_eq!(0, mem.get_u8(8).unwrap());
         assert_eq!(0, mem.get_u8(9).unwrap());

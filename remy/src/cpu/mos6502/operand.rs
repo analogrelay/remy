@@ -6,7 +6,7 @@ use mem::Memory;
 use cpu::mos6502;
 use cpu::mos6502::Mos6502;
 
-#[derive(Show)]
+#[derive(Copy,Debug,Eq,PartialEq)]
 pub enum Operand {
     Accumulator,
     Immediate(u8),
@@ -17,7 +17,7 @@ pub enum Operand {
     PostIndexedIndirect(u8)
 }
 
-#[derive(Show,PartialEq)]
+#[derive(Copy,Debug,Eq,PartialEq)]
 pub enum OperandError {
     ErrorAccessingMemory(mem::MemoryError),
     OperandSizeMismatch,
@@ -63,7 +63,6 @@ impl Operand {
 #[cfg(test)]
 mod test {
     mod operand {
-        use mem;
         use mem::Memory;
         use cpu::mos6502::{Mos6502,Operand,OperandError,RegisterName};
 

@@ -1,6 +1,6 @@
 use std::num;
 
-#[derive(Show,PartialEq)]
+#[derive(Copy,Show,PartialEq)]
 pub enum ProgramCounterError {
 	AdvancedOutOfBounds
 }

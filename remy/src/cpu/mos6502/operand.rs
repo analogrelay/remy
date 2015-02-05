@@ -3,8 +3,6 @@ use std::error;
 use mem;
 use mem::Memory;
 
-use pc;
-
 use cpu::mos6502;
 use cpu::mos6502::Mos6502;
 

@@ -18,59 +18,58 @@ pub enum Instruction {
 	BMI(i8),
 	BNE(i8),
 	BPL(i8),
-	BRK,
-	BVC(Operand),
-	BVS(Operand),
-	CLC,
-	CLD,
-	CLI,
-	CLV,
-	CMP(Operand),
-	CPX(Operand),
-	CPY(Operand),
-	DEC(Operand),
-	DEX,
-	DEY,
-	EOR(Operand),
-	INC(Operand),
-	INX,
-	INY,
-	JMP(Operand),
-	JSR(Operand),
-	LDA(Operand),
-	LDX(Operand),
-	LDY(Operand),
-	LSR(Operand),
-	NOP,
-	ORA(Operand),
-	PHA,
-	PHP,
-	PLA,
-	PLP,
-	ROL(Operand),
-	ROR(Operand),
-	RTI,
-	RTS,
-	SBC(Operand),
-	SEC,
-	SED,
-	SEI,
-	STA(Operand),
-	STX(Operand),
-	STY(Operand),
-	TAX,
-	TAY,
-	TSX,
-	TXA,
-	TXS,
-	TYA,
+	// BRK,
+	// BVC(Operand),
+	// BVS(Operand),
+	// CLC,
+	// CLD,
+	// CLI,
+	// CLV,
+	// CMP(Operand),
+	// CPX(Operand),
+	// CPY(Operand),
+	// DEC(Operand),
+	// DEX,
+	// DEY,
+	// EOR(Operand),
+	// INC(Operand),
+	// INX,
+	// INY,
+	// JMP(Operand),
+	// JSR(Operand),
+	// LDA(Operand),
+	// LDX(Operand),
+	// LDY(Operand),
+	// LSR(Operand),
+	// NOP,
+	// ORA(Operand),
+	// PHA,
+	// PHP,
+	// PLA,
+	// PLP,
+	// ROL(Operand),
+	// ROR(Operand),
+	// RTI,
+	// RTS,
+	// SBC(Operand),
+	// SEC,
+	// SED,
+	// SEI,
+	// STA(Operand),
+	// STX(Operand),
+	// STY(Operand),
+	// TAX,
+	// TAY,
+	// TSX,
+	// TXA,
+	// TXS,
+	// TYA,
 }
 
 #[derive(Show)]
 pub enum ExecError {
 	FailedToRetrieveOperand(OperandError),
-	ErrorAdjustingProgramCounter(pc::ProgramCounterError),
-	InstructionNotImplemented
+	ErrorAdjustingProgramCounter(pc::ProgramCounterError)
 }
 
 impl error::FromError<OperandError> for ExecError {
@@ -112,7 +111,7 @@ impl Instruction {
 					cpu.registers.set_flags(mos6502::FLAGS_CARRY);
 				}
 				let r = (b << 1) & 0xFE;
-				op.set_u8(cpu, r);
+				try!(op.set_u8(cpu, r));
 				if r & 0x80 != 0 {
 					cpu.registers.set_flags(mos6502::FLAGS_SIGN);
 				}
@@ -180,8 +179,7 @@ impl Instruction {
 					try!(cpu.pc.advance(offset))
 				}
 				Ok(())
-			},
-			_ => Err(ExecError::InstructionNotImplemented)
+			}
 		}
 	}
 }
@@ -206,7 +204,7 @@ mod test {
 			let mut cpu = init_cpu();
 			cpu.registers.set_flags(mos6502::FLAGS_CARRY); // Set carry
 			assert!(Instruction::ADC(Operand::Immediate(1)).exec(&mut cpu).is_ok());
-			assert_eq!(cpu.registers.a, 44);	
+			assert_eq!(cpu.registers.a, 44);
 		}
 
 		#[test]

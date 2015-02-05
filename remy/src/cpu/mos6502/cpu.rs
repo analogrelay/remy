@@ -4,8 +4,6 @@ use mem;
 
 use pc;
 
-use cpu::mos6502;
-
 pub const STACK_START   : usize = 0x0100;
 pub const STACK_END     : usize = 0x01FF;
 
@@ -109,7 +107,7 @@ impl Mos6502Registers {
 
     pub fn set_arith_flags<I: num::Int + num::FromPrimitive>(&mut self, val: I, carry: bool) {
         // Clear arithmetic flags
-        let mut flags = (self.flags & !FLAGS_ARITHMETIC);
+        let mut flags = self.flags & !FLAGS_ARITHMETIC;
 
         if carry {
             flags = flags | FLAGS_CARRY;

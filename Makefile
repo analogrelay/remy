@@ -3,6 +3,8 @@ CARGODIRS=$(foreach cargofile,$(CARGOFILES),$(notdir $(patsubst %/,%,$(dir $(car
 
 define RUST_template
 .PHONY: $(1)
+clean_$(1):
+	@cd $(1) && cargo clean --verbose
 build_$(1):
 	@cd $(1) && cargo build --verbose
 test_$(1):
@@ -18,7 +20,11 @@ test: $(foreach cargodir,$(CARGODIRS),test_$(cargodir))
 
 doc: $(foreach cargodir,$(CARGODIRS),doc_$(cargodir))
 
+clean: $(foreach cargodir,$(CARGODIRS),clean_$(cargodir))
+
 all: build test
+
+rebuild: clean build
 
 travis: all
 

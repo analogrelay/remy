@@ -1,13 +1,13 @@
 use std::rt::heap;
 use std::ptr;
 use std::intrinsics::offset;
-use std::u8;
 
 use mem;
 
 /// Represents a flat fixed-size memory buffer
 ///
 /// Upon initialization, a memory buffer will be allocated to hold all bytes in the memory
+#[derive(Copy)]
 pub struct FixedMemory {
     data: *mut u8,
     size: usize

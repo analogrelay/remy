@@ -1,18 +1,15 @@
-use std::num;
-use std::mem::size_of;
 use std::io;
-use std::error::FromError;
 use std::{isize,usize};
 
 pub use mem::fixed::FixedMemory;
-pub use mem::virt::VirtualMemory;
+//pub use mem::virt::VirtualMemory;
 
 mod fixed;
 mod virt;
 
 pub type MemoryResult<T> = Result<T, MemoryError>;
 
-#[derive(Show,PartialEq)]
+#[derive(Copy,Show,PartialEq)]
 /// Represents an error that occurs when accessing a `Memory`
 pub enum MemoryError {
     /// The provided address was outside the bounds of the memory
@@ -312,7 +309,7 @@ fn extend_sign(val: u64, nbytes: usize) -> i64 {
 
 #[cfg(test)]
 mod test {
-    use mem::{Memory,FixedMemory,MemoryError};
+    use mem::{Memory,FixedMemory};
 
     macro_rules! assert_eq_hex(
         ( $ left : expr , $ right : expr ) => (
@@ -328,7 +325,7 @@ mod test {
     #[test]
     pub fn get_u8_returns_single_byte_at_location() {
         let mut mem = FixedMemory::with_size(1);
-        mem.set(0, &[42]);
+        mem.set(0, &[42]).unwrap();
         assert_eq!(mem.get_u8(0).unwrap(), 42);
     }
 

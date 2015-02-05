@@ -1,5 +1,5 @@
 #![allow(unstable)]
-use std::num::Int;
+#![allow(dead_code)]
 
 pub mod cpu;
 pub mod util;

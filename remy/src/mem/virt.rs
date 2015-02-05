@@ -1,57 +1,57 @@
-use mem;
+// use mem;
 
-use std::collections::dlist::DList;
+// use std::collections::dlist::DList;
 
-struct Layer<'a> {
-    base : usize,
-    memory : Box<mem::Memory+'a>
-}
+// struct Layer<'a> {
+//     base : usize,
+//     memory : Box<mem::Memory+'a>
+// }
 
-impl<'a> Layer<'a> {
-    fn new(base: usize, memory: Box<mem::Memory+'a>) -> Layer<'a> {
-        Layer {
-            base: base,
-            memory: memory
-        }
-    }
+// impl<'a> Layer<'a> {
+//     fn new(base: usize, memory: Box<mem::Memory+'a>) -> Layer<'a> {
+//         Layer {
+//             base: base,
+//             memory: memory
+//         }
+//     }
 
-    fn has_addr(&self, addr: usize) -> bool {
-        addr >= self.base && addr < (self.base + self.memory.size())
-    }
-}
+//     fn has_addr(&self, addr: usize) -> bool {
+//         addr >= self.base && addr < (self.base + self.memory.size())
+//     }
+// }
 
-/// Provides an implementation of `mem::Memory` over a list of Memory Layers by performing
-/// the memory operation on the first layer that maps the specified address.
-pub struct VirtualMemory<'a> {
-    layers : DList<Layer<'a>>
-}
+// /// Provides an implementation of `mem::Memory` over a list of Memory Layers by performing
+// /// the memory operation on the first layer that maps the specified address.
+// pub struct VirtualMemory<'a> {
+//     layers : DList<Layer<'a>>
+// }
 
-impl<'a> VirtualMemory<'a> {
-    /// Constructs a new Virtual Memory with no member segments
-    pub fn new() -> VirtualMemory<'a> {
-        VirtualMemory {
-            layers: DList::new()
-        }
-    }
+// impl<'a> VirtualMemory<'a> {
+//     /// Constructs a new Virtual Memory with no member segments
+//     pub fn new() -> VirtualMemory<'a> {
+//         VirtualMemory {
+//             layers: DList::new()
+//         }
+//     }
 
-    /// Attaches another memory as the new bottom layer of this virtual memory.
-    ///
-    /// # Arguments
-    /// * `base` - The address to use as the base for the specified memory
-    /// * `mem` - The memory to attach.
-    pub fn attach_bottom(&mut self, base: usize, mem: Box<mem::Memory+'a>) {
-        self.layers.push_back(Layer::new(base, mem));
-    }
+//     /// Attaches another memory as the new bottom layer of this virtual memory.
+//     ///
+//     /// # Arguments
+//     /// * `base` - The address to use as the base for the specified memory
+//     /// * `mem` - The memory to attach.
+//     pub fn attach_bottom(&mut self, base: usize, mem: Box<mem::Memory+'a>) {
+//         self.layers.push_back(Layer::new(base, mem));
+//     }
 
-    /// Attaches another memory as the new top layer of this virtual memory.
-    ///
-    /// # Arguments
-    /// * `base` - The address to use as the base for the specified memory
-    /// * `mem` - The memory to attach.
-    pub fn attach_top(&mut self, base: usize, mem: Box<mem::Memory+'a>) {
-        self.layers.push_front(Layer::new(base, mem));
-    }
-}
+//     /// Attaches another memory as the new top layer of this virtual memory.
+//     ///
+//     /// # Arguments
+//     /// * `base` - The address to use as the base for the specified memory
+//     /// * `mem` - The memory to attach.
+//     pub fn attach_top(&mut self, base: usize, mem: Box<mem::Memory+'a>) {
+//         self.layers.push_front(Layer::new(base, mem));
+//     }
+// }
 
 // impl<'a> mem::Memory for VirtualMemory<'a> {
 //     fn size(&self) -> usize {

@@ -8,9 +8,34 @@ mod virt;
 
 pub type MemoryResult<T> = Result<T, MemoryError>;
 
-#[derive(Copy,Debug,Eq,PartialEq)]
+#[derive(Clone,Debug,Eq,PartialEq)]
 /// Represents an error that occurs when accessing a `Memory`
-pub enum MemoryError {
+pub struct MemoryError {
+    pub kind: MemoryErrorKind,
+    pub desc: &'static str,
+    pub detail: Option<String>
+}
+
+impl MemoryError {
+    pub fn new(kind: MemoryErrorKind, desc: &'static str) -> MemoryError {
+        MemoryError {
+            kind: kind,
+            desc: desc,
+            detail: None
+        }
+    }
+    pub fn with_detail(kind: MemoryErrorKind, desc: &'static str, detail: String) -> MemoryError {
+        MemoryError {
+            kind: kind,
+            desc: desc,
+            detail: Some(detail)
+        }
+    }
+}
+
+#[derive(Clone,Copy,Debug,Eq,PartialEq)]
+/// Defines the kind of a `MemoryError`
+pub enum MemoryErrorKind {
     /// The provided address was outside the bounds of the memory
     OutOfBounds,
 

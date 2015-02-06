@@ -40,9 +40,13 @@ impl mem::Memory for FixedMemory {
     }
 
     fn get(&self, addr: usize, buf: &mut [u8]) -> mem::MemoryResult<()> {
-        if addr + (buf.len() - 1) >= self.size {
+        let end = addr + buf.len() - 1;
+        if end >= self.size {
             // The read will take us out of bounds, don't start it.
-            Err(mem::MemoryError::OutOfBounds)
+            Err(mem::MemoryError::with_detail(
+                mem::MemoryErrorKind::OutOfBounds,
+                "Read would reach end of memory",
+                format!("requested: 0x{:X} - 0x{:X}, but size is 0x{:x}", addr, end, self.size)))
         }
         else {
             unsafe {
@@ -56,8 +60,12 @@ impl mem::Memory for FixedMemory {
     }
 
     fn set(&mut self, addr: usize, buf: &[u8]) -> mem::MemoryResult<()> {
-        if addr + (buf.len() - 1) >= self.size {
-            Err(mem::MemoryError::OutOfBounds)
+        let end = addr + buf.len() - 1;
+        if end >= self.size {
+            Err(mem::MemoryError::with_detail(
+                mem::MemoryErrorKind::OutOfBounds,
+                "Write would reach end of memory",
+                format!("requested: 0x{:X} - 0x{:X}, but size is 0x{:x}", addr, end, self.size)))
         } else {
             unsafe {
                 for idx in 0..buf.len() {
@@ -72,7 +80,7 @@ impl mem::Memory for FixedMemory {
 
 #[cfg(test)]
 mod test {
-    use mem::{FixedMemory,Memory,MemoryError};
+    use mem::{FixedMemory,Memory,MemoryErrorKind};
 
     #[test]
     pub fn get_and_set_work() {
@@ -89,7 +97,7 @@ mod test {
     pub fn get_returns_err_if_would_go_out_of_bounds() {
         let mem = FixedMemory::with_size(10);
         let mut buf = [0, 0, 0, 0];
-        assert_eq!(mem.get(8, &mut buf), Err(MemoryError::OutOfBounds));
+        assert_eq!(mem.get(8, &mut buf).unwrap_err().kind, MemoryErrorKind::OutOfBounds);
     }
 
     #[test]
@@ -104,7 +112,7 @@ mod test {
     #[test]
     pub fn set_returns_err_if_would_go_out_of_bounds() {
         let mut mem = FixedMemory::with_size(10);
-        assert_eq!(mem.set(8, &[42, 24, 44, 22]), Err(MemoryError::OutOfBounds));
+        assert_eq!(mem.set(8, &[42, 24, 44, 22]).unwrap_err().kind, MemoryErrorKind::OutOfBounds);
     }
 
     #[test]

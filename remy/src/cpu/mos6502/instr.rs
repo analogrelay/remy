@@ -65,7 +65,7 @@ pub enum Instruction {
 	// TYA,
 }
 
-#[derive(Copy,Debug,Eq,PartialEq)]
+#[derive(Clone,Debug,Eq,PartialEq)]
 pub enum ExecError {
 	FailedToRetrieveOperand(OperandError)
 }

@@ -1,7 +1,6 @@
 use mem;
 
 use std::cmp;
-use std::collections::dlist::DList;
 
 struct Layer<'a> {
     base : usize,
@@ -21,36 +20,52 @@ impl<'a> Layer<'a> {
     }
 }
 
-/// Provides an implementation of `mem::Memory` over a list of Memory Layers by performing
-/// the memory operation on the first layer that maps the specified address.
+pub enum VirtualMemoryError {
+	MemoryOverlap
+}
+
+/// Provides an implementation of `mem::Memory` over a list of memories by performing
+/// the memory operation on the memory that is mapped at the specified base address
+///
+/// Warning: Memories may NOT overlap
 pub struct VirtualMemory<'a> {
-    layers : DList<Layer<'a>>
+    layers : Vec<Layer<'a>>
 }
 
 impl<'a> VirtualMemory<'a> {
     /// Constructs a new Virtual Memory with no member segments
     pub fn new() -> VirtualMemory<'a> {
         VirtualMemory {
-            layers: DList::new()
+            layers: Vec::new()
         }
     }
 
-    /// Attaches another memory as the new bottom layer of this virtual memory.
+    /// Attaches another memory to the virtual memory
     ///
     /// # Arguments
     /// * `base` - The address to use as the base for the specified memory
     /// * `mem` - The memory to attach.
-    pub fn attach_bottom(&mut self, base: usize, mem: Box<mem::Memory+'a>) {
-        self.layers.push_back(Layer::new(base, mem));
-    }
+    pub fn attach(&mut self, base: usize, mem: Box<mem::Memory+'a>) -> Result<(), VirtualMemoryError> {
+    	// Find the appropriate place to attach the memory
+    	let new_layer = Layer::new(base, mem);
+    	let pos = self.layers.iter()
+    		.position(|l| l.base > new_layer.base);
 
-    /// Attaches another memory as the new top layer of this virtual memory.
-    ///
-    /// # Arguments
-    /// * `base` - The address to use as the base for the specified memory
-    /// * `mem` - The memory to attach.
-    pub fn attach_top(&mut self, base: usize, mem: Box<mem::Memory+'a>) {
-        self.layers.push_front(Layer::new(base, mem));
+    	let insert_point = match pos {
+    		None => self.layers.len(),
+    		Some(x) => x
+    	};
+
+    	if insert_point > 0 {
+    		// Check the memory on the left
+    		let left = &self.layers[insert_point - 1];
+    		if left.base + left.memory.size() >= base {
+    			return Err(VirtualMemoryError::MemoryOverlap)
+    		}
+    	}
+
+    	self.layers.insert(insert_point, new_layer);
+    	Ok(())
     }
 
     fn find(&self, addr: usize) -> Option<&Layer<'a>> {
@@ -69,13 +84,18 @@ impl<'a> mem::Memory for VirtualMemory<'a> {
 
     fn get(&self, addr: usize, buf: &mut [u8]) -> mem::MemoryResult<()> {
     	let mut ptr = 0;
-    	let mut eaddr = addr;
     	while ptr < buf.len() {
     		// Find the memory at the current address
-    		let layer = match self.find(eaddr) {
+    		let layer = match self.find(addr + ptr) {
     			Some(l) => l,
-    			None => return Err(mem::MemoryError::OutOfBounds)
+    			None => return Err(mem::MemoryError::with_detail(
+    				mem::MemoryErrorKind::OutOfBounds,
+    				"Unable to locate a suitable memory layer",
+    				format!("at address: 0x{:X}", addr + ptr)))
     		};
+
+    		// Calculate effective address
+    		let eaddr = (addr - layer.base) + ptr;
 
     		// Figure out how much to read
     		let to_read = cmp::min(layer.memory.size() - eaddr, buf.len() - ptr);
@@ -87,7 +107,6 @@ impl<'a> mem::Memory for VirtualMemory<'a> {
 
     		// Advance the pointer
     		ptr = ptr + to_read;
-    		eaddr = eaddr + to_read;
     	}
 
     	Ok(())
@@ -95,13 +114,18 @@ impl<'a> mem::Memory for VirtualMemory<'a> {
 
     fn set(&mut self, addr: usize, buf: &[u8]) -> mem::MemoryResult<()> {
         let mut ptr = 0;
-    	let mut eaddr = addr;
     	while ptr < buf.len() {
     		// Find the memory at the current address
-    		let layer = match self.find_mut(eaddr) {
+    		let layer = match self.find_mut(addr + ptr) {
     			Some(l) => l,
-    			None => return Err(mem::MemoryError::OutOfBounds)
+    			None => return Err(mem::MemoryError::with_detail(
+    				mem::MemoryErrorKind::OutOfBounds,
+    				"Unable to locate a suitable memory layer",
+    				format!("at address: 0x{:X}", addr + ptr)))
     		};
+
+    		// Calculate effective address
+    		let eaddr = (addr - layer.base) + ptr;
 
     		// Figure out how much to write
     		let to_read = cmp::min(layer.memory.size() - eaddr, buf.len() - ptr);
@@ -113,7 +137,6 @@ impl<'a> mem::Memory for VirtualMemory<'a> {
 
     		// Advance the pointer
     		ptr = ptr + to_read;
-    		eaddr = eaddr + to_read;
     	}
 
     	Ok(())
@@ -124,55 +147,17 @@ impl<'a> mem::Memory for VirtualMemory<'a> {
 mod test {
     use mem::{Memory,FixedMemory,VirtualMemory};
 
-    #[test]
-    pub fn attach_bottom_adds_new_segment_at_end_with_specified_base() {
-        let mut vm = VirtualMemory::new();
-        let mem = Box::new(FixedMemory::with_size(10));
-        assert_eq!(vm.layers.len(), 0);
-        vm.attach_bottom(0x1400, mem);
-        assert_eq!(vm.layers.len(), 1);
-        assert_eq!(vm.layers.front().unwrap().base, 0x1400);
-    }
+    // Tests:
+    // * attach with no items -> OK
+    // * attach at end with no overlap -> OK
+    // * attach at end with overlap -> ERR
+    // * attach at beginning with no overlap -> OK
+    // * attach at beginning with overlap -> ERR
+    // * attach in middle with no overlap -> OK
+    // * attach in middle with overlap -> ERR
 
-    #[test]
-    pub fn attach_top_adds_new_segment_at_front_with_specified_base() {
-        let mut vm = VirtualMemory::new();
-        let mem_bot = Box::new(FixedMemory::with_size(10));
-        let mem_top = Box::new(FixedMemory::with_size(10));
-        assert_eq!(vm.layers.len(), 0);
-        vm.attach_bottom(0x1400, mem_bot);
-        vm.attach_top(0x1000, mem_top);
-        assert_eq!(vm.layers.len(), 2);
-        assert_eq!(vm.layers.front().unwrap().base, 0x1000);
-        assert_eq!(vm.layers.back().unwrap().base, 0x1400);
-    }
-
-    #[test]
-    pub fn get_u8_reads_from_topmost_layer_containing_specified_address() {
-        let mut vm = VirtualMemory::new();
-        let mut mem1 = Box::new(FixedMemory::with_size(10));
-        let mut mem2 = Box::new(FixedMemory::with_size(10));
-        mem1.set_u8(1, 42).unwrap();
-        mem2.set_u8(1, 24).unwrap();
-        vm.attach_top(0x1400, mem2);
-        vm.attach_top(0x1400, mem1);
-        assert_eq!(vm.get_u8(0x1401).unwrap(), 42);
-    }
-
-    #[test]
-    pub fn set_u8_writes_to_topmost_layer_containing_specified_address() {
-        let mut vm = VirtualMemory::new();
-        let mut mem1 = Box::new(FixedMemory::with_size(10));
-        let mut mem2 = Box::new(FixedMemory::with_size(10));
-        mem1.set_u8(1, 0).unwrap();
-        mem2.set_u8(1, 0).unwrap();
-
-        vm.attach_top(0x1400, mem2);
-        vm.attach_top(0x1400, mem1);
-
-        vm.set_u8(0x1401, 42).unwrap();
-
-        assert_eq!(vm.layers.back().unwrap().memory.get_u8(1).unwrap(), 0);
-        assert_eq!(vm.layers.front().unwrap().memory.get_u8(1).unwrap(), 42);
-    }
+    // * get from one memory
+    // * get spanning memories
+    // * set to one memory
+    // * set spanning memories
 }

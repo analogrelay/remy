@@ -17,7 +17,7 @@ pub enum Operand {
     PostIndexedIndirect(u8)
 }
 
-#[derive(Copy,Debug,Eq,PartialEq)]
+#[derive(Clone,Debug,Eq,PartialEq)]
 pub enum OperandError {
     ErrorAccessingMemory(mem::MemoryError),
     OperandSizeMismatch,

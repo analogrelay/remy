@@ -55,7 +55,7 @@ impl mem::Memory for FixedMemory {
         }
     }
 
-    fn set(&mut self, addr: usize, buf: &[u8]) -> Result<(), mem::MemoryError> {
+    fn set(&mut self, addr: usize, buf: &[u8]) -> mem::MemoryResult<()> {
         if addr + (buf.len() - 1) >= self.size {
             Err(mem::MemoryError::OutOfBounds)
         } else {

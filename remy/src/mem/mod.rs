@@ -1,7 +1,7 @@
 use std::{isize,usize};
 
 pub use mem::fixed::FixedMemory;
-//pub use mem::virt::VirtualMemory;
+pub use mem::virt::VirtualMemory;
 
 mod fixed;
 mod virt;
@@ -33,8 +33,8 @@ pub trait Memory {
 
     /// Copies from the memory into the specified buffer, starting at the specified address
     ///
-    /// Memory operations are expected to succeed or fail atomically. If a read of any
-    /// single byte would fail, the whole operation fails and the buffer is unmodified.
+    /// Memory operations may fail part-way through. The contents of the memory
+    /// become undefined at that point.
     ///
     /// # Arguments
     /// * `addr` - The address at which to begin reading the data
@@ -43,8 +43,8 @@ pub trait Memory {
 
     /// Copies the specified buffer in to the memory starting at the specified address
     ///
-    /// Memory operations are expected to succeed or fail atomically. If a write of any
-    /// single byte would fail, the whole operation fails and the memory is unmodified.
+    /// Memory operations may fail part-way through. The contents of the memory
+    /// become undefined at that point.
     ///
     /// # Arguments
     /// * `addr` - The address at which to begin writing the data

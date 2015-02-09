@@ -20,7 +20,7 @@ pub struct Mos6502<M> where M: mem::Memory {
 
 impl Mos6502<mem::FixedMemory> {
     pub fn with_fixed_memory(size: usize) -> Self {
-        Mos6502::new(mem::FixedMemory::with_size(size))
+        Mos6502::new(mem::FixedMemory::new(size))
     }
 }
 

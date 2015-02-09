@@ -2,14 +2,14 @@ use mem;
 
 use std::cmp;
 
-struct Layer<'a> {
+struct Segment<'a> {
     base : usize,
     memory : Box<mem::Memory+'a>
 }
 
-impl<'a> Layer<'a> {
-    fn new(base: usize, memory: Box<mem::Memory+'a>) -> Layer<'a> {
-        Layer {
+impl<'a> Segment<'a> {
+    fn new(base: usize, memory: Box<mem::Memory+'a>) -> Segment<'a> {
+        Segment {
             base: base,
             memory: memory
         }
@@ -20,6 +20,7 @@ impl<'a> Layer<'a> {
     }
 }
 
+#[derive(Copy,Debug,Eq,PartialEq)]
 pub enum VirtualMemoryError {
 	MemoryOverlap
 }
@@ -29,14 +30,14 @@ pub enum VirtualMemoryError {
 ///
 /// Warning: Memories may NOT overlap
 pub struct VirtualMemory<'a> {
-    layers : Vec<Layer<'a>>
+    segments : Vec<Segment<'a>>
 }
 
 impl<'a> VirtualMemory<'a> {
     /// Constructs a new Virtual Memory with no member segments
     pub fn new() -> VirtualMemory<'a> {
         VirtualMemory {
-            layers: Vec::new()
+            segments: Vec::new()
         }
     }
 
@@ -47,33 +48,41 @@ impl<'a> VirtualMemory<'a> {
     /// * `mem` - The memory to attach.
     pub fn attach(&mut self, base: usize, mem: Box<mem::Memory+'a>) -> Result<(), VirtualMemoryError> {
     	// Find the appropriate place to attach the memory
-    	let new_layer = Layer::new(base, mem);
-    	let pos = self.layers.iter()
-    		.position(|l| l.base > new_layer.base);
+    	let new_segment = Segment::new(base, mem);
+    	let pos = self.segments.iter()
+    		.position(|l| l.base > new_segment.base);
 
     	let insert_point = match pos {
-    		None => self.layers.len(),
+    		None => self.segments.len(),
     		Some(x) => x
     	};
 
     	if insert_point > 0 {
     		// Check the memory on the left
-    		let left = &self.layers[insert_point - 1];
-    		if left.base + left.memory.size() >= base {
+    		let left = &self.segments[insert_point - 1];
+    		if left.base + left.memory.size() - 1 >= base {
     			return Err(VirtualMemoryError::MemoryOverlap)
     		}
     	}
 
-    	self.layers.insert(insert_point, new_layer);
+    	if insert_point < self.segments.len() {
+	    	// Check the memory on the right
+	    	let right = &self.segments[insert_point];
+	    	if base + new_segment.memory.size() - 1 >= right.base {
+	    		return Err(VirtualMemoryError::MemoryOverlap)
+	    	}
+	    }
+
+    	self.segments.insert(insert_point, new_segment);
     	Ok(())
     }
 
-    fn find(&self, addr: usize) -> Option<&Layer<'a>> {
-    	self.layers.iter().find(|l| l.has_addr(addr))
+    fn find(&self, addr: usize) -> Option<&Segment<'a>> {
+    	self.segments.iter().find(|l| l.has_addr(addr))
     }
 
-    fn find_mut(&mut self, addr: usize) -> Option<&mut Layer<'a>> {
-    	self.layers.iter_mut().find(|l| l.has_addr(addr))
+    fn find_mut(&mut self, addr: usize) -> Option<&mut Segment<'a>> {
+    	self.segments.iter_mut().find(|l| l.has_addr(addr))
     }
 }
 
@@ -86,22 +95,23 @@ impl<'a> mem::Memory for VirtualMemory<'a> {
     	let mut ptr = 0;
     	while ptr < buf.len() {
     		// Find the memory at the current address
-    		let layer = match self.find(addr + ptr) {
+    		let segment = match self.find(addr + ptr) {
     			Some(l) => l,
     			None => return Err(mem::MemoryError::with_detail(
     				mem::MemoryErrorKind::OutOfBounds,
-    				"Unable to locate a suitable memory layer",
+    				"Unable to locate a suitable memory segment",
     				format!("at address: 0x{:X}", addr + ptr)))
     		};
 
     		// Calculate effective address
-    		let eaddr = (addr - layer.base) + ptr;
+    		let eaddr = (addr - segment.base) + ptr;
 
     		// Figure out how much to read
-    		let to_read = cmp::min(layer.memory.size() - eaddr, buf.len() - ptr);
+    		let to_read = cmp::min(segment.memory.size() - eaddr, buf.len() - ptr);
 
     		// Read that much
-    		if let Err(e) = layer.memory.get(eaddr, &mut buf[ptr .. (ptr+to_read)]) {
+    		let inp = &mut buf[ptr .. (ptr + to_read)];
+    		if let Err(e) = segment.memory.get(eaddr, inp) {
     			return Err(e)
     		}
 
@@ -116,27 +126,28 @@ impl<'a> mem::Memory for VirtualMemory<'a> {
         let mut ptr = 0;
     	while ptr < buf.len() {
     		// Find the memory at the current address
-    		let layer = match self.find_mut(addr + ptr) {
+    		let segment = match self.find_mut(addr + ptr) {
     			Some(l) => l,
     			None => return Err(mem::MemoryError::with_detail(
     				mem::MemoryErrorKind::OutOfBounds,
-    				"Unable to locate a suitable memory layer",
+    				"Unable to locate a suitable memory segment",
     				format!("at address: 0x{:X}", addr + ptr)))
     		};
 
     		// Calculate effective address
-    		let eaddr = (addr - layer.base) + ptr;
+    		let eaddr = (addr - segment.base) + ptr;
 
     		// Figure out how much to write
-    		let to_read = cmp::min(layer.memory.size() - eaddr, buf.len() - ptr);
+    		let to_write = cmp::min(segment.memory.size() - eaddr, buf.len() - ptr);
 
     		// Write that much
-    		if let Err(e) = layer.memory.set(eaddr, &buf[ptr .. (ptr+to_read)]) {
+    		let outp = &buf[ptr .. (ptr + to_write)];
+    		if let Err(e) = segment.memory.set(eaddr, outp) {
     			return Err(e)
     		}
 
     		// Advance the pointer
-    		ptr = ptr + to_read;
+    		ptr = ptr + to_write;
     	}
 
     	Ok(())
@@ -145,19 +156,161 @@ impl<'a> mem::Memory for VirtualMemory<'a> {
 
 #[cfg(test)]
 mod test {
-    use mem::{Memory,FixedMemory,VirtualMemory};
+    use mem::{Memory,FixedMemory,VirtualMemory,VirtualMemoryError};
 
-    // Tests:
-    // * attach with no items -> OK
-    // * attach at end with no overlap -> OK
-    // * attach at end with overlap -> ERR
-    // * attach at beginning with no overlap -> OK
-    // * attach at beginning with overlap -> ERR
-    // * attach in middle with no overlap -> OK
-    // * attach in middle with overlap -> ERR
+    #[test]
+    pub fn attach_with_no_items() {
+    	let mem = FixedMemory::new(10);
+    	let mut vm = VirtualMemory::new();
+    	vm.attach(1000, Box::new(mem)).unwrap();
+    	assert_eq!(vm.segments.len(), 1);
+    	assert_eq!(vm.segments[0].base, 1000);
+    }
 
-    // * get from one memory
-    // * get spanning memories
-    // * set to one memory
-    // * set spanning memories
+    #[test]
+    pub fn attach_at_end() {
+    	let mem1 = FixedMemory::new(10);
+    	let mem2 = FixedMemory::new(10);
+    	let mut vm = VirtualMemory::new();
+    	vm.attach(1000, Box::new(mem1)).unwrap();
+    	vm.attach(1010, Box::new(mem2)).unwrap();
+    	assert_eq!(vm.segments.len(), 2);
+    	assert_eq!(vm.segments[0].base, 1000);
+    	assert_eq!(vm.segments[1].base, 1010);
+    }
+
+    #[test]
+    pub fn attach_at_end_with_overlap() {
+    	let mem1 = FixedMemory::new(10);
+    	let mem2 = FixedMemory::new(10);
+    	let mut vm = VirtualMemory::new();
+    	vm.attach(1000, Box::new(mem1)).unwrap();
+    	assert_eq!(
+    		vm.attach(1005, Box::new(mem2)),
+    		Err(VirtualMemoryError::MemoryOverlap));
+    }
+
+    #[test]
+    pub fn attach_at_beginning() {
+    	let mem1 = FixedMemory::new(10);
+    	let mem2 = FixedMemory::new(10);
+    	let mut vm = VirtualMemory::new();
+    	vm.attach(1010, Box::new(mem1)).unwrap();
+    	vm.attach(1000, Box::new(mem2)).unwrap();
+    	assert_eq!(vm.segments.len(), 2);
+    	assert_eq!(vm.segments[0].base, 1000);
+    	assert_eq!(vm.segments[1].base, 1010);
+    }
+
+    #[test]
+    pub fn attach_at_beginning_with_overlap() {
+    	let mem1 = FixedMemory::new(10);
+    	let mem2 = FixedMemory::new(10);
+    	let mut vm = VirtualMemory::new();
+    	vm.attach(0x1005, Box::new(mem1)).unwrap();
+    	assert_eq!(
+    		vm.attach(0x1000, Box::new(mem2)),
+    		Err(VirtualMemoryError::MemoryOverlap));
+    }
+
+    #[test]
+    pub fn attach_in_middle() {
+    	let mem1 = FixedMemory::new(10);
+    	let mem2 = FixedMemory::new(10);
+    	let mem3 = FixedMemory::new(10);
+    	let mut vm = VirtualMemory::new();
+    	vm.attach(1000, Box::new(mem1)).unwrap();
+    	vm.attach(1020, Box::new(mem2)).unwrap();
+    	vm.attach(1010, Box::new(mem3)).unwrap();
+    	assert_eq!(vm.segments.len(), 3);
+    	assert_eq!(vm.segments[0].base, 1000);
+    	assert_eq!(vm.segments[1].base, 1010);
+    	assert_eq!(vm.segments[2].base, 1020);
+    }
+
+    #[test]
+    pub fn attach_in_middle_with_overlap() {
+    	let mem1 = FixedMemory::new(10);
+    	let mem2 = FixedMemory::new(10);
+    	let mem3 = FixedMemory::new(10);
+    	let mut vm = VirtualMemory::new();
+    	vm.attach(1000, Box::new(mem1)).unwrap();
+    	vm.attach(1010, Box::new(mem2)).unwrap();
+    	assert_eq!(
+    		vm.attach(1005, Box::new(mem3)),
+    		Err(VirtualMemoryError::MemoryOverlap));
+    }
+
+    #[test]
+    pub fn get_from_single_memory() {
+    	let mut mem1 = FixedMemory::new(10);
+    	let mut mem2 = FixedMemory::new(10);
+    	let mut vm = VirtualMemory::new();
+
+    	mem1.set(0, &[1, 2, 3, 4, 5, 6, 7, 8, 9, 10]).unwrap();
+    	mem2.set(0, &[11, 12, 13, 14, 15, 16, 17, 18, 19, 20]).unwrap();
+
+    	vm.attach(1000, Box::new(mem1)).unwrap();
+    	vm.attach(1010, Box::new(mem2)).unwrap();
+
+    	let mut buf = [0, 0, 0, 0];
+    	vm.get(1006, &mut buf).unwrap();
+    	assert_eq!([7, 8, 9, 10], buf);
+    }
+
+    #[test]
+    pub fn get_spanning_memories() {
+    	let mut mem1 = FixedMemory::new(10);
+    	let mut mem2 = FixedMemory::new(10);
+    	let mut vm = VirtualMemory::new();
+
+    	mem1.set(0, &[1, 2, 3, 4, 5, 6, 7, 8, 9, 10]).unwrap();
+    	mem2.set(0, &[11, 12, 13, 14, 15, 16, 17, 18, 19, 20]).unwrap();
+
+    	vm.attach(1000, Box::new(mem1)).unwrap();
+    	vm.attach(1010, Box::new(mem2)).unwrap();
+
+    	let mut buf = [0, 0, 0, 0];
+    	vm.get(1008, &mut buf).unwrap();
+    	assert_eq!([9, 10, 11, 12], buf);
+    }
+
+    #[test]
+    pub fn set_to_single_memory() {
+    	let mut mem1 = FixedMemory::new(10);
+    	let mut mem2 = FixedMemory::new(10);
+    	let mut vm = VirtualMemory::new();
+
+    	mem1.set(0, &[1, 2, 3, 4, 5, 6, 7, 8, 9, 10]).unwrap();
+    	mem2.set(0, &[11, 12, 13, 14, 15, 16, 17, 18, 19, 20]).unwrap();
+
+    	vm.attach(1000, Box::new(mem1)).unwrap();
+    	vm.attach(1010, Box::new(mem2)).unwrap();
+
+    	vm.set(1006, &[0xDE, 0xAD, 0xBE, 0xEF]).unwrap();
+
+    	let mut buf = [0, 0, 0, 0];
+    	vm.segments[0].memory.get(6, &mut buf).unwrap();
+    	assert_eq!([0xDE, 0xAD, 0xBE, 0xEF], buf);
+    }
+
+    #[test]
+    pub fn set_spanning_memories() {
+    	let mut mem1 = FixedMemory::new(10);
+    	let mut mem2 = FixedMemory::new(10);
+    	let mut vm = VirtualMemory::new();
+
+    	mem1.set(0, &[1, 2, 3, 4, 5, 6, 7, 8, 9, 10]).unwrap();
+    	mem2.set(0, &[11, 12, 13, 14, 15, 16, 17, 18, 19, 20]).unwrap();
+
+    	vm.attach(1000, Box::new(mem1)).unwrap();
+    	vm.attach(1010, Box::new(mem2)).unwrap();
+
+    	vm.set(1008, &[0xDE, 0xAD, 0xBE, 0xEF]).unwrap();
+
+    	let mut buf = [0, 0, 0, 0];
+    	vm.segments[0].memory.get(8, &mut buf[0..2]).unwrap();
+    	vm.segments[1].memory.get(0, &mut buf[2..4]).unwrap();
+    	assert_eq!([0xDE, 0xAD, 0xBE, 0xEF], buf);
+    }
 }

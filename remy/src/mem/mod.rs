@@ -1,7 +1,7 @@
 use std::{isize,usize};
 
 pub use mem::fixed::FixedMemory;
-pub use mem::virt::VirtualMemory;
+pub use mem::virt::{VirtualMemory,VirtualMemoryError};
 
 mod fixed;
 mod virt;
@@ -327,14 +327,14 @@ mod test {
 
     #[test]
     pub fn get_u8_returns_single_byte_at_location() {
-        let mut mem = FixedMemory::with_size(1);
+        let mut mem = FixedMemory::new(1);
         mem.set(0, &[42]).unwrap();
         assert_eq!(mem.get_u8(0).unwrap(), 42);
     }
 
     #[test]
     pub fn set_u8_writes_single_byte_at_location() {
-        let mut mem = FixedMemory::with_size(1);
+        let mut mem = FixedMemory::new(1);
         mem.set_u8(0, 42).unwrap();
         let mut buf = [0];
         mem.get(0, &mut buf).unwrap();
@@ -361,7 +361,7 @@ mod test {
 
     #[test]
     pub fn set_be_u16_works() {
-        let mut mem = FixedMemory::with_size(10);
+        let mut mem = FixedMemory::new(10);
         mem.set_be_u16(1, 0x2345).unwrap();
         let mut buf = [0, 0];
         mem.get(1, &mut buf).unwrap();
@@ -370,7 +370,7 @@ mod test {
 
     #[test]
     pub fn set_be_u32_works() {
-        let mut mem = FixedMemory::with_size(10);
+        let mut mem = FixedMemory::new(10);
         mem.set_be_u32(1, 0x23456789).unwrap();
         let mut buf = [0, 0, 0, 0];
         mem.get(1, &mut buf).unwrap();
@@ -379,7 +379,7 @@ mod test {
 
     #[test]
     pub fn set_be_u64_works() {
-        let mut mem = FixedMemory::with_size(10);
+        let mut mem = FixedMemory::new(10);
         mem.set_be_u64(1, 0x23456789ABCDEF00).unwrap();
         let mut buf = [0, 0, 0, 0, 0, 0, 0, 0];
         mem.get(1, &mut buf).unwrap();
@@ -388,7 +388,7 @@ mod test {
 
     #[test]
     pub fn set_le_u16_works() {
-        let mut mem = FixedMemory::with_size(10);
+        let mut mem = FixedMemory::new(10);
         mem.set_le_u16(1, 0x2345).unwrap();
         let mut buf = [0, 0];
         mem.get(1, &mut buf).unwrap();
@@ -397,7 +397,7 @@ mod test {
 
     #[test]
     pub fn set_le_u32_works() {
-        let mut mem = FixedMemory::with_size(10);
+        let mut mem = FixedMemory::new(10);
         mem.set_le_u32(1, 0x23456789).unwrap();
         let mut buf = [0, 0, 0, 0];
         mem.get(1, &mut buf).unwrap();
@@ -406,7 +406,7 @@ mod test {
 
     #[test]
     pub fn set_le_u64_works() {
-        let mut mem = FixedMemory::with_size(10);
+        let mut mem = FixedMemory::new(10);
         mem.set_le_u64(1, 0x23456789ABCDEF00).unwrap();
         let mut buf = [0, 0, 0, 0, 0, 0, 0, 0];
         mem.get(1, &mut buf).unwrap();
@@ -414,7 +414,7 @@ mod test {
     }
 
     fn init_mem_get() -> FixedMemory {
-        let mut mem = FixedMemory::with_size(10);
+        let mut mem = FixedMemory::new(10);
         mem.set(0, &[0x01, 0x23, 0x45, 0x67, 0x89, 0xAB, 0xCD, 0xEF, 0x00, 0x00]).unwrap();
         mem
     }

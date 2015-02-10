@@ -32,6 +32,19 @@ impl<M> Mos6502<M> where M: mem::Memory {
             pc: pc::ProgramCounter::new()
         }
     }
+
+    pub fn push(&mut self, val: u8) -> mem::MemoryResult<()> {
+        let addr = (self.registers.sp as usize) + STACK_START;
+        try!(self.mem.set_u8(addr, val));
+        self.registers.sp -= 1;
+        Ok(())
+    }
+
+    pub fn pop(&mut self) -> mem::MemoryResult<u8> {
+        self.registers.sp += 1;
+        let addr = (self.registers.sp as usize) + STACK_START;
+        self.mem.get_u8(addr)
+    }
 }
 
 pub struct Registers {
@@ -124,6 +137,11 @@ impl Flags {
     pub fn intersects(&self, other: Flags) -> bool {
         (*self & other) != Flags::NONE()
     }
+
+    pub fn bits(self) -> u8 {
+        let Flags(x) = self;
+        x
+    }
 }
 
 impl ::std::ops::BitOr for Flags {
@@ -157,6 +175,51 @@ impl ::std::ops::Not for Flags {
 
 #[cfg(test)]
 mod test {
+    mod mos6502 {
+        use mem::{Memory,FixedMemory,VirtualMemory};
+
+        use cpu::mos6502;
+
+        #[test]
+        pub fn push_places_value_at_current_sp_location() {
+            let mut cpu = setup_cpu();
+            cpu.push(42).unwrap();
+            assert_eq!(Ok(42), cpu.mem.get_u8(mos6502::cpu::STACK_START + 5));
+        }
+
+        #[test]
+        pub fn push_decrements_sp() {
+            let mut cpu = setup_cpu();
+            cpu.push(42).unwrap();
+            assert_eq!(4, cpu.registers.sp);
+        }
+
+        #[test]
+        pub fn pop_gets_value_at_sp_plus_one() {
+            let mut cpu = setup_cpu();
+            cpu.mem.set_u8(mos6502::cpu::STACK_START + 6, 24).unwrap();
+            assert_eq!(Ok(24), cpu.pop());
+        }
+
+        #[test]
+        pub fn pop_increments_sp() {
+            let mut cpu = setup_cpu();
+            cpu.mem.set_u8(mos6502::cpu::STACK_START + 6, 24).unwrap();
+            cpu.pop().unwrap();
+            assert_eq!(6, cpu.registers.sp);
+        }
+
+        pub fn setup_cpu<'a>() -> mos6502::Mos6502<VirtualMemory<'a>> {
+            let mem = FixedMemory::new(10);
+            let mut vm = VirtualMemory::new();
+            vm.attach(mos6502::cpu::STACK_START, Box::new(mem)).unwrap();
+
+            let mut cpu = mos6502::Mos6502::new(vm);
+            cpu.registers.sp = 5;
+            cpu
+        }
+    }
+
     mod mos6502_registers {
         mod set_arith_flags {
             use cpu::mos6502;

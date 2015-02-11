@@ -18,8 +18,8 @@ pub enum Instruction {
 	BNE(i8),
 	BPL(i8),
 	BRK,
-	BVC(Operand),
-	BVS(Operand),
+	BVC(i8),
+	BVS(i8),
 	CLC,
 	CLD,
 	CLI,
@@ -92,7 +92,7 @@ impl Instruction {
 				cpu.registers.a = a;
 				cpu.registers.set_arith_flags(a as isize, c);
 				Ok(())
-			},
+			}
 			Instruction::AND(op) => {
 				let opv = try!(op.get_u8(cpu));
 				let res = cpu.registers.a & opv;
@@ -104,7 +104,7 @@ impl Instruction {
 					cpu.registers.set_flags(mos6502::Flags::SIGN());
 				}
 				Ok(())
-			},
+			}
 			Instruction::ASL(op) => {
 				let b = try!(op.get_u8(cpu));
 				if b & 0x80 != 0 {
@@ -119,25 +119,25 @@ impl Instruction {
 					cpu.registers.set_flags(mos6502::Flags::ZERO());
 				}
 				Ok(())
-			},
+			}
 			Instruction::BCC(offset) => {
 				if !cpu.registers.has_flags(mos6502::Flags::CARRY()) {
 					cpu.pc.advance(offset as isize)
 				}
 				Ok(())
-			},
+			}
 			Instruction::BCS(offset) => {
 				if cpu.registers.has_flags(mos6502::Flags::CARRY()) {
 					cpu.pc.advance(offset as isize)
 				}
 				Ok(())
-			},
+			}
 			Instruction::BEQ(offset) => {
 				if cpu.registers.has_flags(mos6502::Flags::ZERO()) {
 					cpu.pc.advance(offset as isize)
 				}
 				Ok(())
-			},
+			}
 			Instruction::BIT(op) => {
 				let m = try!(op.get_u8(cpu));
 				let t = cpu.registers.a & m;
@@ -161,25 +161,25 @@ impl Instruction {
 				}
 
 				Ok(())
-			},
+			}
 			Instruction::BMI(offset) => {
 				if cpu.registers.has_flags(mos6502::Flags::SIGN()) {
 					cpu.pc.advance(offset as isize)
 				}
 				Ok(())
-			},
+			}
 			Instruction::BNE(offset) => {
 				if !cpu.registers.has_flags(mos6502::Flags::ZERO()) {
 					cpu.pc.advance(offset as isize)
 				}
 				Ok(())
-			},
+			}
 			Instruction::BPL(offset) => {
 				if !cpu.registers.has_flags(mos6502::Flags::SIGN()) {
 					cpu.pc.advance(offset as isize)
 				}
 				Ok(())
-			},
+			}
 			Instruction::BRK => {
 				cpu.pc.advance(1);
 				let pc = cpu.pc.get();
@@ -191,7 +191,54 @@ impl Instruction {
 
 				cpu.pc.set(try!(cpu.mem.get_le_u16(0xFFFE)) as usize);
 				Ok(())
-			},
+			}
+			Instruction::BVC(offset) => {
+				if !cpu.registers.has_flags(mos6502::Flags::OVERFLOW()) {
+					cpu.pc.advance(offset as isize)
+				}
+				Ok(())
+			}
+			Instruction::BVS(offset) => {
+				if cpu.registers.has_flags(mos6502::Flags::OVERFLOW()) {
+					cpu.pc.advance(offset as isize)
+				}
+				Ok(())
+			}
+			Instruction::CLC => {
+				cpu.registers.clear_flags(mos6502::Flags::CARRY());
+				Ok(())
+			}
+			Instruction::CLD => {
+				cpu.registers.clear_flags(mos6502::Flags::BCD());
+				Ok(())
+			}
+			Instruction::CLI => {
+				cpu.registers.clear_flags(mos6502::Flags::INTERRUPT());
+				Ok(())
+			}
+			Instruction::CLV => {
+				cpu.registers.clear_flags(mos6502::Flags::OVERFLOW());
+				Ok(())
+			}
+			Instruction::CMP(op) => {
+				let val = try!(op.get_u8(cpu));
+				let t = (cpu.registers.a as isize) - (val as isize);
+
+				cpu.registers.clear_flags(
+					mos6502::Flags::SIGN() |
+					mos6502::Flags::CARRY() |
+					mos6502::Flags::ZERO());
+
+				if t < 0 {
+					cpu.registers.set_flags(mos6502::Flags::SIGN());
+				} else if t >= 0 {
+					cpu.registers.set_flags(mos6502::Flags::CARRY());
+					if t == 0 {
+						cpu.registers.set_flags(mos6502::Flags::ZERO());
+					}
+				}
+				Ok(())
+			}
 			_ => Err(ExecError::UnknownInstruction)
 		}
 	}
@@ -304,7 +351,7 @@ mod test {
 		}
 
 		#[test]
-		pub fn bcs_does_not_modify_pc_if_carry_flag_unset() {
+		pub fn bcs_does_not_modify_pc_if_carry_flag_clear() {
 			let mut cpu = init_cpu();
 			Instruction::BCS(1).exec(&mut cpu).unwrap();
 			assert_eq!(cpu.pc.get(), 0xABCD);
@@ -327,7 +374,7 @@ mod test {
 		}
 
 		#[test]
-		pub fn beq_does_not_modify_pc_if_zero_flag_unset() {
+		pub fn beq_does_not_modify_pc_if_zero_flag_clear() {
 			let mut cpu = init_cpu();
 			Instruction::BEQ(1).exec(&mut cpu).unwrap();
 			assert_eq!(cpu.pc.get(), 0xABCD);
@@ -393,14 +440,14 @@ mod test {
 		}
 
 		#[test]
-		pub fn bmi_does_not_modify_pc_if_sign_flag_unset() {
+		pub fn bmi_does_not_modify_pc_if_sign_flag_clear() {
 			let mut cpu = init_cpu();
 			Instruction::BMI(1).exec(&mut cpu).unwrap();
 			assert_eq!(cpu.pc.get(), 0xABCD);
 		}
 
 		#[test]
-		pub fn bne_advances_pc_by_specified_amount_if_zero_flag_unset() {
+		pub fn bne_advances_pc_by_specified_amount_if_zero_flag_clear() {
 			let mut cpu = init_cpu();
 			Instruction::BNE(1).exec(&mut cpu).unwrap();
 			assert_eq!(cpu.pc.get(), 0xABCE);
@@ -415,7 +462,7 @@ mod test {
 		}
 
 		#[test]
-		pub fn bpl_advances_pc_by_specified_amount_if_sign_flag_unset() {
+		pub fn bpl_advances_pc_by_specified_amount_if_sign_flag_clear() {
 			let mut cpu = init_cpu();
 			Instruction::BPL(1).exec(&mut cpu).unwrap();
 			assert_eq!(cpu.pc.get(), 0xABCE);
@@ -464,6 +511,128 @@ mod test {
 			Instruction::BRK.exec(&mut cpu).unwrap();
 
 			assert_eq!(0xBEEF, cpu.pc.get());
+		}
+
+		#[test]
+		pub fn bvc_advances_pc_by_specified_amount_if_overflow_flag_clear() {
+			let mut cpu = init_cpu();
+			Instruction::BVC(1).exec(&mut cpu).unwrap();
+			assert_eq!(cpu.pc.get(), 0xABCE);
+		}
+
+		#[test]
+		pub fn bvc_does_not_modify_pc_if_overflow_flag_set() {
+			let mut cpu = init_cpu();
+			cpu.registers.set_flags(mos6502::Flags::OVERFLOW());
+			Instruction::BVC(1).exec(&mut cpu).unwrap();
+			assert_eq!(cpu.pc.get(), 0xABCD);
+		}
+
+		#[test]
+		pub fn bvs_advances_pc_by_specified_amount_if_overflow_flag_set() {
+			let mut cpu = init_cpu();
+			cpu.registers.set_flags(mos6502::Flags::OVERFLOW());
+			Instruction::BVS(1).exec(&mut cpu).unwrap();
+			assert_eq!(cpu.pc.get(), 0xABCE);
+		}
+
+		#[test]
+		pub fn bvc_does_not_modify_pc_if_overflow_flag_clear() {
+			let mut cpu = init_cpu();
+			Instruction::BVS(1).exec(&mut cpu).unwrap();
+			assert_eq!(cpu.pc.get(), 0xABCD);
+		}
+
+		#[test]
+		pub fn clc_clears_carry_flag() {
+			let mut cpu = init_cpu();
+			cpu.registers.set_flags(mos6502::Flags::CARRY());
+			Instruction::CLC.exec(&mut cpu).unwrap();
+			assert!(!cpu.registers.has_flags(mos6502::Flags::CARRY()));
+		}
+
+		#[test]
+		pub fn cld_clears_bcd_flag() {
+			let mut cpu = init_cpu();
+			cpu.registers.set_flags(mos6502::Flags::BCD());
+			Instruction::CLD.exec(&mut cpu).unwrap();
+			assert!(!cpu.registers.has_flags(mos6502::Flags::BCD()));
+		}
+
+		#[test]
+		pub fn cli_clears_interrupt_flag() {
+			let mut cpu = init_cpu();
+			cpu.registers.set_flags(mos6502::Flags::INTERRUPT());
+			Instruction::CLI.exec(&mut cpu).unwrap();
+			assert!(!cpu.registers.has_flags(mos6502::Flags::INTERRUPT()));
+		}
+
+		#[test]
+		pub fn clv_clears_overflow_flag() {
+			let mut cpu = init_cpu();
+			cpu.registers.set_flags(mos6502::Flags::OVERFLOW());
+			Instruction::CLV.exec(&mut cpu).unwrap();
+			assert!(!cpu.registers.has_flags(mos6502::Flags::OVERFLOW()));
+		}
+
+		#[test]
+		pub fn cmp_sets_sign_bit_if_operand_greater_than_a() {
+			let mut cpu = init_cpu();
+			Instruction::CMP(Operand::Immediate(43)).exec(&mut cpu).unwrap();
+			assert!(cpu.registers.has_flags(mos6502::Flags::SIGN()));
+		}
+
+		#[test]
+		pub fn cmp_clears_sign_bit_if_operand_less_than_a() {
+			let mut cpu = init_cpu();
+			cpu.registers.set_flags(mos6502::Flags::SIGN());
+			Instruction::CMP(Operand::Immediate(41)).exec(&mut cpu).unwrap();
+			assert!(!cpu.registers.has_flags(mos6502::Flags::SIGN()));
+		}
+
+		#[test]
+		pub fn cmp_sets_carry_bit_if_a_greater_than_operand() {
+			let mut cpu = init_cpu();
+			Instruction::CMP(Operand::Immediate(41)).exec(&mut cpu).unwrap();
+			assert!(cpu.registers.has_flags(mos6502::Flags::CARRY()));
+		}
+
+		#[test]
+		pub fn cmp_sets_carry_bit_if_a_equal_to_operand() {
+			let mut cpu = init_cpu();
+			Instruction::CMP(Operand::Immediate(42)).exec(&mut cpu).unwrap();
+			assert!(cpu.registers.has_flags(mos6502::Flags::CARRY()));
+		}
+
+		#[test]
+		pub fn cmp_clears_carry_bit_if_a_less_than_operand() {
+			let mut cpu = init_cpu();
+			cpu.registers.set_flags(mos6502::Flags::CARRY());
+			Instruction::CMP(Operand::Immediate(43)).exec(&mut cpu).unwrap();
+			assert!(!cpu.registers.has_flags(mos6502::Flags::CARRY()));
+		}
+
+		#[test]
+		pub fn cmp_sets_zero_bit_if_a_equal_to_operand() {
+			let mut cpu = init_cpu();
+			Instruction::CMP(Operand::Immediate(42)).exec(&mut cpu).unwrap();
+			assert!(cpu.registers.has_flags(mos6502::Flags::ZERO()));
+		}
+
+		#[test]
+		pub fn cmp_clears_zero_bit_if_a_less_than_operand() {
+			let mut cpu = init_cpu();
+			cpu.registers.set_flags(mos6502::Flags::ZERO());
+			Instruction::CMP(Operand::Immediate(43)).exec(&mut cpu).unwrap();
+			assert!(!cpu.registers.has_flags(mos6502::Flags::ZERO()));
+		}
+
+		#[test]
+		pub fn cmp_clears_zero_bit_if_a_greater_than_operand() {
+			let mut cpu = init_cpu();
+			cpu.registers.set_flags(mos6502::Flags::ZERO());
+			Instruction::CMP(Operand::Immediate(41)).exec(&mut cpu).unwrap();
+			assert!(!cpu.registers.has_flags(mos6502::Flags::ZERO()));
 		}
 
 		fn init_cpu() -> Mos6502<mem::VirtualMemory<'static>> {

@@ -304,6 +304,22 @@ pub trait Memory {
     }
 }
 
+pub struct EmptyMemory;
+
+impl Memory for EmptyMemory {
+    fn size(&self) -> usize { 0 }
+
+    #[allow(unused_variables)]
+    fn get(&self, addr: usize, buf: &mut [u8]) -> MemoryResult<()> {
+        Err(MemoryError::new(MemoryErrorKind::OutOfBounds, "EmptyMemory cannot be read from"))
+    }
+
+    #[allow(unused_variables)]
+    fn set(&mut self, addr: usize, buf: &[u8]) -> MemoryResult<()> {
+        Err(MemoryError::new(MemoryErrorKind::OutOfBounds, "EmptyMemory cannot be written to"))
+    }
+}
+
 // From http://doc.rust-lang.org/src/std/old_io/mod.rs.html#976-979
 fn extend_sign(val: u64, nbytes: usize) -> i64 {
     let shift = (8 - nbytes) * 8;

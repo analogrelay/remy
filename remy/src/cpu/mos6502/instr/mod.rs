@@ -5,6 +5,9 @@ use mem;
 use cpu::mos6502;
 use cpu::mos6502::{Mos6502,Operand,OperandError};
 
+mod adc;
+mod and;
+
 #[derive(Copy,Debug,Eq,PartialEq)]
 pub enum Instruction {
 	ADC(Operand),
@@ -87,24 +90,8 @@ impl error::FromError<mem::MemoryError> for ExecError {
 impl Instruction {
 	pub fn exec<M>(self, cpu: &mut Mos6502<M>) -> Result<(), ExecError> where M: mem::Memory {
 		match self {
-			Instruction::ADC(op) => {
-				let (a, c) = ::util::add_u8_with_carry(cpu.registers.a, try!(op.get_u8(cpu)), cpu.registers.carry());
-				cpu.registers.a = a;
-				cpu.registers.set_arith_flags(a as isize, c);
-				Ok(())
-			}
-			Instruction::AND(op) => {
-				let opv = try!(op.get_u8(cpu));
-				let res = cpu.registers.a & opv;
-				cpu.registers.a = res;
-				if res == 0 {
-					cpu.registers.set_flags(mos6502::Flags::ZERO());
-				}
-				else if res & 0x80 != 0 {
-					cpu.registers.set_flags(mos6502::Flags::SIGN());
-				}
-				Ok(())
-			}
+			Instruction::ADC(op) => adc::exec(cpu, op),
+			Instruction::AND(op) => and::exec(cpu, op),
 			Instruction::ASL(op) => {
 				let b = try!(op.get_u8(cpu));
 				if b & 0x80 != 0 {
@@ -252,53 +239,6 @@ mod test {
 		use cpu::mos6502;
 		use cpu::mos6502::{Instruction,Operand,Mos6502};
 		use cpu::mos6502::cpu::STACK_START;
-
-		#[test]
-		pub fn adc_adds_regularly_when_carry_not_set() {
-			let mut cpu = init_cpu();
-			Instruction::ADC(Operand::Immediate(1)).exec(&mut cpu).unwrap();
-			assert_eq!(cpu.registers.a, 43);
-		}
-
-		#[test]
-		pub fn adc_adds_carry_value_when_carry_flag_is_set() {
-			let mut cpu = init_cpu();
-			cpu.registers.set_flags(mos6502::Flags::CARRY()); // Set CARRY()
-			Instruction::ADC(Operand::Immediate(1)).exec(&mut cpu).unwrap();
-			assert_eq!(cpu.registers.a, 44);
-		}
-
-		#[test]
-		pub fn adc_sets_flags_when_overflow() {
-			let mut cpu = init_cpu();
-			Instruction::ADC(Operand::Immediate(255)).exec(&mut cpu).unwrap();
-			assert_eq!(cpu.registers.a, 41);
-			assert_eq!(cpu.registers.get_flags(), mos6502::Flags::CARRY() | mos6502::Flags::RESERVED());
-		}
-
-		#[test]
-		pub fn and_ands_value_with_accumulator() {
-			let mut cpu = init_cpu();
-			Instruction::AND(Operand::Immediate(24)).exec(&mut cpu).unwrap();
-			assert_eq!(cpu.registers.a, 42 & 24);
-		}
-
-		#[test]
-		pub fn and_sets_zero_flag_if_result_is_zero() {
-			let mut cpu = init_cpu();
-			Instruction::AND(Operand::Immediate(0)).exec(&mut cpu).unwrap();
-			assert_eq!(cpu.registers.a, 0);
-			assert_eq!(cpu.registers.get_flags(), mos6502::Flags::ZERO() | mos6502::Flags::RESERVED());
-		}
-
-		#[test]
-		pub fn and_sets_sign_flag_if_result_has_bit_7_set() {
-			let mut cpu = init_cpu();
-			cpu.registers.a = 0xFF;
-			Instruction::AND(Operand::Immediate(0xFF)).exec(&mut cpu).unwrap();
-			assert_eq!(cpu.registers.a, 0xFF);
-			assert_eq!(cpu.registers.get_flags(), mos6502::Flags::SIGN() | mos6502::Flags::RESERVED());
-		}
 
 		#[test]
 		pub fn asl_shifts_value_left() {

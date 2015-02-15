@@ -7,6 +7,8 @@ use cpu::mos6502::{Mos6502,Operand,OperandError};
 
 mod adc;
 mod and;
+mod asl;
+mod bcc;
 
 #[derive(Copy,Debug,Eq,PartialEq)]
 pub enum Instruction {
@@ -92,27 +94,8 @@ impl Instruction {
 		match self {
 			Instruction::ADC(op) => adc::exec(cpu, op),
 			Instruction::AND(op) => and::exec(cpu, op),
-			Instruction::ASL(op) => {
-				let b = try!(op.get_u8(cpu));
-				if b & 0x80 != 0 {
-					cpu.registers.set_flags(mos6502::Flags::CARRY());
-				}
-				let r = (b << 1) & 0xFE;
-				try!(op.set_u8(cpu, r));
-				if r & 0x80 != 0 {
-					cpu.registers.set_flags(mos6502::Flags::SIGN());
-				}
-				if r == 0 {
-					cpu.registers.set_flags(mos6502::Flags::ZERO());
-				}
-				Ok(())
-			}
-			Instruction::BCC(offset) => {
-				if !cpu.registers.has_flags(mos6502::Flags::CARRY()) {
-					cpu.pc.advance(offset as isize)
-				}
-				Ok(())
-			}
+			Instruction::ASL(op) => asl::exec(cpu, op), 
+			Instruction::BCC(offset) => bcc::exec(cpu, offset),
 			Instruction::BCS(offset) => {
 				if cpu.registers.has_flags(mos6502::Flags::CARRY()) {
 					cpu.pc.advance(offset as isize)
@@ -239,56 +222,6 @@ mod test {
 		use cpu::mos6502;
 		use cpu::mos6502::{Instruction,Operand,Mos6502};
 		use cpu::mos6502::cpu::STACK_START;
-
-		#[test]
-		pub fn asl_shifts_value_left() {
-			let mut cpu = init_cpu();
-			cpu.registers.a = 0x0F;
-			Instruction::ASL(Operand::Accumulator).exec(&mut cpu).unwrap();
-			assert_eq!(cpu.registers.a, 0x1E);
-		}
-
-		#[test]
-		pub fn asl_sets_carry_if_bit_7_is_set_before_shifting() {
-			let mut cpu = init_cpu();
-			cpu.registers.a = 0x81;
-			Instruction::ASL(Operand::Accumulator).exec(&mut cpu).unwrap();
-			assert_eq!(cpu.registers.a, 0x02);
-			assert_eq!(cpu.registers.get_flags(), mos6502::Flags::CARRY() | mos6502::Flags::RESERVED());
-		}
-
-		#[test]
-		pub fn asl_sets_sign_if_bit_7_is_set_after_shifting() {
-			let mut cpu = init_cpu();
-			cpu.registers.a = 0x40;
-			Instruction::ASL(Operand::Accumulator).exec(&mut cpu).unwrap();
-			assert_eq!(cpu.registers.a, 0x80);
-			assert_eq!(cpu.registers.get_flags(), mos6502::Flags::SIGN() | mos6502::Flags::RESERVED());
-		}
-
-		#[test]
-		pub fn asl_sets_zero_if_value_is_zero_after_shifting() {
-			let mut cpu = init_cpu();
-			cpu.registers.a = 0x00;
-			Instruction::ASL(Operand::Accumulator).exec(&mut cpu).unwrap();
-			assert_eq!(cpu.registers.a, 0x00);
-			assert_eq!(cpu.registers.get_flags(), mos6502::Flags::ZERO() | mos6502::Flags::RESERVED());
-		}
-
-		#[test]
-		pub fn bcc_does_not_modify_pc_if_carry_flag_set() {
-			let mut cpu = init_cpu();
-			cpu.registers.set_flags(mos6502::Flags::CARRY());
-			Instruction::BCC(1).exec(&mut cpu).unwrap();
-			assert_eq!(cpu.pc.get(), 0xABCD);
-		}
-
-		#[test]
-		pub fn bcc_advances_pc_by_specified_amount_if_carry_flag_clear() {
-			let mut cpu = init_cpu();
-			Instruction::BCC(1).exec(&mut cpu).unwrap();
-			assert_eq!(cpu.pc.get(), 0xABCE);
-		}
 
 		#[test]
 		pub fn bcs_does_not_modify_pc_if_carry_flag_clear() {

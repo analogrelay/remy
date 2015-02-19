@@ -24,6 +24,7 @@ mod clv;
 mod cmp;
 mod cpx;
 mod cpy;
+mod dec;
 
 #[derive(Copy,Debug,Eq,PartialEq)]
 pub enum Instruction {
@@ -127,6 +128,7 @@ impl Instruction {
 			Instruction::CMP(op) => cmp::exec(cpu, op), 
             Instruction::CPX(op) => cpx::exec(cpu, op),
             Instruction::CPY(op) => cpy::exec(cpu, op),
+            Instruction::DEC(op) => dec::exec(cpu, op),
 			_ => Err(ExecError::UnknownInstruction)
 		}
 	}

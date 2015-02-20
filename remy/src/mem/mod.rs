@@ -225,82 +225,82 @@ pub trait Memory {
 
     #[inline]
     fn set_be_u16(&mut self, addr: usize, val: u16) -> MemoryResult<()> {
-        ::std::old_io::extensions::u64_to_be_bytes(val as u64, 2, |v| self.set(addr, v))
+        u64_to_be_bytes(val as u64, 2, |v| self.set(addr, v))
     }
 
     #[inline]
     fn set_be_u32(&mut self, addr: usize, val: u32) -> MemoryResult<()> {
-        ::std::old_io::extensions::u64_to_be_bytes(val as u64, 4, |v| self.set(addr, v))
+        u64_to_be_bytes(val as u64, 4, |v| self.set(addr, v))
     }
 
     #[inline]
     fn set_be_u64(&mut self, addr: usize, val: u64) -> MemoryResult<()> {
-        ::std::old_io::extensions::u64_to_be_bytes(val, 8, |v| self.set(addr, v))
+        u64_to_be_bytes(val, 8, |v| self.set(addr, v))
     }
 
     #[inline]
     fn set_be_usize(&mut self, addr: usize, val: usize) -> MemoryResult<()> {
-        ::std::old_io::extensions::u64_to_be_bytes(val as u64, usize::BYTES, |v| self.set(addr, v))
+        u64_to_be_bytes(val as u64, usize::BYTES, |v| self.set(addr, v))
     }
 
     #[inline]
     fn set_be_i16(&mut self, addr: usize, val: i16) -> MemoryResult<()> {
-        ::std::old_io::extensions::u64_to_be_bytes(val as u64, 2, |v| self.set(addr, v))
+        u64_to_be_bytes(val as u64, 2, |v| self.set(addr, v))
     }
 
     #[inline]
     fn set_be_i32(&mut self, addr: usize, val: i32) -> MemoryResult<()> {
-        ::std::old_io::extensions::u64_to_be_bytes(val as u64, 4, |v| self.set(addr, v))
+        u64_to_be_bytes(val as u64, 4, |v| self.set(addr, v))
     }
 
     #[inline]
     fn set_be_i64(&mut self, addr: usize, val: i64) -> MemoryResult<()> {
-        ::std::old_io::extensions::u64_to_be_bytes(val as u64, 8, |v| self.set(addr, v))
+        u64_to_be_bytes(val as u64, 8, |v| self.set(addr, v))
     }
 
     #[inline]
     fn set_be_isize(&mut self, addr: usize, val: isize) -> MemoryResult<()> {
-        ::std::old_io::extensions::u64_to_be_bytes(val as u64, isize::BYTES, |v| self.set(addr, v))
+        u64_to_be_bytes(val as u64, isize::BYTES, |v| self.set(addr, v))
     }
 
     #[inline]
     fn set_le_u16(&mut self, addr: usize, val: u16) -> MemoryResult<()> {
-        ::std::old_io::extensions::u64_to_le_bytes(val as u64, 2, |v| self.set(addr, v))
+        u64_to_le_bytes(val as u64, 2, |v| self.set(addr, v))
     }
 
     #[inline]
     fn set_le_u32(&mut self, addr: usize, val: u32) -> MemoryResult<()> {
-        ::std::old_io::extensions::u64_to_le_bytes(val as u64, 4, |v| self.set(addr, v))
+        u64_to_le_bytes(val as u64, 4, |v| self.set(addr, v))
     }
 
     #[inline]
     fn set_le_u64(&mut self, addr: usize, val: u64) -> MemoryResult<()> {
-        ::std::old_io::extensions::u64_to_le_bytes(val, 8, |v| self.set(addr, v))
+        u64_to_le_bytes(val, 8, |v| self.set(addr, v))
     }
 
     #[inline]
     fn set_le_usize(&mut self, addr: usize, val: usize) -> MemoryResult<()> {
-        ::std::old_io::extensions::u64_to_le_bytes(val as u64, usize::BYTES, |v| self.set(addr, v))
+        u64_to_le_bytes(val as u64, usize::BYTES, |v| self.set(addr, v))
     }
 
     #[inline]
     fn set_le_i16(&mut self, addr: usize, val: i16) -> MemoryResult<()> {
-        ::std::old_io::extensions::u64_to_le_bytes(val as u64, 2, |v| self.set(addr, v))
+        u64_to_le_bytes(val as u64, 2, |v| self.set(addr, v))
     }
 
     #[inline]
     fn set_le_i32(&mut self, addr: usize, val: i32) -> MemoryResult<()> {
-        ::std::old_io::extensions::u64_to_le_bytes(val as u64, 4, |v| self.set(addr, v))
+        u64_to_le_bytes(val as u64, 4, |v| self.set(addr, v))
     }
 
     #[inline]
     fn set_le_i64(&mut self, addr: usize, val: i64) -> MemoryResult<()> {
-        ::std::old_io::extensions::u64_to_le_bytes(val as u64, 8, |v| self.set(addr, v))
+        u64_to_le_bytes(val as u64, 8, |v| self.set(addr, v))
     }
 
     #[inline]
     fn set_le_isize(&mut self, addr: usize, val: isize) -> MemoryResult<()> {
-        ::std::old_io::extensions::u64_to_le_bytes(val as u64, isize::BYTES, |v| self.set(addr, v))
+        u64_to_le_bytes(val as u64, isize::BYTES, |v| self.set(addr, v))
     }
 }
 
@@ -324,6 +324,61 @@ impl Memory for EmptyMemory {
 fn extend_sign(val: u64, nbytes: usize) -> i64 {
     let shift = (8 - nbytes) * 8;
     (val << shift) as i64 >> shift
+}
+
+// Borrowed straight from the rust old_io code :)
+fn u64_to_be_bytes<T, F>(n: u64, size: usize, f: F) -> T where
+    F: FnOnce(&[u8]) -> T,
+{
+    use std::mem::transmute;
+    use std::num::Int;
+
+    // LLVM fails to properly optimize this when using shifts instead of the to_be* intrinsics
+    assert!(size <= 8);
+    match size {
+      1 => f(&[n as u8]),
+      2 => f(unsafe { & transmute::<_, [u8; 2]>((n as u16).to_be()) }),
+      4 => f(unsafe { & transmute::<_, [u8; 4]>((n as u32).to_be()) }),
+      8 => f(unsafe { & transmute::<_, [u8; 8]>(n.to_be()) }),
+      _ => {
+        let mut bytes = vec!();
+        let mut i = size;
+        while i > 0 {
+            let shift = (i - 1) * 8;
+            bytes.push((n >> shift) as u8);
+            i -= 1;
+        }
+        f(&bytes)
+      }
+    }
+}
+
+pub fn u64_to_le_bytes<T, F>(n: u64, size: usize, f: F) -> T where
+    F: FnOnce(&[u8]) -> T,
+{
+    use std::mem::transmute;
+    use std::num::Int;
+
+    // LLVM fails to properly optimize this when using shifts instead of the to_le* intrinsics
+    assert!(size <= 8);
+    match size {
+      1 => f(&[n as u8]),
+      2 => f(unsafe { & transmute::<_, [u8; 2]>((n as u16).to_le()) }),
+      4 => f(unsafe { & transmute::<_, [u8; 4]>((n as u32).to_le()) }),
+      8 => f(unsafe { & transmute::<_, [u8; 8]>(n.to_le()) }),
+      _ => {
+
+        let mut bytes = vec!();
+        let mut i = size;
+        let mut n = n;
+        while i > 0 {
+            bytes.push((n & 255_u64) as u8);
+            n >>= 8;
+            i -= 1;
+        }
+        f(&bytes)
+      }
+    }
 }
 
 #[cfg(test)]

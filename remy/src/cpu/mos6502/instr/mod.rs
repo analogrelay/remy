@@ -28,6 +28,7 @@ mod dec;
 mod dex;
 mod dey;
 mod eor;
+mod inc;
 
 #[derive(Copy,Debug,Eq,PartialEq)]
 pub enum Instruction {
@@ -135,6 +136,7 @@ impl Instruction {
             Instruction::DEX => dex::exec(cpu),
             Instruction::DEY => dey::exec(cpu),
             Instruction::EOR(op) => eor::exec(cpu, op),
+            Instruction::INC(op) => inc::exec(cpu, op),
 			_ => Err(ExecError::UnknownInstruction)
 		}
 	}

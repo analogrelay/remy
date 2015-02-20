@@ -3,7 +3,8 @@ use cpu::mos6502::{ExecError,Mos6502,Flags};
 
 pub fn exec<M>(cpu: &mut Mos6502<M>) -> Result<(), ExecError> where M: Memory {
     let new_val = (cpu.registers.x - 1) & 0xFF;
-    if (new_val & 0b1000000) != 0 {
+    cpu.registers.clear_flags(Flags::SIGN() | Flags::ZERO());
+    if (new_val & 0b10000000) != 0 {
         cpu.registers.set_flags(Flags::SIGN());
     }
     if new_val == 0 {
@@ -28,11 +29,29 @@ mod test {
     }
 
     #[test]
+    fn dex_clears_sign_flag_if_new_value_is_non_negative() {
+        let mut cpu = init_cpu();
+        cpu.registers.x = 2;
+        cpu.registers.set_flags(Flags::SIGN());
+        dex::exec(&mut cpu).unwrap();
+        assert!(!cpu.registers.has_flags(Flags::SIGN()));
+    }
+
+    #[test]
     fn dex_sets_zero_flag_if_new_value_is_zero() {
         let mut cpu = init_cpu();
         cpu.registers.x = 1;
         dex::exec(&mut cpu).unwrap();
         assert!(cpu.registers.has_flags(Flags::ZERO()));
+    }
+
+    #[test]
+    fn dex_clears_zero_flag_if_new_value_is_nonzero() {
+        let mut cpu = init_cpu();
+        cpu.registers.x = 0;
+        cpu.registers.set_flags(Flags::ZERO());
+        dex::exec(&mut cpu).unwrap();
+        assert!(!cpu.registers.has_flags(Flags::ZERO()));
     }
 
     #[test]

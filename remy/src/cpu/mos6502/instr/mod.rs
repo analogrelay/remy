@@ -27,6 +27,7 @@ mod cpy;
 mod dec;
 mod eor;
 mod inc;
+mod jmp;
 
 #[derive(Copy,Debug,Eq,PartialEq)]
 pub enum Instruction {
@@ -92,6 +93,7 @@ pub enum Instruction {
 pub enum ExecError {
 	ErrorRetrievingOperand(OperandError),
 	ErrorReadingMemory(mem::MemoryError),
+    IllegalOperand,
 	UnknownInstruction
 }
 
@@ -137,6 +139,7 @@ impl Instruction {
             Instruction::INC(op) => inc::exec(cpu, op),
             Instruction::INX => inc::exec(cpu, Operand::Register(RegisterName::X)),
             Instruction::INY => inc::exec(cpu, Operand::Register(RegisterName::Y)),
+            Instruction::JMP(op) => jmp::exec(cpu, op),
 			_ => Err(ExecError::UnknownInstruction)
 		}
 	}

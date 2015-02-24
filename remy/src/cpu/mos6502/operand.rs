@@ -22,7 +22,8 @@ pub enum Operand {
 pub enum OperandError {
     ErrorAccessingMemory(mem::MemoryError),
     OperandSizeMismatch,
-    ReadOnlyOperand
+    ReadOnlyOperand,
+    NonAddressOperand
 }
 
 impl error::FromError<mem::MemoryError> for OperandError {
@@ -36,20 +37,8 @@ impl Operand {
         Ok(match *self {
             Operand::Accumulator                => cpu.registers.a,
             Operand::Immediate(n)               => n,
-            Operand::Absolute(addr)             => try!(cpu.mem.get_u8(addr as usize)),
-            Operand::Indexed(addr, r)           => try!(cpu.mem.get_u8(addr as usize + cpu.registers.get(r) as usize)),
-            Operand::PreIndexedIndirect(addr)   => try!(cpu.mem.get_u8(try!(cpu.mem.get_le_u16(addr as usize + cpu.registers.x as usize)) as usize)),
-            Operand::PostIndexedIndirect(addr)  => try!(cpu.mem.get_u8(try!(cpu.mem.get_le_u16(addr as usize)) as usize + cpu.registers.y as usize)),
-            Operand::Register(r)                => cpu.registers.get(r),
-            _                                   => return Err(OperandError::OperandSizeMismatch),
+            _                                   => try!(cpu.mem.get_u8(try!(self.get_addr(cpu)) as usize))
         })
-    }
-
-    pub fn get_u16<M>(&self, cpu: &Mos6502<M>) -> Result<u16, OperandError> where M: mem::Memory {
-        match *self {
-            Operand::Indirect(addr)     => Ok(try!(cpu.mem.get_le_u16(try!(cpu.mem.get_le_u16(addr as usize)) as usize))),
-            _                           => Err(OperandError::OperandSizeMismatch)
-        }
     }
 
     pub fn set_u8<M>(&self, cpu: &mut Mos6502<M>, val: u8) -> Result<(), OperandError> where M: mem::Memory {
@@ -60,6 +49,17 @@ impl Operand {
             Operand::Register(r)        => Ok(cpu.registers.set(r, val)),
             _                           => Err(OperandError::ReadOnlyOperand)
         }
+    }
+
+    pub fn get_addr<M>(&self, cpu: &Mos6502<M>) -> Result<u16, OperandError> where M: mem::Memory {
+        Ok(match *self {
+            Operand::Absolute(addr)             => addr,
+            Operand::Indirect(addr)             => try!(cpu.mem.get_le_u16(addr as usize)),
+            Operand::Indexed(addr, r)           => addr + cpu.registers.get(r) as u16,
+            Operand::PreIndexedIndirect(addr)   => try!(cpu.mem.get_le_u16(addr as usize + cpu.registers.x as usize)),
+            Operand::PostIndexedIndirect(addr)  => try!(cpu.mem.get_le_u16(addr as usize)) + cpu.registers.y as u16,
+            _                                   => return Err(OperandError::NonAddressOperand)
+        })
     }
 }
 
@@ -162,35 +162,6 @@ mod test {
             cpu.registers.y = 2;
             let val = Operand::PostIndexedIndirect(2).get_u8(&cpu).unwrap();
             assert_eq!(val, 42);
-        }
-
-        #[test]
-        pub fn get_u16_indirect_reads_indirect_u16_value() {
-            let mut cpu = Mos6502::with_fixed_memory(10);
-            assert!(cpu.mem.set_le_u16(7, 1024).is_ok()); // Value
-            assert!(cpu.mem.set_le_u16(2, 7).is_ok());    // Indirect Memory Address
-            let val = Operand::Indirect(2).get_u16(&cpu).unwrap();
-            assert_eq!(val, 1024);
-        }
-
-        #[test]
-        pub fn get_u16_returns_error_if_given_u8_operand() {
-            let cpu = Mos6502::with_fixed_memory(10);
-
-            assert_eq!(Operand::Accumulator.get_u16(&cpu).unwrap_err(), OperandError::OperandSizeMismatch);
-            assert_eq!(Operand::Immediate(42).get_u16(&cpu).unwrap_err(), OperandError::OperandSizeMismatch);
-            assert_eq!(Operand::Absolute(42).get_u16(&cpu).unwrap_err(), OperandError::OperandSizeMismatch);
-            assert_eq!(Operand::Indexed(42, RegisterName::X).get_u16(&cpu).unwrap_err(), OperandError::OperandSizeMismatch);
-            assert_eq!(Operand::Indexed(42, RegisterName::Y).get_u16(&cpu).unwrap_err(), OperandError::OperandSizeMismatch);
-            assert_eq!(Operand::PreIndexedIndirect(42).get_u16(&cpu).unwrap_err(), OperandError::OperandSizeMismatch);
-            assert_eq!(Operand::PostIndexedIndirect(42).get_u16(&cpu).unwrap_err(), OperandError::OperandSizeMismatch);
-        }
-
-        #[test]
-        pub fn get_returns_error_if_given_u16_operand() {
-            let cpu = Mos6502::with_fixed_memory(10);
-            let val = Operand::Indirect(1).get_u8(&cpu).unwrap_err();
-            assert_eq!(val, OperandError::OperandSizeMismatch);
         }
     }
 }

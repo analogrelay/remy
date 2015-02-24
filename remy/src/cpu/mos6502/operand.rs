@@ -14,7 +14,8 @@ pub enum Operand {
     Indexed(u16, mos6502::RegisterName),
     Indirect(u16),
     PreIndexedIndirect(u8),
-    PostIndexedIndirect(u8)
+    PostIndexedIndirect(u8),
+    Register(mos6502::RegisterName)
 }
 
 #[derive(Clone,Debug,Eq,PartialEq)]
@@ -39,6 +40,7 @@ impl Operand {
             Operand::Indexed(addr, r)           => try!(cpu.mem.get_u8(addr as usize + cpu.registers.get(r) as usize)),
             Operand::PreIndexedIndirect(addr)   => try!(cpu.mem.get_u8(try!(cpu.mem.get_le_u16(addr as usize + cpu.registers.x as usize)) as usize)),
             Operand::PostIndexedIndirect(addr)  => try!(cpu.mem.get_u8(try!(cpu.mem.get_le_u16(addr as usize)) as usize + cpu.registers.y as usize)),
+            Operand::Register(r)                => cpu.registers.get(r),
             _                                   => return Err(OperandError::OperandSizeMismatch),
         })
     }
@@ -55,6 +57,7 @@ impl Operand {
             Operand::Accumulator        => Ok(cpu.registers.a = val),
             Operand::Absolute(addr)     => Ok(try!(cpu.mem.set_u8(addr as usize, val))),
             Operand::Indexed(addr, r)   => Ok(try!(cpu.mem.set_u8(addr as usize + cpu.registers.get(r) as usize, val))),
+            Operand::Register(r)        => Ok(cpu.registers.set(r, val)),
             _                           => Err(OperandError::ReadOnlyOperand)
         }
     }

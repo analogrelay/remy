@@ -72,6 +72,14 @@ impl Registers {
         }
     }
 
+    pub fn set(&mut self, r: RegisterName, val: u8) {
+        match r {
+            RegisterName::A => self.a = val,
+            RegisterName::X => self.x = val,
+            RegisterName::Y => self.y = val
+        }
+    }
+
     pub fn carry(&self) -> bool {
         self.flags.intersects(Flags::CARRY())
     }

@@ -2,7 +2,7 @@ use std::error;
 
 use mem;
 
-use cpu::mos6502::{Mos6502,Operand,OperandError};
+use cpu::mos6502::{Mos6502,Operand,OperandError,RegisterName};
 
 mod adc;
 mod and;
@@ -25,8 +25,6 @@ mod cmp;
 mod cpx;
 mod cpy;
 mod dec;
-mod dex;
-mod dey;
 mod eor;
 mod inc;
 
@@ -133,10 +131,12 @@ impl Instruction {
             Instruction::CPX(op) => cpx::exec(cpu, op),
             Instruction::CPY(op) => cpy::exec(cpu, op),
             Instruction::DEC(op) => dec::exec(cpu, op),
-            Instruction::DEX => dex::exec(cpu),
-            Instruction::DEY => dey::exec(cpu),
+            Instruction::DEX => dec::exec(cpu, Operand::Register(RegisterName::X)),
+            Instruction::DEY => dec::exec(cpu, Operand::Register(RegisterName::Y)),
             Instruction::EOR(op) => eor::exec(cpu, op),
             Instruction::INC(op) => inc::exec(cpu, op),
+            Instruction::INX => inc::exec(cpu, Operand::Register(RegisterName::X)),
+            Instruction::INY => inc::exec(cpu, Operand::Register(RegisterName::Y)),
 			_ => Err(ExecError::UnknownInstruction)
 		}
 	}

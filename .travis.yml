@@ -1,6 +1,6 @@
 env:
   global:
-    - secure: RQAHUeFjcncBCB3Ctw/qksVweGB4Bz8m/HgDTFyr8W9vmrZHoA78SvjkBxgues9ezp31qCApIs98gD17WkAEpPHylHX/4dkaJhgnWgNLeVFvo/vwR1y48vrqE1SblGmGaO/JKVhJdrtcJ16LGuC5Wjl3imhFE0rdqnBlD0/vkAM=
+    - secure: X7Rkx8Ymagj25MkEBV4nwOZYlWXJl/mBHkfFpZ3DeYmxqbln8o5zFqAL0pDm+e9A1ksc8Q7wJhAQDdDaWME8/p/4beEWVISYLAKwERhWcJF1OZxycaqDqf5GLSIhR35b4WETJ4hjugTNBsrgJ7jAB4hyOplimBohGU6ySMGT5zE=
 
 language: rust
 script: make travis

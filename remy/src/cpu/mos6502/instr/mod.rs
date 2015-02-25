@@ -2,28 +2,16 @@ use std::error;
 
 use mem;
 
-use cpu::mos6502::{Mos6502,Operand,OperandError,RegisterName};
+use cpu::mos6502::{Mos6502,Operand,OperandError,RegisterName,Flags};
 
 mod adc;
 mod and;
 mod asl;
-mod bcc;
-mod bcs;
-mod beq;
 mod bit;
-mod bmi;
-mod bne;
-mod bpl;
+mod branch;
 mod brk;
-mod bvc;
-mod bvs;
-mod clc;
-mod cld;
-mod cli;
-mod clv;
-mod cmp;
-mod cpx;
-mod cpy;
+mod clear_flag;
+mod compare;
 mod dec;
 mod eor;
 mod inc;
@@ -34,35 +22,18 @@ pub enum Instruction {
 	ADC(Operand),
 	AND(Operand),
 	ASL(Operand),
-	BCC(i8),
-	BCS(i8),
-	BEQ(i8),
+    BranchIfClear(i8, Flags),
+    BranchIfSet(i8, Flags),
 	BIT(Operand),
-	BMI(i8),
-	BNE(i8),
-	BPL(i8),
 	BRK,
-	BVC(i8),
-	BVS(i8),
-	CLC,
-	CLD,
-	CLI,
-	CLV,
-	CMP(Operand),
-	CPX(Operand),
-	CPY(Operand),
+    ClearFlag(Flags),
+    Compare(RegisterName, Operand),
 	DEC(Operand),
-	DEX,
-	DEY,
 	EOR(Operand),
 	INC(Operand),
-	INX,
-	INY,
 	JMP(Operand),
 	JSR(Operand),
-	LDA(Operand),
-	LDX(Operand),
-	LDY(Operand),
+	Load(RegisterName, Operand),
 	LSR(Operand),
 	NOP,
 	ORA(Operand),
@@ -75,18 +46,9 @@ pub enum Instruction {
 	RTI,
 	RTS,
 	SBC(Operand),
-	SEC,
-	SED,
-	SEI,
-	STA(Operand),
-	STX(Operand),
-	STY(Operand),
-	TAX,
-	TAY,
-	TSX,
-	TXA,
-	TXS,
-	TYA,
+    SetFlag(Flags),
+    Store(RegisterName, Operand),
+    Transfer(RegisterName, RegisterName)
 }
 
 #[derive(Clone,Debug,Eq,PartialEq)]
@@ -115,30 +77,15 @@ impl Instruction {
 			Instruction::ADC(op) => adc::exec(cpu, op),
 			Instruction::AND(op) => and::exec(cpu, op),
 			Instruction::ASL(op) => asl::exec(cpu, op), 
-			Instruction::BCC(offset) => bcc::exec(cpu, offset),
-            Instruction::BCS(offset) => bcs::exec(cpu, offset), 
-			Instruction::BEQ(offset) => beq::exec(cpu, offset), 
+            Instruction::BranchIfClear(offset, flag_selector) => branch::if_clear(cpu, offset, flag_selector),
+            Instruction::BranchIfSet(offset, flag_selector) => branch::if_set(cpu, offset, flag_selector),
 			Instruction::BIT(op) => bit::exec(cpu, op), 
-			Instruction::BMI(offset) => bmi::exec(cpu, offset), 
-			Instruction::BNE(offset) => bne::exec(cpu, offset), 
-			Instruction::BPL(offset) => bpl::exec(cpu, offset),
 			Instruction::BRK => brk::exec(cpu), 
-			Instruction::BVC(offset) => bvc::exec(cpu, offset), 
-			Instruction::BVS(offset) => bvs::exec(cpu, offset), 
-			Instruction::CLC => clc::exec(cpu), 
-			Instruction::CLD => cld::exec(cpu), 
-			Instruction::CLI => cli::exec(cpu), 
-			Instruction::CLV => clv::exec(cpu), 
-			Instruction::CMP(op) => cmp::exec(cpu, op), 
-            Instruction::CPX(op) => cpx::exec(cpu, op),
-            Instruction::CPY(op) => cpy::exec(cpu, op),
+            Instruction::ClearFlag(flag_selector) => clear_flag::exec(cpu, flag_selector),
+            Instruction::Compare(reg, op) => compare::exec(cpu, reg, op),
             Instruction::DEC(op) => dec::exec(cpu, op),
-            Instruction::DEX => dec::exec(cpu, Operand::Register(RegisterName::X)),
-            Instruction::DEY => dec::exec(cpu, Operand::Register(RegisterName::Y)),
             Instruction::EOR(op) => eor::exec(cpu, op),
             Instruction::INC(op) => inc::exec(cpu, op),
-            Instruction::INX => inc::exec(cpu, Operand::Register(RegisterName::X)),
-            Instruction::INY => inc::exec(cpu, Operand::Register(RegisterName::Y)),
             Instruction::JMP(op) => jmp::exec(cpu, op),
 			_ => Err(ExecError::UnknownInstruction)
 		}

@@ -16,6 +16,7 @@ mod dec;
 mod eor;
 mod inc;
 mod jmp;
+mod jsr;
 
 #[derive(Copy,Debug,Eq,PartialEq)]
 pub enum Instruction {
@@ -32,7 +33,7 @@ pub enum Instruction {
 	EOR(Operand),
 	INC(Operand),
 	JMP(Operand),
-	JSR(Operand),
+	JSR(u16),
 	Load(RegisterName, Operand),
 	LSR(Operand),
 	NOP,
@@ -87,6 +88,7 @@ impl Instruction {
             Instruction::EOR(op) => eor::exec(cpu, op),
             Instruction::INC(op) => inc::exec(cpu, op),
             Instruction::JMP(op) => jmp::exec(cpu, op),
+            Instruction::JSR(addr) => jsr::exec(cpu, addr),
 			_ => Err(ExecError::UnknownInstruction)
 		}
 	}

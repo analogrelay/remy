@@ -90,6 +90,7 @@ impl Instruction {
             Instruction::INC(op) => inc::exec(cpu, op),
             Instruction::JMP(op) => jmp::exec(cpu, op),
             Instruction::JSR(addr) => jsr::exec(cpu, addr),
+            Instruction::Load(reg, op) => load::exec(cpu, reg, op),
 			_ => Err(ExecError::UnknownInstruction)
 		}
 	}

@@ -14,4 +14,4 @@ all: build test
 
 rebuild: clean build
 
-travis: all
+travis: all doc

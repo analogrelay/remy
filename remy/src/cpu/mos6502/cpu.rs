@@ -76,7 +76,6 @@ impl Registers {
             RegisterName::Y => self.y = val
         }
     }
-
 }
 
 #[derive(Copy,Debug,Eq,PartialEq)]

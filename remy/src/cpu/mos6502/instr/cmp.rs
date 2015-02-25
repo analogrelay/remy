@@ -5,17 +5,17 @@ pub fn exec<M>(cpu: &mut Mos6502<M>, op: Operand) -> Result<(), ExecError> where
     let val = try!(op.get_u8(cpu));
     let t = (cpu.registers.a as isize) - (val as isize);
 
-    cpu.registers.clear_flags(
+    cpu.flags.clear(
         Flags::SIGN() |
         Flags::CARRY() |
         Flags::ZERO());
 
     if t < 0 {
-        cpu.registers.set_flags(Flags::SIGN());
+        cpu.flags.set(Flags::SIGN());
     } else if t >= 0 {
-        cpu.registers.set_flags(Flags::CARRY());
+        cpu.flags.set(Flags::CARRY());
         if t == 0 {
-            cpu.registers.set_flags(Flags::ZERO());
+            cpu.flags.set(Flags::ZERO());
         }
     }
     Ok(())
@@ -31,60 +31,60 @@ mod test {
     pub fn cmp_sets_sign_bit_if_operand_greater_than_a() {
         let mut cpu = init_cpu();
         cmp::exec(&mut cpu, Operand::Immediate(43)).unwrap();
-        assert!(cpu.registers.has_flags(Flags::SIGN()));
+        assert!(cpu.flags.intersects(Flags::SIGN()));
     }
 
     #[test]
     pub fn cmp_clears_sign_bit_if_operand_less_than_a() {
         let mut cpu = init_cpu();
-        cpu.registers.set_flags(Flags::SIGN());
+        cpu.flags.set(Flags::SIGN());
         cmp::exec(&mut cpu, Operand::Immediate(41)).unwrap();
-        assert!(!cpu.registers.has_flags(Flags::SIGN()));
+        assert!(!cpu.flags.intersects(Flags::SIGN()));
     }
 
     #[test]
     pub fn cmp_sets_carry_bit_if_a_greater_than_operand() {
         let mut cpu = init_cpu();
         cmp::exec(&mut cpu, Operand::Immediate(41)).unwrap();
-        assert!(cpu.registers.has_flags(Flags::CARRY()));
+        assert!(cpu.flags.intersects(Flags::CARRY()));
     }
 
     #[test]
     pub fn cmp_sets_carry_bit_if_a_equal_to_operand() {
         let mut cpu = init_cpu();
         cmp::exec(&mut cpu, Operand::Immediate(42)).unwrap();
-        assert!(cpu.registers.has_flags(Flags::CARRY()));
+        assert!(cpu.flags.intersects(Flags::CARRY()));
     }
 
     #[test]
     pub fn cmp_clears_carry_bit_if_a_less_than_operand() {
         let mut cpu = init_cpu();
-        cpu.registers.set_flags(Flags::CARRY());
+        cpu.flags.set(Flags::CARRY());
         cmp::exec(&mut cpu, Operand::Immediate(43)).unwrap();
-        assert!(!cpu.registers.has_flags(Flags::CARRY()));
+        assert!(!cpu.flags.intersects(Flags::CARRY()));
     }
 
     #[test]
     pub fn cmp_sets_zero_bit_if_a_equal_to_operand() {
         let mut cpu = init_cpu();
         cmp::exec(&mut cpu, Operand::Immediate(42)).unwrap();
-        assert!(cpu.registers.has_flags(Flags::ZERO()));
+        assert!(cpu.flags.intersects(Flags::ZERO()));
     }
 
     #[test]
     pub fn cmp_clears_zero_bit_if_a_less_than_operand() {
         let mut cpu = init_cpu();
-        cpu.registers.set_flags(Flags::ZERO());
+        cpu.flags.set(Flags::ZERO());
         cmp::exec(&mut cpu, Operand::Immediate(43)).unwrap();
-        assert!(!cpu.registers.has_flags(Flags::ZERO()));
+        assert!(!cpu.flags.intersects(Flags::ZERO()));
     }
 
     #[test]
     pub fn cmp_clears_zero_bit_if_a_greater_than_operand() {
         let mut cpu = init_cpu();
-        cpu.registers.set_flags(Flags::ZERO());
+        cpu.flags.set(Flags::ZERO());
         cmp::exec(&mut cpu, Operand::Immediate(41)).unwrap();
-        assert!(!cpu.registers.has_flags(Flags::ZERO()));
+        assert!(!cpu.flags.intersects(Flags::ZERO()));
     }
 
     fn init_cpu() -> Mos6502<VirtualMemory<'static>> {

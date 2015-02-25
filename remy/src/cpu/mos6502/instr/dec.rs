@@ -3,12 +3,12 @@ use cpu::mos6502::{ExecError,Mos6502,Flags,Operand};
 
 pub fn exec<M>(cpu: &mut Mos6502<M>, op: Operand) -> Result<(), ExecError> where M: Memory {
     let new_val = (try!(op.get_u8(cpu)) - 1) & 0xFF;
-    cpu.registers.clear_flags(Flags::SIGN() | Flags::ZERO());
+    cpu.flags.clear(Flags::SIGN() | Flags::ZERO());
     if (new_val & 0b1000000) != 0 {
-        cpu.registers.set_flags(Flags::SIGN());
+        cpu.flags.set(Flags::SIGN());
     }
     if new_val == 0 {
-        cpu.registers.set_flags(Flags::ZERO());
+        cpu.flags.set(Flags::ZERO());
     }
     try!(op.set_u8(cpu, new_val));
     Ok(())
@@ -25,16 +25,16 @@ mod test {
         let mut cpu = init_cpu();
         cpu.mem.set_u8(0, 0).unwrap();
         dec::exec(&mut cpu, Operand::Absolute(0)).unwrap();
-        assert!(cpu.registers.has_flags(Flags::SIGN()));
+        assert!(cpu.flags.intersects(Flags::SIGN()));
     }
 
     #[test]
     fn dec_clears_sign_flag_if_new_value_is_non_negative() {
         let mut cpu = init_cpu();
         cpu.mem.set_u8(0, 2).unwrap();
-        cpu.registers.set_flags(Flags::SIGN());
+        cpu.flags.set(Flags::SIGN());
         dec::exec(&mut cpu, Operand::Absolute(0)).unwrap();
-        assert!(!cpu.registers.has_flags(Flags::SIGN()));
+        assert!(!cpu.flags.intersects(Flags::SIGN()));
     }
 
     #[test]
@@ -42,16 +42,16 @@ mod test {
         let mut cpu = init_cpu();
         cpu.mem.set_u8(0, 1).unwrap();
         dec::exec(&mut cpu, Operand::Absolute(0)).unwrap();
-        assert!(cpu.registers.has_flags(Flags::ZERO()));
+        assert!(cpu.flags.intersects(Flags::ZERO()));
     }
 
     #[test]
     fn dec_clears_zero_flag_if_new_value_is_nonzero() {
         let mut cpu = init_cpu();
         cpu.mem.set_u8(0, 2).unwrap();
-        cpu.registers.set_flags(Flags::ZERO());
+        cpu.flags.set(Flags::ZERO());
         dec::exec(&mut cpu, Operand::Absolute(0)).unwrap();
-        assert!(!cpu.registers.has_flags(Flags::ZERO()));
+        assert!(!cpu.flags.intersects(Flags::ZERO()));
     }
 
     #[test]

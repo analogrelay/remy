@@ -2,9 +2,9 @@ use mem::Memory;
 use cpu::mos6502::{ExecError,Operand,Mos6502};
 
 pub fn exec<M>(cpu: &mut Mos6502<M>, op: Operand) -> Result<(), ExecError> where M: Memory {
-	let (a, c) = ::util::add_u8_with_carry(cpu.registers.a, try!(op.get_u8(cpu)), cpu.registers.carry());
+	let (a, c) = ::util::add_u8_with_carry(cpu.registers.a, try!(op.get_u8(cpu)), cpu.flags.carry());
 	cpu.registers.a = a;
-	cpu.registers.set_arith_flags(a as isize, c);
+	cpu.flags.set_arith(a as isize, c);
 	Ok(())
 }
 
@@ -24,7 +24,7 @@ mod test {
 	#[test]
 	pub fn adc_adds_carry_value_when_carry_flag_is_set() {
 		let mut cpu = init_cpu();
-		cpu.registers.set_flags(Flags::CARRY()); // Set CARRY()
+		cpu.flags.set(Flags::CARRY()); // Set CARRY()
 		adc::exec(&mut cpu, Operand::Immediate(1)).unwrap();
 		assert_eq!(cpu.registers.a, 44);
 	}
@@ -34,7 +34,7 @@ mod test {
 		let mut cpu = init_cpu();
 		adc::exec(&mut cpu, Operand::Immediate(255)).unwrap();
 		assert_eq!(cpu.registers.a, 41);
-		assert_eq!(cpu.registers.get_flags(), Flags::CARRY() | Flags::RESERVED());
+		assert_eq!(cpu.flags, Flags::CARRY() | Flags::RESERVED());
 	}
 
 	fn init_cpu() -> Mos6502<VirtualMemory<'static>> {

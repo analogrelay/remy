@@ -6,10 +6,10 @@ pub fn exec<M>(cpu: &mut Mos6502<M>, op: Operand) -> Result<(), ExecError> where
     let res = cpu.registers.a & opv;
     cpu.registers.a = res;
     if res == 0 {
-        cpu.registers.set_flags(Flags::ZERO());
+        cpu.flags.set(Flags::ZERO());
     }
     else if res & 0x80 != 0 {
-        cpu.registers.set_flags(Flags::SIGN());
+        cpu.flags.set(Flags::SIGN());
     }
     Ok(())
 }
@@ -32,7 +32,7 @@ mod test {
         let mut cpu = init_cpu();
         and::exec(&mut cpu, Operand::Immediate(0)).unwrap();
         assert_eq!(cpu.registers.a, 0);
-        assert_eq!(cpu.registers.get_flags(), Flags::ZERO() | Flags::RESERVED());
+        assert_eq!(cpu.flags, Flags::ZERO() | Flags::RESERVED());
     }
 
     #[test]
@@ -41,7 +41,7 @@ mod test {
         cpu.registers.a = 0xFF;
         and::exec(&mut cpu, Operand::Immediate(0xFF)).unwrap();
         assert_eq!(cpu.registers.a, 0xFF);
-        assert_eq!(cpu.registers.get_flags(), Flags::SIGN() | Flags::RESERVED());
+        assert_eq!(cpu.flags, Flags::SIGN() | Flags::RESERVED());
     }
     
     fn init_cpu() -> Mos6502<VirtualMemory<'static>> {

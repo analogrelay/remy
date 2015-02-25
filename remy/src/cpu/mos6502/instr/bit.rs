@@ -6,21 +6,21 @@ pub fn exec<M>(cpu: &mut Mos6502<M>, op: Operand) -> Result<(), ExecError> where
     let t = cpu.registers.a & m;
 
     if m & 0x80 != 0 {
-        cpu.registers.set_flags(Flags::SIGN());
+        cpu.flags.set(Flags::SIGN());
     } else {
-        cpu.registers.clear_flags(Flags::SIGN());
+        cpu.flags.clear(Flags::SIGN());
     }
 
     if m & 0x40 != 0 {
-        cpu.registers.set_flags(Flags::OVERFLOW());
+        cpu.flags.set(Flags::OVERFLOW());
     } else {
-        cpu.registers.clear_flags(Flags::OVERFLOW());
+        cpu.flags.clear(Flags::OVERFLOW());
     }
 
     if t == 0 {
-        cpu.registers.set_flags(Flags::ZERO());
+        cpu.flags.set(Flags::ZERO());
     } else {
-        cpu.registers.clear_flags(Flags::ZERO());
+        cpu.flags.clear(Flags::ZERO());
     }
 
     Ok(())
@@ -37,16 +37,16 @@ mod test {
         let mut cpu = init_cpu();
         cpu.registers.a = 0xFF;
         bit::exec(&mut cpu, Operand::Immediate(0x80)).unwrap();
-        assert_eq!(cpu.registers.get_flags(), Flags::SIGN() | Flags::RESERVED());
+        assert_eq!(cpu.flags, Flags::SIGN() | Flags::RESERVED());
     }
 
     #[test]
     pub fn bit_clears_sign_bit_if_bit_7_of_operand_is_not_set() {
         let mut cpu = init_cpu();
         cpu.registers.a = 0xFF;
-        cpu.registers.set_flags(Flags::SIGN() | Flags::RESERVED());
+        cpu.flags.set(Flags::SIGN() | Flags::RESERVED());
         bit::exec(&mut cpu, Operand::Immediate(0x01)).unwrap();
-        assert_eq!(cpu.registers.get_flags(), Flags::RESERVED());
+        assert_eq!(cpu.flags, Flags::RESERVED());
     }
 
     #[test]
@@ -54,16 +54,16 @@ mod test {
         let mut cpu = init_cpu();
         cpu.registers.a = 0xFF;
         bit::exec(&mut cpu, Operand::Immediate(0x40)).unwrap();
-        assert_eq!(cpu.registers.get_flags(), Flags::OVERFLOW() | Flags::RESERVED());
+        assert_eq!(cpu.flags, Flags::OVERFLOW() | Flags::RESERVED());
     }
 
     #[test]
     pub fn bit_clears_overflow_bit_if_bit_6_of_operand_is_not_set() {
         let mut cpu = init_cpu();
         cpu.registers.a = 0xFF;
-        cpu.registers.set_flags(Flags::OVERFLOW() | Flags::RESERVED());
+        cpu.flags.set(Flags::OVERFLOW() | Flags::RESERVED());
         bit::exec(&mut cpu, Operand::Immediate(0x01)).unwrap();
-        assert_eq!(cpu.registers.get_flags(), Flags::RESERVED());
+        assert_eq!(cpu.flags, Flags::RESERVED());
     }
 
     #[test]
@@ -71,16 +71,16 @@ mod test {
         let mut cpu = init_cpu();
         cpu.registers.a = 0x02;
         bit::exec(&mut cpu, Operand::Immediate(0x01)).unwrap();
-        assert_eq!(cpu.registers.get_flags(), Flags::ZERO() | Flags::RESERVED());
+        assert_eq!(cpu.flags, Flags::ZERO() | Flags::RESERVED());
     }
 
     #[test]
     pub fn bit_clears_zero_flag_if_result_of_masking_operand_with_a_is_nonzero() {
         let mut cpu = init_cpu();
         cpu.registers.a = 0x02;
-        cpu.registers.set_flags(Flags::ZERO() | Flags::RESERVED());
+        cpu.flags.set(Flags::ZERO() | Flags::RESERVED());
         bit::exec(&mut cpu, Operand::Immediate(0x03)).unwrap();
-        assert_eq!(cpu.registers.get_flags(), Flags::RESERVED());
+        assert_eq!(cpu.flags, Flags::RESERVED());
     }
 
     fn init_cpu() -> Mos6502<VirtualMemory<'static>> {

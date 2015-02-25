@@ -67,7 +67,7 @@ impl Operand {
 mod test {
     mod operand {
         use mem::Memory;
-        use cpu::mos6502::{Mos6502,Operand,OperandError,RegisterName};
+        use cpu::mos6502::{Mos6502,Operand,RegisterName};
 
         #[test]
         pub fn set_accumulator_puts_value_in_accumulator() {

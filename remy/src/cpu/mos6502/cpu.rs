@@ -14,6 +14,7 @@ pub enum RegisterName {
 
 pub struct Mos6502<M> where M: mem::Memory {
     pub registers: Registers,
+    pub flags: Flags,
     pub mem: M,
     pub pc: pc::ProgramCounter
 }
@@ -29,6 +30,7 @@ impl<M> Mos6502<M> where M: mem::Memory {
         Mos6502 {
             registers: Registers::new(),
             mem: mem,
+            flags: Flags::RESERVED(),
             pc: pc::ProgramCounter::new()
         }
     }
@@ -80,33 +82,54 @@ impl Registers {
         }
     }
 
+}
+
+#[derive(Copy,Debug,Eq,PartialEq)]
+pub struct Flags {
+    pub bits: u8
+}
+
+impl Flags {
+    #[inline] #[allow(non_snake_case)] pub fn SIGN() -> Flags        { Flags::new(0b10000000) }
+    #[inline] #[allow(non_snake_case)] pub fn OVERFLOW() -> Flags    { Flags::new(0b01000000) }
+    #[inline] #[allow(non_snake_case)] pub fn RESERVED() -> Flags    { Flags::new(0b00100000) }
+    #[inline] #[allow(non_snake_case)] pub fn BREAK() -> Flags       { Flags::new(0b00010000) }
+    #[inline] #[allow(non_snake_case)] pub fn BCD() -> Flags         { Flags::new(0b00001000) }
+    #[inline] #[allow(non_snake_case)] pub fn INTERRUPT() -> Flags   { Flags::new(0b00000100) }
+    #[inline] #[allow(non_snake_case)] pub fn ZERO() -> Flags        { Flags::new(0b00000010) }
+    #[inline] #[allow(non_snake_case)] pub fn CARRY() -> Flags       { Flags::new(0b00000001) }
+    #[inline] #[allow(non_snake_case)] pub fn NONE() -> Flags        { Flags::new(0b00000000) }
+    #[inline] #[allow(non_snake_case)] pub fn ARITHMETIC() -> Flags  { Flags::new(0b11000011) }
+
+    pub fn new(bits: u8) -> Flags {
+        Flags { bits: bits }
+    }
+
+    pub fn intersects(&self, other: Flags) -> bool {
+        (*self & other) != Flags::NONE()
+    }
+
     pub fn carry(&self) -> bool {
-        self.flags.intersects(Flags::CARRY())
+        self.intersects(Flags::CARRY())
     }
 
-    pub fn has_flags(&self, flags: Flags) -> bool {
-        self.flags.intersects(flags)
+    pub fn clear(&mut self, flags: Flags) {
+        let new_val = *self & (!flags);
+        self.replace(new_val);
     }
 
-    pub fn get_flags(&self) -> Flags {
-        self.flags
+    pub fn set(&mut self, flags: Flags) {
+        let new_val = *self | flags;
+        self.replace(new_val);
     }
 
-    pub fn clear_flags(&mut self, flags: Flags) {
-        self.flags = self.flags & (!flags)
+    pub fn replace(&mut self, flags: Flags) {
+        self.bits = (flags | Flags::RESERVED()).bits;
     }
 
-    pub fn set_flags(&mut self, flags: Flags) {
-        self.flags = self.flags | flags;
-    }
-
-    pub fn replace_flags(&mut self, flags: Flags) {
-        self.flags = flags | Flags::RESERVED();
-    }
-
-    pub fn set_arith_flags(&mut self, val: isize, carry: bool) {
+    pub fn set_arith(&mut self, val: isize, carry: bool) {
         // Clear arithmetic flags
-        let mut flags = self.flags & !Flags::ARITHMETIC();
+        let mut flags = *self & !Flags::ARITHMETIC();
 
         if carry {
             flags = flags | Flags::CARRY();
@@ -123,32 +146,7 @@ impl Registers {
                 Flags::NONE()
             };
 
-        self.replace_flags(flags);
-    }
-}
-
-#[derive(Copy,Debug,Eq,PartialEq)]
-pub struct Flags(u8);
-
-impl Flags {
-    #[inline] #[allow(non_snake_case)] pub fn SIGN() -> Flags        { Flags(0b10000000) }
-    #[inline] #[allow(non_snake_case)] pub fn OVERFLOW() -> Flags    { Flags(0b01000000) }
-    #[inline] #[allow(non_snake_case)] pub fn RESERVED() -> Flags    { Flags(0b00100000) }
-    #[inline] #[allow(non_snake_case)] pub fn BREAK() -> Flags       { Flags(0b00010000) }
-    #[inline] #[allow(non_snake_case)] pub fn BCD() -> Flags         { Flags(0b00001000) }
-    #[inline] #[allow(non_snake_case)] pub fn INTERRUPT() -> Flags   { Flags(0b00000100) }
-    #[inline] #[allow(non_snake_case)] pub fn ZERO() -> Flags        { Flags(0b00000010) }
-    #[inline] #[allow(non_snake_case)] pub fn CARRY() -> Flags       { Flags(0b00000001) }
-    #[inline] #[allow(non_snake_case)] pub fn NONE() -> Flags        { Flags(0b00000000) }
-    #[inline] #[allow(non_snake_case)] pub fn ARITHMETIC() -> Flags  { Flags(0b11000011) }
-
-    pub fn intersects(&self, other: Flags) -> bool {
-        (*self & other) != Flags::NONE()
-    }
-
-    pub fn bits(self) -> u8 {
-        let Flags(x) = self;
-        x
+        self.replace(flags);
     }
 }
 
@@ -156,9 +154,7 @@ impl ::std::ops::BitOr for Flags {
     type Output = Flags;
 
     fn bitor(self, rhs: Flags) -> Flags {
-        let Flags(l) = self;
-        let Flags(r) = rhs;
-        Flags(l | r)
+        Flags::new(self.bits | rhs.bits)
     }
 }
 
@@ -166,9 +162,7 @@ impl ::std::ops::BitAnd for Flags {
     type Output = Flags;
 
     fn bitand(self, rhs: Flags) -> Flags {
-        let Flags(l) = self;
-        let Flags(r) = rhs;
-        Flags(l & r)
+        Flags::new(self.bits & rhs.bits)
     }
 }
 
@@ -176,8 +170,7 @@ impl ::std::ops::Not for Flags {
     type Output = Flags;
 
     fn not(self) -> Flags {
-        let Flags(l) = self;
-        Flags(!l)
+        Flags::new(!self.bits)
     }
 }
 
@@ -228,122 +221,119 @@ mod test {
         }
     }
 
-    mod mos6502_registers {
-        mod set_arith_flags {
-            use cpu::mos6502;
-            use cpu::mos6502::Registers;
+    mod flags {
+        use cpu::mos6502;
+        use cpu::mos6502::Flags;
 
-            #[test]
-            pub fn sets_carry_flag_if_carry_true() {
-                let mut r = Registers::new();
-                r.set_arith_flags(10, true);
-                assert_eq!(r.get_flags(), mos6502::Flags::CARRY() | mos6502::Flags::RESERVED());
-            }
-
-            #[test]
-            pub fn unsets_carry_flag_if_carry_false() {
-                let mut r = Registers::with_flags(mos6502::Flags::CARRY());
-                r.set_arith_flags(10, false);
-                assert_eq!(r.get_flags(), mos6502::Flags::RESERVED());
-            }
-
-            #[test]
-            pub fn sets_zero_flag_if_value_is_zero() {
-                let mut r = Registers::new();
-                r.set_arith_flags(0, false);
-                assert_eq!(r.get_flags(), mos6502::Flags::ZERO() | mos6502::Flags::RESERVED());
-            }
-
-            #[test]
-            pub fn unsets_zero_flag_if_value_is_nonzero() {
-                let mut r = Registers::with_flags(mos6502::Flags::ZERO());
-                r.set_arith_flags(42, false);
-                assert_eq!(r.get_flags(), mos6502::Flags::RESERVED());
-            }
-
-            #[test]
-            pub fn sets_overflow_flag_if_value_is_higher_than_255() {
-                let mut r = Registers::new();
-                r.set_arith_flags(1024, false);
-                assert_eq!(r.get_flags(), mos6502::Flags::OVERFLOW() | mos6502::Flags::RESERVED());
-            }
-
-            #[test]
-            pub fn unsets_overflow_flag_if_value_is_less_than_or_equal_to_255() {
-                let mut r = Registers::with_flags(mos6502::Flags::OVERFLOW());
-                r.set_arith_flags(128, false);
-                assert_eq!(r.get_flags(), mos6502::Flags::RESERVED());
-            }
-
-            #[test]
-            pub fn sets_sign_flag_if_value_is_negative() {
-                let mut r = Registers::new();
-                r.set_arith_flags(-10, false);
-                assert_eq!(r.get_flags(), mos6502::Flags::SIGN() | mos6502::Flags::RESERVED());
-            }
-
-            #[test]
-            pub fn unsets_sign_flag_if_value_is_non_negative() {
-                let mut r = Registers::with_flags(mos6502::Flags::SIGN());
-                r.set_arith_flags(128, false);
-                assert_eq!(r.get_flags(), mos6502::Flags::RESERVED());
-            }
-
-            #[test]
-            pub fn does_not_change_non_arith_flags() {
-                let mut r = Registers::with_flags(!mos6502::Flags::ARITHMETIC());
-                r.set_arith_flags(-10, false);
-                assert_eq!(r.get_flags(), (!mos6502::Flags::ARITHMETIC()) | mos6502::Flags::SIGN() | mos6502::Flags::RESERVED());
-            }
-
-            #[test]
-            pub fn sets_all_relevant_flags() {
-                let mut r = Registers::new();
-                r.set_arith_flags(0, true);
-                assert_eq!(r.get_flags(), mos6502::Flags::CARRY() | mos6502::Flags::ZERO() | mos6502::Flags::RESERVED());
-            }
+        #[test]
+        pub fn sets_carry_flag_if_carry_true() {
+            let mut r = Flags::NONE();
+            r.set_arith(10, true);
+            assert_eq!(r, mos6502::Flags::CARRY() | mos6502::Flags::RESERVED());
         }
 
-        mod get {
-            use cpu::mos6502::{Registers, RegisterName};
-
-            #[test]
-            pub fn gets_a() {
-                let mut r = Registers::new();
-                r.a = 42;
-                assert_eq!(r.get(RegisterName::A), 42);
-            }
-
-            #[test]
-            pub fn gets_x() {
-                let mut r = Registers::new();
-                r.x = 42;
-                assert_eq!(r.get(RegisterName::X), 42);
-            }
-
-            #[test]
-            pub fn gets_y() {
-                let mut r = Registers::new();
-                r.y = 42;
-                assert_eq!(r.get(RegisterName::Y), 42);
-            }
+        #[test]
+        pub fn unsets_carry_flag_if_carry_false() {
+            let mut r = Flags::CARRY();
+            r.set_arith(10, false);
+            assert_eq!(r, Flags::RESERVED());
         }
 
-        mod carry {
-            use cpu::mos6502;
-            use cpu::mos6502::Registers;
+        #[test]
+        pub fn sets_zero_flag_if_value_is_zero() {
+            let mut r = Flags::NONE();
+            r.set_arith(0, false);
+            assert_eq!(r, Flags::ZERO() | Flags::RESERVED());
+        }
 
-            #[test]
-            pub fn returns_true_if_carry_bit_set() {
-                let r = Registers::with_flags(mos6502::Flags::CARRY());
-                assert!(r.carry());
-            }
+        #[test]
+        pub fn unsets_zero_flag_if_value_is_nonzero() {
+            let mut r = Flags::ZERO();
+            r.set_arith(42, false);
+            assert_eq!(r, Flags::RESERVED());
+        }
 
-            #[test]
-            pub fn returns_false_if_carry_bit_not_set() {
-                let r = Registers::with_flags(mos6502::Flags::SIGN());
-                assert!(!r.carry());
-            }
+        #[test]
+        pub fn sets_overflow_flag_if_value_is_higher_than_255() {
+            let mut r = Flags::NONE();
+            r.set_arith(1024, false);
+            assert_eq!(r, Flags::OVERFLOW() | Flags::RESERVED());
+        }
+
+        #[test]
+        pub fn unsets_overflow_flag_if_value_is_less_than_or_equal_to_255() {
+            let mut r = Flags::OVERFLOW();
+            r.set_arith(128, false);
+            assert_eq!(r, Flags::RESERVED());
+        }
+
+        #[test]
+        pub fn sets_sign_flag_if_value_is_negative() {
+            let mut r = Flags::NONE();
+            r.set_arith(-10, false);
+            assert_eq!(r, Flags::SIGN() | Flags::RESERVED());
+        }
+
+        #[test]
+        pub fn unsets_sign_flag_if_value_is_non_negative() {
+            let mut r = Flags::SIGN();
+            r.set_arith(128, false);
+            assert_eq!(r, Flags::RESERVED());
+        }
+
+        #[test]
+        pub fn does_not_change_non_arith_flags() {
+            let mut r = !Flags::ARITHMETIC();
+            r.set_arith(-10, false);
+            assert_eq!(r, (!Flags::ARITHMETIC()) | Flags::SIGN() | Flags::RESERVED());
+        }
+
+        #[test]
+        pub fn sets_all_relevant_flags() {
+            let mut r = Flags::NONE();
+            r.set_arith(0, true);
+            assert_eq!(r, Flags::CARRY() | Flags::ZERO() | Flags::RESERVED());
+        }
+    }
+
+    mod get {
+        use cpu::mos6502::{Registers, RegisterName};
+
+        #[test]
+        pub fn gets_a() {
+            let mut r = Registers::new();
+            r.a = 42;
+            assert_eq!(r.get(RegisterName::A), 42);
+        }
+
+        #[test]
+        pub fn gets_x() {
+            let mut r = Registers::new();
+            r.x = 42;
+            assert_eq!(r.get(RegisterName::X), 42);
+        }
+
+        #[test]
+        pub fn gets_y() {
+            let mut r = Registers::new();
+            r.y = 42;
+            assert_eq!(r.get(RegisterName::Y), 42);
+        }
+    }
+
+    mod carry {
+        use cpu::mos6502::Flags;
+
+        #[test]
+        pub fn returns_true_if_carry_bit_set() {
+            let f = Flags::CARRY();
+            assert!(f.carry());
+        }
+
+        #[test]
+        pub fn returns_false_if_carry_bit_not_set() {
+            let f = Flags::SIGN();
+            assert!(!f.carry());
         }
     }
 }

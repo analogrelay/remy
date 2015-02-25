@@ -7,8 +7,8 @@ pub fn exec<M>(cpu: &mut Mos6502<M>) -> Result<(), ExecError> where M: Memory {
     try!(cpu.push(((pc & 0xFF00) >> 8) as u8));
     try!(cpu.push((pc & 0x00FF) as u8));
 
-    let new_flags = cpu.registers.get_flags() | Flags::BREAK();
-    try!(cpu.push(new_flags.bits()));
+    let new_flags = cpu.flags | Flags::BREAK();
+    try!(cpu.push(new_flags.bits));
 
     cpu.pc.set(try!(cpu.mem.get_le_u16(0xFFFE)) as usize);
     Ok(())
@@ -34,20 +34,20 @@ mod test {
     pub fn brk_sets_break_flag_and_pushes_flags_on_to_stack() {
         let mut cpu = init_cpu();
         let flags = Flags::SIGN() | Flags::OVERFLOW() | Flags::RESERVED();
-        cpu.registers.set_flags(flags);
+        cpu.flags.set(flags);
         brk::exec(&mut cpu).unwrap();
 
-        assert_eq!(Ok((flags | Flags::BREAK()).bits()), cpu.mem.get_u8(STACK_START + 14));
+        assert_eq!(Ok((flags | Flags::BREAK()).bits), cpu.mem.get_u8(STACK_START + 14));
     }
 
     #[test]
     pub fn brk_does_not_set_break_flag_on_current_flags() {
         let mut cpu = init_cpu();
         let flags = Flags::SIGN() | Flags::OVERFLOW() | Flags::RESERVED();
-        cpu.registers.set_flags(flags);
+        cpu.flags.set(flags);
         brk::exec(&mut cpu).unwrap();
 
-        assert_eq!(flags, cpu.registers.get_flags());
+        assert_eq!(flags, cpu.flags);
     }
 
     #[test]

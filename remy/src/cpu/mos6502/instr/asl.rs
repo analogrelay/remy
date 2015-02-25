@@ -4,15 +4,15 @@ use cpu::mos6502::{ExecError,Operand,Mos6502,Flags};
 pub fn exec<M>(cpu: &mut Mos6502<M>, op: Operand) -> Result<(), ExecError> where M: Memory {
     let b = try!(op.get_u8(cpu));
     if b & 0x80 != 0 {
-        cpu.registers.set_flags(Flags::CARRY());
+        cpu.flags.set(Flags::CARRY());
     }
     let r = (b << 1) & 0xFE;
     try!(op.set_u8(cpu, r));
     if r & 0x80 != 0 {
-        cpu.registers.set_flags(Flags::SIGN());
+        cpu.flags.set(Flags::SIGN());
     }
     if r == 0 {
-        cpu.registers.set_flags(Flags::ZERO());
+        cpu.flags.set(Flags::ZERO());
     }
     Ok(())
 }
@@ -37,7 +37,7 @@ mod test {
         cpu.registers.a = 0x81;
         asl::exec(&mut cpu, Operand::Accumulator).unwrap();
         assert_eq!(cpu.registers.a, 0x02);
-        assert_eq!(cpu.registers.get_flags(), Flags::CARRY() | Flags::RESERVED());
+        assert_eq!(cpu.flags, Flags::CARRY() | Flags::RESERVED());
     }
 
     #[test]
@@ -46,7 +46,7 @@ mod test {
         cpu.registers.a = 0x40;
         asl::exec(&mut cpu, Operand::Accumulator).unwrap();
         assert_eq!(cpu.registers.a, 0x80);
-        assert_eq!(cpu.registers.get_flags(), Flags::SIGN() | Flags::RESERVED());
+        assert_eq!(cpu.flags, Flags::SIGN() | Flags::RESERVED());
     }
 
     #[test]
@@ -55,7 +55,7 @@ mod test {
         cpu.registers.a = 0x00;
         asl::exec(&mut cpu, Operand::Accumulator).unwrap();
         assert_eq!(cpu.registers.a, 0x00);
-        assert_eq!(cpu.registers.get_flags(), Flags::ZERO() | Flags::RESERVED());
+        assert_eq!(cpu.flags, Flags::ZERO() | Flags::RESERVED());
     }
 
     fn init_cpu() -> Mos6502<VirtualMemory<'static>> {

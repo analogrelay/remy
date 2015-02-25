@@ -2,7 +2,7 @@ use mem::Memory;
 use cpu::mos6502::{ExecError,Mos6502,Flags};
 
 pub fn exec<M>(cpu: &mut Mos6502<M>) -> Result<(), ExecError> where M: Memory {
-    cpu.registers.clear_flags(Flags::BCD());
+    cpu.flags.clear(Flags::BCD());
     Ok(())
 }
 
@@ -15,9 +15,9 @@ mod test {
     #[test]
     pub fn cld_clears_bcd_flag() {
         let mut cpu = init_cpu();
-        cpu.registers.set_flags(Flags::BCD());
+        cpu.flags.set(Flags::BCD());
         cld::exec(&mut cpu).unwrap();
-        assert!(!cpu.registers.has_flags(Flags::BCD()));
+        assert!(!cpu.flags.intersects(Flags::BCD()));
     }
 
     fn init_cpu() -> Mos6502<VirtualMemory<'static>> {

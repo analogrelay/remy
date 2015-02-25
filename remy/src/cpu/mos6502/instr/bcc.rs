@@ -2,7 +2,7 @@ use mem::Memory;
 use cpu::mos6502::{ExecError,Mos6502,Flags};
 
 pub fn exec<M>(cpu: &mut Mos6502<M>, offset: i8) -> Result<(), ExecError> where M: Memory {
-    if !cpu.registers.has_flags(Flags::CARRY()) {
+    if !cpu.flags.intersects(Flags::CARRY()) {
         cpu.pc.advance(offset as isize)
     }
     Ok(())
@@ -17,7 +17,7 @@ mod test {
     #[test]
     pub fn bcc_does_not_modify_pc_if_carry_flag_set() {
         let mut cpu = init_cpu();
-        cpu.registers.set_flags(Flags::CARRY());
+        cpu.flags.set(Flags::CARRY());
         bcc::exec(&mut cpu, 1).unwrap();
         assert_eq!(cpu.pc.get(), 0xABCD);
     }

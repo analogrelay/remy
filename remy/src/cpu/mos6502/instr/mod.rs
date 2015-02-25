@@ -17,6 +17,7 @@ mod eor;
 mod inc;
 mod jmp;
 mod jsr;
+mod load;
 
 #[derive(Copy,Debug,Eq,PartialEq)]
 pub enum Instruction {

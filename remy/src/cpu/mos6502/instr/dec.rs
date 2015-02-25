@@ -1,15 +1,9 @@
 use mem::Memory;
-use cpu::mos6502::{ExecError,Mos6502,Flags,Operand};
+use cpu::mos6502::{ExecError,Mos6502,Operand};
 
 pub fn exec<M>(cpu: &mut Mos6502<M>, op: Operand) -> Result<(), ExecError> where M: Memory {
     let new_val = (try!(op.get_u8(cpu)) - 1) & 0xFF;
-    cpu.flags.clear(Flags::SIGN() | Flags::ZERO());
-    if (new_val & 0b1000000) != 0 {
-        cpu.flags.set(Flags::SIGN());
-    }
-    if new_val == 0 {
-        cpu.flags.set(Flags::ZERO());
-    }
+    cpu.flags.set_sign_and_zero(new_val as usize); 
     try!(op.set_u8(cpu, new_val));
     Ok(())
 }

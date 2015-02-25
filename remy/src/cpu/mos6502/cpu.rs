@@ -54,16 +54,11 @@ pub struct Registers {
     pub x: u8,
     pub y: u8,
     pub sp: u8,
-    flags: Flags
 }
 
 impl Registers {
     pub fn new() -> Registers {
-        Registers { a: 0, x: 0, y: 0, sp: 0, flags: Flags::RESERVED() }
-    }
-
-    pub fn with_flags(flags: Flags) -> Registers {
-        Registers { a: 0, x: 0, y: 0, sp: 0, flags: flags | Flags::RESERVED() }
+        Registers { a: 0, x: 0, y: 0, sp: 0 }
     }
 
     pub fn get(&self, r: RegisterName) -> u8 {
@@ -125,6 +120,16 @@ impl Flags {
 
     pub fn replace(&mut self, flags: Flags) {
         self.bits = (flags | Flags::RESERVED()).bits;
+    }
+
+    pub fn set_sign_and_zero(&mut self, val: usize) {
+        self.clear(Flags::SIGN() | Flags::ZERO());
+        if (val & 0b10000000) != 0 {
+            self.set(Flags::SIGN());
+        }
+        if val == 0 {
+            self.set(Flags::ZERO());
+        }
     }
 
     pub fn set_arith(&mut self, val: isize, carry: bool) {

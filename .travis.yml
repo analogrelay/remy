@@ -8,6 +8,6 @@ sudo: false
 
 after_success:
   - cp -R target/doc doc
-  - curl http://www.rust-ci.org/artifacts/put?t=$RUSTCI_TOKEN | sh
+  - curl http://www.rust-ci.org/artifacts/put?t=$RUSTCI_TOKEN | bash
   - rm -r doc
 

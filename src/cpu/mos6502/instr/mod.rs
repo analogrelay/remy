@@ -22,6 +22,7 @@ mod lsr;
 mod ora;
 mod push;
 mod pull;
+mod rotate;
 
 #[derive(Copy,Debug,Eq,PartialEq)]
 pub enum Instruction {
@@ -98,6 +99,8 @@ impl Instruction {
             Instruction::ORA(op) => ora::exec(cpu, op),
             Instruction::Push(r) => push::exec(cpu, r),
             Instruction::Pull(r) => pull::exec(cpu, r),
+            Instruction::ROL(op) => rotate::exec(cpu, op, true),
+            Instruction::ROR(op) => rotate::exec(cpu, op, false),
 			_ => Err(ExecError::UnknownInstruction)
 		}
 	}

@@ -13,6 +13,26 @@ pub enum RegisterName {
     P
 }
 
+impl RegisterName {
+    pub fn get<M>(self, cpu: &Mos6502<M>) -> u8 where M : mem::Memory {
+        match self {
+            RegisterName::A => cpu.registers.a,
+            RegisterName::X => cpu.registers.x,
+            RegisterName::Y => cpu.registers.y,
+            RegisterName::P => cpu.flags.bits
+        }
+    }
+
+    pub fn set<M>(self, cpu: &mut Mos6502<M>, val: u8) where M : mem::Memory {
+        match self {
+            RegisterName::A => cpu.registers.a = val,
+            RegisterName::X => cpu.registers.x = val,
+            RegisterName::Y => cpu.registers.y = val,
+            RegisterName::P => cpu.flags.replace(Flags::new(val))
+        }
+    }
+}
+
 pub struct Mos6502<M> where M: mem::Memory {
     pub registers: Registers,
     pub flags: Flags,
@@ -47,24 +67,6 @@ impl<M> Mos6502<M> where M: mem::Memory {
         self.registers.sp += 1;
         let addr = (self.registers.sp as usize) + STACK_START;
         self.mem.get_u8(addr)
-    }
-
-    pub fn get_reg(&self, r: RegisterName) -> u8 {
-        match r {
-            RegisterName::A => self.registers.a,
-            RegisterName::X => self.registers.x,
-            RegisterName::Y => self.registers.y,
-            RegisterName::P => self.flags.bits
-        }
-    }
-
-    pub fn set_reg(&mut self, r: RegisterName, val: u8) {
-        match r {
-            RegisterName::A => self.registers.a = val,
-            RegisterName::X => self.registers.x = val,
-            RegisterName::Y => self.registers.y = val,
-            RegisterName::P => self.flags.replace(Flags::new(val))
-        }
     }
 }
 
@@ -322,7 +324,7 @@ mod test {
         }
     }
 
-    mod get_reg {
+    mod register_name {
         use mem::VirtualMemory;
         use cpu::mos6502::{Mos6502,RegisterName,Flags};
 
@@ -330,28 +332,56 @@ mod test {
         pub fn gets_a() {
             let mut cpu = Mos6502::new(VirtualMemory::new());
             cpu.registers.a = 42;
-            assert_eq!(cpu.get_reg(RegisterName::A), 42);
+            assert_eq!(RegisterName::A.get(&cpu), 42);
         }
 
         #[test]
         pub fn gets_x() {
             let mut cpu = Mos6502::new(VirtualMemory::new());
             cpu.registers.x = 42;
-            assert_eq!(cpu.get_reg(RegisterName::X), 42);
+            assert_eq!(RegisterName::X.get(&cpu), 42);
         }
 
         #[test]
         pub fn gets_y() {
             let mut cpu = Mos6502::new(VirtualMemory::new());
             cpu.registers.y = 42;
-            assert_eq!(cpu.get_reg(RegisterName::Y), 42);
+            assert_eq!(RegisterName::Y.get(&cpu), 42);
         }
 
         #[test]
         pub fn gets_p() {
             let mut cpu = Mos6502::new(VirtualMemory::new());
             cpu.flags.set(Flags::SIGN() | Flags::CARRY()); 
-            assert_eq!(cpu.get_reg(RegisterName::P), cpu.flags.bits);
+            assert_eq!(RegisterName::P.get(&cpu), cpu.flags.bits);
+        }
+
+        #[test]
+        pub fn sets_a() {
+            let mut cpu = Mos6502::new(VirtualMemory::new());
+            RegisterName::A.set(&mut cpu, 42);
+            assert_eq!(cpu.registers.a, 42);
+        }
+
+        #[test]
+        pub fn sets_x() {
+            let mut cpu = Mos6502::new(VirtualMemory::new());
+            RegisterName::X.set(&mut cpu, 42);
+            assert_eq!(cpu.registers.x, 42);
+        }
+
+        #[test]
+        pub fn sets_y() {
+            let mut cpu = Mos6502::new(VirtualMemory::new());
+            RegisterName::Y.set(&mut cpu, 42);
+            assert_eq!(cpu.registers.y, 42);
+        }
+
+        #[test]
+        pub fn sets_p() {
+            let mut cpu = Mos6502::new(VirtualMemory::new());
+            RegisterName::P.set(&mut cpu, (Flags::SIGN() | Flags::CARRY()).bits);
+            assert_eq!(Flags::SIGN() | Flags::CARRY() | Flags::RESERVED(), cpu.flags);
         }
     }
 }

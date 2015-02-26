@@ -19,6 +19,7 @@ mod jmp;
 mod jsr;
 mod load;
 mod lsr;
+mod ora;
 
 #[derive(Copy,Debug,Eq,PartialEq)]
 pub enum Instruction {
@@ -94,6 +95,7 @@ impl Instruction {
             Instruction::Load(reg, op) => load::exec(cpu, reg, op),
             Instruction::LSR(op) => lsr::exec(cpu, op),
             Instruction::NOP => Ok(()),
+            Instruction::ORA(op) => ora::exec(cpu, op),
 			_ => Err(ExecError::UnknownInstruction)
 		}
 	}

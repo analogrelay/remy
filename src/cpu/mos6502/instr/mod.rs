@@ -18,6 +18,7 @@ mod inc;
 mod jmp;
 mod jsr;
 mod load;
+mod lsr;
 
 #[derive(Copy,Debug,Eq,PartialEq)]
 pub enum Instruction {
@@ -91,6 +92,7 @@ impl Instruction {
             Instruction::JMP(op) => jmp::exec(cpu, op),
             Instruction::JSR(addr) => jsr::exec(cpu, addr),
             Instruction::Load(reg, op) => load::exec(cpu, reg, op),
+            Instruction::LSR(op) => lsr::exec(cpu, op),
 			_ => Err(ExecError::UnknownInstruction)
 		}
 	}

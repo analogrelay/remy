@@ -117,6 +117,13 @@ impl Flags {
         self.replace(new_val);
     }
 
+    pub fn set_if(&mut self, flag_selector: Flags, condition: bool) {
+        self.clear(flag_selector);
+        if condition {
+            self.set(flag_selector);
+        }
+    }
+
     pub fn replace(&mut self, flags: Flags) {
         self.bits = (flags | Flags::RESERVED()).bits;
     }

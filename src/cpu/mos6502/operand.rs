@@ -8,14 +8,13 @@ use cpu::mos6502::Mos6502;
 
 #[derive(Copy,Debug,Eq,PartialEq)]
 pub enum Operand {
-    Accumulator,
     Immediate(u8),
+    Register(mos6502::RegisterName),
     Absolute(u16),
     Indexed(u16, mos6502::RegisterName),
     Indirect(u16),
     PreIndexedIndirect(u8),
-    PostIndexedIndirect(u8),
-    Register(mos6502::RegisterName)
+    PostIndexedIndirect(u8)
 }
 
 #[derive(Clone,Debug,Eq,PartialEq)]
@@ -35,15 +34,14 @@ impl error::FromError<mem::MemoryError> for OperandError {
 impl Operand {
     pub fn get_u8<M>(&self, cpu: &Mos6502<M>) -> Result<u8, OperandError> where M: mem::Memory {
         Ok(match *self {
-            Operand::Accumulator                => cpu.registers.a,
             Operand::Immediate(n)               => n,
+            Operand::Register(r)                => cpu.registers.get(r),
             _                                   => try!(cpu.mem.get_u8(try!(self.get_addr(cpu)) as usize))
         })
     }
 
     pub fn set_u8<M>(&self, cpu: &mut Mos6502<M>, val: u8) -> Result<(), OperandError> where M: mem::Memory {
         match *self {
-            Operand::Accumulator        => Ok(cpu.registers.a = val),
             Operand::Absolute(addr)     => Ok(try!(cpu.mem.set_u8(addr as usize, val))),
             Operand::Indexed(addr, r)   => Ok(try!(cpu.mem.set_u8(addr as usize + cpu.registers.get(r) as usize, val))),
             Operand::Register(r)        => Ok(cpu.registers.set(r, val)),
@@ -68,14 +66,6 @@ mod test {
     mod operand {
         use mem::Memory;
         use cpu::mos6502::{Mos6502,Operand,RegisterName};
-
-        #[test]
-        pub fn set_accumulator_puts_value_in_accumulator() {
-            let mut cpu = Mos6502::with_fixed_memory(10);
-            cpu.registers.a = 42;
-            assert!(Operand::Accumulator.set_u8(&mut cpu, 24).is_ok());
-            assert_eq!(cpu.registers.a, 24);
-        }
 
         #[test]
         pub fn set_absolute_puts_value_in_memory_location() {
@@ -104,11 +94,18 @@ mod test {
         }
 
         #[test]
-        pub fn get_accumulator_returns_value_of_accumulator() {
+        pub fn set_register_puts_value_in_register() {
+            let mut cpu = Mos6502::with_fixed_memory(10);
+            cpu.registers.a = 24;
+            Operand::Register(RegisterName::A).set_u8(&mut cpu, 42).unwrap();
+            assert_eq!(cpu.registers.a, 42);
+        }
+
+        #[test]
+        pub fn get_register_returns_value_from_register() {
             let mut cpu = Mos6502::with_fixed_memory(10);
             cpu.registers.a = 42;
-            let val = Operand::Accumulator.get_u8(&cpu).unwrap();
-            assert_eq!(val, 42);
+            assert_eq!(Ok(42), Operand::Register(RegisterName::A).get_u8(&mut cpu));
         }
 
         #[test]

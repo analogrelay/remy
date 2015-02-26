@@ -20,6 +20,8 @@ mod jsr;
 mod load;
 mod lsr;
 mod ora;
+mod push;
+mod pull;
 
 #[derive(Copy,Debug,Eq,PartialEq)]
 pub enum Instruction {
@@ -41,10 +43,8 @@ pub enum Instruction {
 	LSR(Operand),
 	NOP,
 	ORA(Operand),
-	PHA,
-	PHP,
-	PLA,
-	PLP,
+    Push(RegisterName),
+    Pull(RegisterName),
 	ROL(Operand),
 	ROR(Operand),
 	RTI,
@@ -96,6 +96,8 @@ impl Instruction {
             Instruction::LSR(op) => lsr::exec(cpu, op),
             Instruction::NOP => Ok(()),
             Instruction::ORA(op) => ora::exec(cpu, op),
+            Instruction::Push(r) => push::exec(cpu, r),
+            Instruction::Pull(r) => pull::exec(cpu, r),
 			_ => Err(ExecError::UnknownInstruction)
 		}
 	}

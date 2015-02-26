@@ -105,7 +105,7 @@ impl Flags {
     }
 
     pub fn intersects(&self, other: Flags) -> bool {
-        (*self & other) != Flags::NONE()
+        self.bits & other.bits == other.bits
     }
 
     pub fn carry(&self) -> bool {
@@ -242,85 +242,176 @@ mod test {
         use cpu::mos6502::Flags;
 
         #[test]
-        pub fn returns_true_if_carry_bit_set() {
+        pub fn intersects_returns_true_if_all_of_provided_flags_are_set() {
+            let f = Flags::CARRY() | Flags::SIGN() | Flags::ZERO();
+            assert!(f.intersects(Flags::CARRY() | Flags::SIGN()));
+        }
+
+        #[test]
+        pub fn intersects_returns_false_if_any_of_provided_flags_are_clear() {
+            let f = Flags::CARRY();
+            assert!(!f.intersects(Flags::CARRY() | Flags::SIGN()));
+        }
+
+        #[test]
+        pub fn clear_leaves_flag_clear_if_it_is_already_clear() {
+            let mut f = Flags::CARRY();
+            f.clear(Flags::SIGN());
+            assert!(!f.intersects(Flags::SIGN()));
+        }
+
+        #[test]
+        pub fn clear_clears_flag_if_it_is_set() {
+            let mut f = Flags::CARRY() | Flags::SIGN();
+            f.clear(Flags::SIGN());
+            assert!(!f.intersects(Flags::SIGN()));
+        }
+
+        #[test]
+        pub fn set_leaves_flag_set_if_it_is_already_set() {
+            let mut f = Flags::CARRY() | Flags::SIGN();
+            f.set(Flags::SIGN());
+            assert!(f.intersects(Flags::SIGN()));
+        }
+
+        #[test]
+        pub fn set_sets_flag_if_it_is_clear() {
+            let mut f = Flags::CARRY();
+            f.set(Flags::SIGN());
+            assert!(f.intersects(Flags::SIGN()));
+        }
+
+        #[test]
+        pub fn replace_sets_flags_to_provided_value_plus_reserved_flag() {
+            let mut f = Flags::CARRY() | Flags::SIGN();
+            f.replace(Flags::INTERRUPT() | Flags::ZERO());
+            assert_eq!(Flags::INTERRUPT() | Flags::ZERO() | Flags::RESERVED(), f);
+        }
+
+        #[test]
+        pub fn set_sign_and_zero_clears_sign_flag_if_value_non_negative() {
+            let mut f = Flags::SIGN();
+            f.set_sign_and_zero(12);
+            assert!(!f.intersects(Flags::SIGN()));
+        }
+
+        #[test]
+        pub fn set_sign_and_zero_sets_sign_flag_if_value_negative() {
+            let mut f = Flags::ZERO();
+            f.set_sign_and_zero(0xFF);
+            assert!(f.intersects(Flags::SIGN()));
+        }
+
+        #[test]
+        pub fn set_sign_and_zero_clears_zero_flag_if_value_non_zero() {
+            let mut f = Flags::ZERO();
+            f.set_sign_and_zero(12);
+            assert!(!f.intersects(Flags::ZERO()));
+        }
+
+        #[test]
+        pub fn set_sign_and_zero_sets_zero_flag_if_value_zero() {
+            let mut f = Flags::SIGN();
+            f.set_sign_and_zero(0);
+            assert!(f.intersects(Flags::ZERO()));
+        }
+
+        #[test]
+        pub fn carry_returns_true_if_carry_bit_set() {
             let f = Flags::CARRY();
             assert!(f.carry());
         }
 
         #[test]
-        pub fn returns_false_if_carry_bit_not_set() {
+        pub fn carry_returns_false_if_carry_bit_not_set() {
             let f = Flags::SIGN();
             assert!(!f.carry());
         }
 
         #[test]
-        pub fn sets_carry_flag_if_carry_true() {
+        pub fn set_arith_sets_carry_flag_if_carry_true() {
             let mut r = Flags::NONE();
             r.set_arith(10, true);
             assert_eq!(r, mos6502::Flags::CARRY() | mos6502::Flags::RESERVED());
         }
 
         #[test]
-        pub fn unsets_carry_flag_if_carry_false() {
+        pub fn set_arith_unsets_carry_flag_if_carry_false() {
             let mut r = Flags::CARRY();
             r.set_arith(10, false);
             assert_eq!(r, Flags::RESERVED());
         }
 
         #[test]
-        pub fn sets_zero_flag_if_value_is_zero() {
+        pub fn set_arith_sets_zero_flag_if_value_is_zero() {
             let mut r = Flags::NONE();
             r.set_arith(0, false);
             assert_eq!(r, Flags::ZERO() | Flags::RESERVED());
         }
 
         #[test]
-        pub fn unsets_zero_flag_if_value_is_nonzero() {
+        pub fn set_arith_unsets_zero_flag_if_value_is_nonzero() {
             let mut r = Flags::ZERO();
             r.set_arith(42, false);
             assert_eq!(r, Flags::RESERVED());
         }
 
         #[test]
-        pub fn sets_overflow_flag_if_value_is_higher_than_255() {
+        pub fn set_arith_sets_overflow_flag_if_value_is_higher_than_255() {
             let mut r = Flags::NONE();
             r.set_arith(1024, false);
             assert_eq!(r, Flags::OVERFLOW() | Flags::RESERVED());
         }
 
         #[test]
-        pub fn unsets_overflow_flag_if_value_is_less_than_or_equal_to_255() {
+        pub fn set_arith_unsets_overflow_flag_if_value_is_less_than_or_equal_to_255() {
             let mut r = Flags::OVERFLOW();
             r.set_arith(128, false);
             assert_eq!(r, Flags::RESERVED());
         }
 
         #[test]
-        pub fn sets_sign_flag_if_value_is_negative() {
+        pub fn set_arith_sets_sign_flag_if_value_is_negative() {
             let mut r = Flags::NONE();
             r.set_arith(-10, false);
             assert_eq!(r, Flags::SIGN() | Flags::RESERVED());
         }
 
         #[test]
-        pub fn unsets_sign_flag_if_value_is_non_negative() {
+        pub fn set_arith_unsets_sign_flag_if_value_is_non_negative() {
             let mut r = Flags::SIGN();
             r.set_arith(128, false);
             assert_eq!(r, Flags::RESERVED());
         }
 
         #[test]
-        pub fn does_not_change_non_arith_flags() {
+        pub fn set_arith_does_not_change_non_arith_flags() {
             let mut r = !Flags::ARITHMETIC();
             r.set_arith(-10, false);
             assert_eq!(r, (!Flags::ARITHMETIC()) | Flags::SIGN() | Flags::RESERVED());
         }
 
         #[test]
-        pub fn sets_all_relevant_flags() {
+        pub fn set_arith_sets_all_relevant_flags() {
             let mut r = Flags::NONE();
             r.set_arith(0, true);
             assert_eq!(r, Flags::CARRY() | Flags::ZERO() | Flags::RESERVED());
+        }
+
+        #[test]
+        pub fn set_if_sets_flag_if_condition_true() {
+            let mut r = Flags::NONE();
+            r.clear(Flags::SIGN());
+            r.set_if(Flags::SIGN(), true);
+            assert!(r.intersects(Flags::SIGN()));
+        }
+
+        #[test]
+        pub fn set_if_clears_flag_if_condition_false() {
+            let mut r = Flags::NONE();
+            r.set(Flags::SIGN());
+            r.set_if(Flags::SIGN(), false);
+            assert!(!r.intersects(Flags::SIGN()));
         }
     }
 

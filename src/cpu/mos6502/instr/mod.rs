@@ -93,6 +93,7 @@ impl Instruction {
             Instruction::JSR(addr) => jsr::exec(cpu, addr),
             Instruction::Load(reg, op) => load::exec(cpu, reg, op),
             Instruction::LSR(op) => lsr::exec(cpu, op),
+            Instruction::NOP => Ok(()),
 			_ => Err(ExecError::UnknownInstruction)
 		}
 	}

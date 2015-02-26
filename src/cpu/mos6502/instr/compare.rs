@@ -3,7 +3,7 @@ use cpu::mos6502::{ExecError,Mos6502,RegisterName,Flags,Operand};
 
 pub fn exec<M>(cpu: &mut Mos6502<M>, reg: RegisterName, op: Operand) -> Result<(), ExecError> where M: Memory {
     let val = try!(op.get_u8(cpu));
-    let t = (cpu.registers.get(reg) as isize) - (val as isize);
+    let t = (cpu.get_reg(reg) as isize) - (val as isize);
 
     cpu.flags.clear(
         Flags::SIGN() |

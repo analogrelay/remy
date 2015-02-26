@@ -35,7 +35,7 @@ impl Operand {
     pub fn get_u8<M>(&self, cpu: &Mos6502<M>) -> Result<u8, OperandError> where M: mem::Memory {
         Ok(match *self {
             Operand::Immediate(n)               => n,
-            Operand::Register(r)                => cpu.registers.get(r),
+            Operand::Register(r)                => cpu.get_reg(r),
             _                                   => try!(cpu.mem.get_u8(try!(self.get_addr(cpu)) as usize))
         })
     }
@@ -43,8 +43,11 @@ impl Operand {
     pub fn set_u8<M>(&self, cpu: &mut Mos6502<M>, val: u8) -> Result<(), OperandError> where M: mem::Memory {
         match *self {
             Operand::Absolute(addr)     => Ok(try!(cpu.mem.set_u8(addr as usize, val))),
-            Operand::Indexed(addr, r)   => Ok(try!(cpu.mem.set_u8(addr as usize + cpu.registers.get(r) as usize, val))),
-            Operand::Register(r)        => Ok(cpu.registers.set(r, val)),
+            Operand::Indexed(addr, r)   => {
+                let r = cpu.get_reg(r) as usize;
+                Ok(try!(cpu.mem.set_u8(addr as usize + r, val)))
+            }
+            Operand::Register(r)        => Ok(cpu.set_reg(r, val)),
             _                           => Err(OperandError::ReadOnlyOperand)
         }
     }
@@ -53,7 +56,7 @@ impl Operand {
         Ok(match *self {
             Operand::Absolute(addr)             => addr,
             Operand::Indirect(addr)             => try!(cpu.mem.get_le_u16(addr as usize)),
-            Operand::Indexed(addr, r)           => addr + cpu.registers.get(r) as u16,
+            Operand::Indexed(addr, r)           => addr + cpu.get_reg(r) as u16,
             Operand::PreIndexedIndirect(addr)   => try!(cpu.mem.get_le_u16(addr as usize + cpu.registers.x as usize)),
             Operand::PostIndexedIndirect(addr)  => try!(cpu.mem.get_le_u16(addr as usize)) + cpu.registers.y as u16,
             _                                   => return Err(OperandError::NonAddressOperand)

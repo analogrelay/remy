@@ -9,7 +9,8 @@ pub const STACK_END     : usize = 0x01FF;
 pub enum RegisterName {
     A,
     X,
-    Y
+    Y,
+    P
 }
 
 pub struct Mos6502<M> where M: mem::Memory {
@@ -47,6 +48,24 @@ impl<M> Mos6502<M> where M: mem::Memory {
         let addr = (self.registers.sp as usize) + STACK_START;
         self.mem.get_u8(addr)
     }
+
+    pub fn get_reg(&self, r: RegisterName) -> u8 {
+        match r {
+            RegisterName::A => self.registers.a,
+            RegisterName::X => self.registers.x,
+            RegisterName::Y => self.registers.y,
+            RegisterName::P => self.flags.bits
+        }
+    }
+
+    pub fn set_reg(&mut self, r: RegisterName, val: u8) {
+        match r {
+            RegisterName::A => self.registers.a = val,
+            RegisterName::X => self.registers.x = val,
+            RegisterName::Y => self.registers.y = val,
+            RegisterName::P => self.flags.replace(Flags::new(val))
+        }
+    }
 }
 
 pub struct Registers {
@@ -59,22 +78,6 @@ pub struct Registers {
 impl Registers {
     pub fn new() -> Registers {
         Registers { a: 0, x: 0, y: 0, sp: 0 }
-    }
-
-    pub fn get(&self, r: RegisterName) -> u8 {
-        match r {
-            RegisterName::A => self.a,
-            RegisterName::X => self.x,
-            RegisterName::Y => self.y
-        }
-    }
-
-    pub fn set(&mut self, r: RegisterName, val: u8) {
-        match r {
-            RegisterName::A => self.a = val,
-            RegisterName::X => self.x = val,
-            RegisterName::Y => self.y = val
-        }
     }
 }
 
@@ -237,6 +240,18 @@ mod test {
         use cpu::mos6502::Flags;
 
         #[test]
+        pub fn returns_true_if_carry_bit_set() {
+            let f = Flags::CARRY();
+            assert!(f.carry());
+        }
+
+        #[test]
+        pub fn returns_false_if_carry_bit_not_set() {
+            let f = Flags::SIGN();
+            assert!(!f.carry());
+        }
+
+        #[test]
         pub fn sets_carry_flag_if_carry_true() {
             let mut r = Flags::NONE();
             r.set_arith(10, true);
@@ -307,44 +322,36 @@ mod test {
         }
     }
 
-    mod get {
-        use cpu::mos6502::{Registers, RegisterName};
+    mod get_reg {
+        use mem::VirtualMemory;
+        use cpu::mos6502::{Mos6502,RegisterName,Flags};
 
         #[test]
         pub fn gets_a() {
-            let mut r = Registers::new();
-            r.a = 42;
-            assert_eq!(r.get(RegisterName::A), 42);
+            let mut cpu = Mos6502::new(VirtualMemory::new());
+            cpu.registers.a = 42;
+            assert_eq!(cpu.get_reg(RegisterName::A), 42);
         }
 
         #[test]
         pub fn gets_x() {
-            let mut r = Registers::new();
-            r.x = 42;
-            assert_eq!(r.get(RegisterName::X), 42);
+            let mut cpu = Mos6502::new(VirtualMemory::new());
+            cpu.registers.x = 42;
+            assert_eq!(cpu.get_reg(RegisterName::X), 42);
         }
 
         #[test]
         pub fn gets_y() {
-            let mut r = Registers::new();
-            r.y = 42;
-            assert_eq!(r.get(RegisterName::Y), 42);
-        }
-    }
-
-    mod carry {
-        use cpu::mos6502::Flags;
-
-        #[test]
-        pub fn returns_true_if_carry_bit_set() {
-            let f = Flags::CARRY();
-            assert!(f.carry());
+            let mut cpu = Mos6502::new(VirtualMemory::new());
+            cpu.registers.y = 42;
+            assert_eq!(cpu.get_reg(RegisterName::Y), 42);
         }
 
         #[test]
-        pub fn returns_false_if_carry_bit_not_set() {
-            let f = Flags::SIGN();
-            assert!(!f.carry());
+        pub fn gets_p() {
+            let mut cpu = Mos6502::new(VirtualMemory::new());
+            cpu.flags.set(Flags::SIGN() | Flags::CARRY()); 
+            assert_eq!(cpu.get_reg(RegisterName::P), cpu.flags.bits);
         }
     }
 }

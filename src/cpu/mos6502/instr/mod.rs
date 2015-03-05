@@ -99,8 +99,8 @@ impl Instruction {
             Instruction::ORA(op) => ora::exec(cpu, op),
             Instruction::Push(r) => push::exec(cpu, r),
             Instruction::Pull(r) => pull::exec(cpu, r),
-            Instruction::ROL(op) => rotate::exec(cpu, op, true),
-            Instruction::ROR(op) => rotate::exec(cpu, op, false),
+            Instruction::ROL(op) => rotate::left(cpu, op),
+            Instruction::ROR(op) => rotate::right(cpu, op),
 			_ => Err(ExecError::UnknownInstruction)
 		}
 	}

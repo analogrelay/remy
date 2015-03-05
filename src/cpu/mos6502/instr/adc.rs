@@ -1,10 +1,16 @@
 use mem::Memory;
-use cpu::mos6502::{ExecError,Operand,Mos6502};
+use cpu::mos6502::{ExecError,Operand,Mos6502,Flags};
 
 pub fn exec<M>(cpu: &mut Mos6502<M>, op: Operand) -> Result<(), ExecError> where M: Memory {
-	let (a, c) = ::util::add_u8_with_carry(cpu.registers.a, try!(op.get_u8(cpu)), cpu.flags.carry());
-	cpu.registers.a = a;
-	cpu.flags.set_arith(a as isize, c);
+    let n = try!(op.get_u8(cpu)) as isize;
+    let a = cpu.registers.a as isize;
+    let c = if cpu.flags.carry() { 1 } else { 0 };
+    let t = n + a + c; 
+
+    cpu.flags.set_if(Flags::OVERFLOW(), (a & 0x80) != (t & 0x80));
+    cpu.flags.set_if(Flags::CARRY(), t > 255);
+	cpu.registers.a = (t & 0xFF) as u8;
+	cpu.flags.set_sign_and_zero(cpu.registers.a);
 	Ok(())
 }
 

@@ -211,7 +211,6 @@ mod test {
     }
 
     mod flags {
-        use cpu::mos6502;
         use cpu::mos6502::Flags;
 
         #[test]

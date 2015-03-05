@@ -1,5 +1,5 @@
 #![allow(dead_code)]
-#![deny(deprecated)]
+#![deny(deprecated,unused_imports)]
 
 #![feature(alloc)]
 #![feature(core)]

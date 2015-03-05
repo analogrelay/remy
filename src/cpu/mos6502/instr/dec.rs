@@ -2,7 +2,7 @@ use mem::Memory;
 use cpu::mos6502::{ExecError,Mos6502,Operand};
 
 pub fn exec<M>(cpu: &mut Mos6502<M>, op: Operand) -> Result<(), ExecError> where M: Memory {
-    let new_val = (try!(op.get_u8(cpu)) - 1) & 0xFF;
+    let new_val = (try!(op.get_u8(cpu)).wrapping_sub(1)) & 0xFF;
     cpu.flags.set_sign_and_zero(new_val); 
     try!(op.set_u8(cpu, new_val));
     Ok(())

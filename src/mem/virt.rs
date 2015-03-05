@@ -104,7 +104,7 @@ impl<'a> mem::Memory for VirtualMemory<'a> {
     		};
 
     		// Calculate effective address
-    		let eaddr = (addr - segment.base) + ptr;
+    		let eaddr = (addr + ptr) - segment.base;
 
     		// Figure out how much to read
     		let to_read = cmp::min(segment.memory.size() - eaddr, buf.len() - ptr);
@@ -135,7 +135,7 @@ impl<'a> mem::Memory for VirtualMemory<'a> {
     		};
 
     		// Calculate effective address
-    		let eaddr = (addr - segment.base) + ptr;
+    		let eaddr = (addr + ptr) - segment.base;
 
     		// Figure out how much to write
     		let to_write = cmp::min(segment.memory.size() - eaddr, buf.len() - ptr);

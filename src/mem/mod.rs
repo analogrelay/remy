@@ -104,14 +104,14 @@ pub trait Memory {
     ///
     /// * `addr` - The address to read from
     /// * `nbytes` - The number of bytes to read (must be between 1 and 8, inclusive)
-    fn get_le_uint_n(&self, addr: usize, nbytes: usize) -> MemoryResult<u64> {
+    fn get_le_uint_n(&self, addr: usize, nbytes: u32) -> MemoryResult<u64> {
         // Borrowed from http://doc.rust-lang.org/src/std/old_io/mod.rs.html#691-701
         assert!(nbytes > 0 && nbytes <= 8);
 
         let mut val = 0u64;
         let mut pos = 0;
         let mut i = 0;
-        while i < nbytes {
+        while i < (nbytes as usize) {
             val += (try!(self.get_u8(addr + i)) as u64) << pos;
             pos += 8;
             i += 1;
@@ -125,7 +125,7 @@ pub trait Memory {
     ///
     /// * `addr` - The address to read from
     /// * `nbytes` - The number of bytes to read (must be between 1 and 8, inclusive)
-    fn get_le_int_n(&self, addr: usize, nbytes: usize) -> MemoryResult<i64> {
+    fn get_le_int_n(&self, addr: usize, nbytes: u32) -> MemoryResult<i64> {
         self.get_le_uint_n(addr, nbytes).map(|i| extend_sign(i, nbytes))
     }
 
@@ -135,15 +135,15 @@ pub trait Memory {
     ///
     /// * `addr` - The address to read from
     /// * `nbytes` - The number of bytes to read (must be between 1 and 8, inclusive)
-    fn get_be_uint_n(&self, addr: usize, nbytes: usize) -> MemoryResult<u64> {
+    fn get_be_uint_n(&self, addr: usize, nbytes: u32) -> MemoryResult<u64> {
         // Borrowed from http://doc.rust-lang.org/src/std/old_io/mod.rs.html#691-701
 
         assert!(nbytes > 0 && nbytes <= 8);
 
         let mut val = 0u64;
         let mut i = 0;
-        while i < nbytes {
-            val += (try!(self.get_u8(addr + i)) as u64) << (nbytes - i - 1) * 8;
+        while i < (nbytes as usize) {
+            val += (try!(self.get_u8(addr + i)) as u64) << (nbytes as usize - i - 1) * 8;
             i += 1;
         }
         Ok(val)
@@ -155,7 +155,7 @@ pub trait Memory {
     ///
     /// * `addr` - The address to read from
     /// * `nbytes` - The number of bytes to read (must be between 1 and 8, inclusive)
-    fn get_be_int_n(&self, addr: usize, nbytes: usize) -> MemoryResult<i64> {
+    fn get_be_int_n(&self, addr: usize, nbytes: u32) -> MemoryResult<i64> {
         self.get_be_uint_n(addr, nbytes).map(|i| extend_sign(i, nbytes))
     }
 
@@ -321,13 +321,13 @@ impl Memory for EmptyMemory {
 }
 
 // From http://doc.rust-lang.org/src/std/old_io/mod.rs.html#976-979
-fn extend_sign(val: u64, nbytes: usize) -> i64 {
+fn extend_sign(val: u64, nbytes: u32) -> i64 {
     let shift = (8 - nbytes) * 8;
     (val << shift) as i64 >> shift
 }
 
 // Borrowed straight from the rust old_io code :)
-fn u64_to_be_bytes<T, F>(n: u64, size: usize, f: F) -> T where
+fn u64_to_be_bytes<T, F>(n: u64, size: u32, f: F) -> T where
     F: FnOnce(&[u8]) -> T,
 {
     use std::mem::transmute;
@@ -353,7 +353,7 @@ fn u64_to_be_bytes<T, F>(n: u64, size: usize, f: F) -> T where
     }
 }
 
-pub fn u64_to_le_bytes<T, F>(n: u64, size: usize, f: F) -> T where
+pub fn u64_to_le_bytes<T, F>(n: u64, size: u32, f: F) -> T where
     F: FnOnce(&[u8]) -> T,
 {
     use std::mem::transmute;

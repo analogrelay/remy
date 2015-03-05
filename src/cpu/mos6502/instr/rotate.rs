@@ -53,4 +53,85 @@ mod test {
         assert_eq!(cpu.registers.a, 0b11011001);
         assert!(!cpu.flags.intersects(Flags::CARRY()));
     }
+
+    #[test]
+    pub fn rotate_left_puts_leftmost_bit_in_carry_flag() {
+        let vm = VirtualMemory::new();
+        let mut cpu = Mos6502::new(vm);
+
+        cpu.registers.a = 0b10000000;
+        rotate::left(&mut cpu, Operand::Register(RegisterName::A)).unwrap();
+        assert!(cpu.flags.intersects(Flags::CARRY()));
+        cpu.registers.a = 0b01111111;
+        rotate::left(&mut cpu, Operand::Register(RegisterName::A)).unwrap();
+        assert!(!cpu.flags.intersects(Flags::CARRY()));
+    }
+
+    #[test]
+    pub fn rotate_left_sets_sign_flag_if_value_now_negative() {
+        let vm = VirtualMemory::new();
+        let mut cpu = Mos6502::new(vm);
+
+        cpu.registers.a = 0b01111111;
+        rotate::left(&mut cpu, Operand::Register(RegisterName::A)).unwrap();
+        assert!(cpu.flags.intersects(Flags::SIGN()));
+    }
+
+    #[test]
+    pub fn rotate_left_sets_zero_flag_if_value_now_zero() {
+        let vm = VirtualMemory::new();
+        let mut cpu = Mos6502::new(vm);
+
+        cpu.registers.a = 0b10000000;
+        rotate::left(&mut cpu, Operand::Register(RegisterName::A)).unwrap();
+        assert!(cpu.flags.intersects(Flags::ZERO()));
+    }
+
+    #[test]
+    pub fn rotate_can_rotate_right() {
+        let vm = VirtualMemory::new();
+        let mut cpu = Mos6502::new(vm);
+
+        cpu.flags.set(Flags::CARRY());
+        cpu.registers.a = 0b01101100;
+
+        rotate::right(&mut cpu, Operand::Register(RegisterName::A)).unwrap();
+
+        assert_eq!(cpu.registers.a, 0b10110110);
+        assert!(!cpu.flags.intersects(Flags::CARRY()));
+    }
+
+    #[test]
+    pub fn rotate_right_puts_rightmost_bit_in_carry_flag() {
+        let vm = VirtualMemory::new();
+        let mut cpu = Mos6502::new(vm);
+
+        cpu.registers.a = 0b00000001;
+        rotate::right(&mut cpu, Operand::Register(RegisterName::A)).unwrap();
+        assert!(cpu.flags.intersects(Flags::CARRY()));
+        cpu.registers.a = 0b11111110;
+        rotate::right(&mut cpu, Operand::Register(RegisterName::A)).unwrap();
+        assert!(!cpu.flags.intersects(Flags::CARRY()));
+    }
+
+    #[test]
+    pub fn rotate_right_sets_sign_flag_if_value_now_negative() {
+        let vm = VirtualMemory::new();
+        let mut cpu = Mos6502::new(vm);
+
+        cpu.flags.set(Flags::CARRY());
+        cpu.registers.a = 0b00000000;
+        rotate::right(&mut cpu, Operand::Register(RegisterName::A)).unwrap();
+        assert!(cpu.flags.intersects(Flags::SIGN()));
+    }
+
+    #[test]
+    pub fn rotate_right_sets_zero_flag_if_value_now_zero() {
+        let vm = VirtualMemory::new();
+        let mut cpu = Mos6502::new(vm);
+
+        cpu.registers.a = 0b00000001;
+        rotate::right(&mut cpu, Operand::Register(RegisterName::A)).unwrap();
+        assert!(cpu.flags.intersects(Flags::ZERO()));
+    }
 }

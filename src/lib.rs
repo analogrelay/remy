@@ -1,4 +1,6 @@
 #![allow(dead_code)]
+#![deny(deprecated)]
+
 #![feature(alloc)]
 #![feature(core)]
 

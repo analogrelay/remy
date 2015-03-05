@@ -22,7 +22,7 @@ impl FixedMemory {
     pub fn new(size: usize) -> FixedMemory {
         unsafe {
             let buf = heap::allocate(size, 0);
-            ptr::zero_memory(buf, size);
+            ptr::write_bytes(buf, 0, size);
 
             FixedMemory::from_raw_parts(buf, size)
         }
@@ -46,7 +46,7 @@ impl Clone for FixedMemory {
     fn clone(&self) -> FixedMemory {
         unsafe {
             let buf = heap::allocate(self.size, 0);
-            ptr::copy_nonoverlapping_memory(buf, self.data, self.size);
+            ptr::copy_nonoverlapping(buf, self.data, self.size);
             FixedMemory::from_raw_parts(buf, self.size)
         }
     }

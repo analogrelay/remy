@@ -31,8 +31,8 @@ mod test {
 
         jsr::exec(&mut cpu, 0xBEEF).unwrap();
         
-        assert_eq!(Ok(0xCC), cpu.pop());
-        assert_eq!(Ok(0xAB), cpu.pop());
+        assert_eq!(Ok(0xCC), cpu.pull());
+        assert_eq!(Ok(0xAB), cpu.pull());
     }
 
     fn init_cpu() -> Mos6502<VirtualMemory<'static>> {

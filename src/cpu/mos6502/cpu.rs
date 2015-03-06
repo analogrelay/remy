@@ -63,7 +63,7 @@ impl<M> Mos6502<M> where M: mem::Memory {
         Ok(())
     }
 
-    pub fn pop(&mut self) -> mem::MemoryResult<u8> {
+    pub fn pull(&mut self) -> mem::MemoryResult<u8> {
         self.registers.sp += 1;
         let addr = (self.registers.sp as usize) + STACK_START;
         self.mem.get_u8(addr)
@@ -185,17 +185,17 @@ mod test {
         }
 
         #[test]
-        pub fn pop_gets_value_at_sp_plus_one() {
+        pub fn pull_gets_value_at_sp_plus_one() {
             let mut cpu = setup_cpu();
             cpu.mem.set_u8(mos6502::cpu::STACK_START + 6, 24).unwrap();
-            assert_eq!(Ok(24), cpu.pop());
+            assert_eq!(Ok(24), cpu.pull());
         }
 
         #[test]
-        pub fn pop_increments_sp() {
+        pub fn pull_increments_sp() {
             let mut cpu = setup_cpu();
             cpu.mem.set_u8(mos6502::cpu::STACK_START + 6, 24).unwrap();
-            cpu.pop().unwrap();
+            cpu.pull().unwrap();
             assert_eq!(6, cpu.registers.sp);
         }
 

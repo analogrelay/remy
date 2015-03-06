@@ -2,7 +2,7 @@ use mem::Memory;
 use cpu::mos6502::{ExecError,Mos6502,RegisterName};
 
 pub fn exec<M>(cpu: &mut Mos6502<M>, r: RegisterName) -> Result<(), ExecError> where M : Memory {
-    let val = try!(cpu.pop());
+    let val = try!(cpu.pull());
     cpu.flags.set_sign_and_zero(val);
     r.set(cpu, val);
     Ok(())

@@ -23,6 +23,7 @@ mod ora;
 mod push;
 mod pull;
 mod rotate;
+mod ret;
 
 #[derive(Copy,Debug,Eq,PartialEq)]
 pub enum Instruction {
@@ -101,6 +102,8 @@ impl Instruction {
             Instruction::Pull(r) => pull::exec(cpu, r),
             Instruction::ROL(op) => rotate::left(cpu, op),
             Instruction::ROR(op) => rotate::right(cpu, op),
+            Instruction::RTI => ret::from_interrupt(cpu),
+            Instruction::RTS => ret::from_sub(cpu),
 			_ => Err(ExecError::UnknownInstruction)
 		}
 	}

@@ -18,7 +18,7 @@ mod test {
         let mut cpu = init_cpu();
         cpu.registers.a = 42;
         push::exec(&mut cpu, RegisterName::A).unwrap();
-        assert_eq!(Ok(42), cpu.pop());
+        assert_eq!(Ok(42), cpu.pull());
     }
 
     fn init_cpu() -> Mos6502<VirtualMemory<'static>> {

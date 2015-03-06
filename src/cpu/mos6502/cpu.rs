@@ -37,7 +37,8 @@ pub struct Mos6502<M> where M: mem::Memory {
     pub registers: Registers,
     pub flags: Flags,
     pub mem: M,
-    pub pc: pc::ProgramCounter
+    pub pc: pc::ProgramCounter,
+    pub bcd_enabled: bool
 }
 
 impl Mos6502<mem::FixedMemory> {
@@ -52,7 +53,18 @@ impl<M> Mos6502<M> where M: mem::Memory {
             registers: Registers::new(),
             mem: mem,
             flags: Flags::RESERVED(),
-            pc: pc::ProgramCounter::new()
+            pc: pc::ProgramCounter::new(),
+            bcd_enabled: true
+        }
+    }
+
+    pub fn without_bcd(mem: M) -> Self {
+        Mos6502 {
+            registers: Registers::new(),
+            mem: mem,
+            flags: Flags::RESERVED(),
+            pc: pc::ProgramCounter::new(),
+            bcd_enabled: false
         }
     }
 

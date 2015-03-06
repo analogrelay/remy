@@ -1,5 +1,6 @@
 use mem::Memory;
 use cpu::mos6502::{ExecError,Operand,Mos6502,Flags};
+use cpu::mos6502::instr::utils::{bcd_to_int,int_to_bcd};
 
 pub fn exec<M>(cpu: &mut Mos6502<M>, op: Operand) -> Result<(), ExecError> where M: Memory {
     let n = try!(op.get_u8(cpu)) as isize;
@@ -8,11 +9,11 @@ pub fn exec<M>(cpu: &mut Mos6502<M>, op: Operand) -> Result<(), ExecError> where
 
     let t = 
         if cpu.bcd_enabled && cpu.flags.intersects(Flags::BCD()) {
-            let v = bcd_to_uint(n) + bcd_to_uint(a) + c;
+            let v = bcd_to_int(a) + bcd_to_int(n) + c;
             cpu.flags.set_if(Flags::CARRY(), v > 99);
-            uint_to_bcd(v)
+            int_to_bcd(v)
         } else {
-            let v = n + a + c;
+            let v = a + n + c;
             cpu.flags.set_if(Flags::CARRY(), v > 255);
             v
         };
@@ -21,25 +22,6 @@ pub fn exec<M>(cpu: &mut Mos6502<M>, op: Operand) -> Result<(), ExecError> where
 	cpu.registers.a = (t & 0xFF) as u8;
 	cpu.flags.set_sign_and_zero(cpu.registers.a);
 	Ok(())
-}
-
-fn bcd_to_uint(bcd: isize) -> isize {
-    (((bcd & 0xF0) >> 4) * 10) + (bcd & 0x0F)
-}
-
-fn uint_to_bcd(int: isize) -> isize {
-    let v = if int > 99 {
-        int - 100
-    } else {
-        int
-    };
-    if v > 99 {
-        panic!("bcd overflow!");
-    }
-    let h = (v / 10) as u8;
-    let l = (v % 10) as u8;
-    
-    ((h << 4) | l) as isize
 }
 
 #[cfg(test)]

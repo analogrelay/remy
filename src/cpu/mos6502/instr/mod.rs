@@ -54,6 +54,7 @@ mod utils {
     }
 }
 
+/// Represents an instruction that can be executed on a `Mos6502` processor
 #[derive(Copy,Debug,Eq,PartialEq)]
 pub enum Instruction {
 	ADC(Operand),
@@ -86,10 +87,14 @@ pub enum Instruction {
     Transfer(RegisterName, RegisterName)
 }
 
+/// Represents an error that can occur while executing an instruction
 #[derive(Clone,Debug,Eq,PartialEq)]
 pub enum ExecError {
+    /// Indicates that an error occurred retrieving an operand attached to the instruction
 	ErrorRetrievingOperand(OperandError),
+    /// Indicates that an error occurred reading or writing memory
 	ErrorReadingMemory(mem::MemoryError),
+    /// Indicates that a provided operand is illegal for use with the executed instruction
     IllegalOperand
 }
 
@@ -106,6 +111,11 @@ impl error::FromError<mem::MemoryError> for ExecError {
 }
 
 impl Instruction {
+    /// Executes the instruction against the provided CPU
+    ///
+    /// # Arguments
+    ///
+    /// * `cpu` - The process on which to execute the instruction
 	pub fn exec<M>(self, cpu: &mut Mos6502<M>) -> Result<(), ExecError> where M: mem::Memory {
 		match self {
 			Instruction::ADC(op) => adc::exec(cpu, op),

@@ -20,8 +20,10 @@ impl<'a> Segment<'a> {
     }
 }
 
+/// Represents an error that can occur during a virtual memory management operation
 #[derive(Copy,Debug,Eq,PartialEq)]
 pub enum VirtualMemoryError {
+    /// Indicates that a memory overlaps with another memory in the virtual memory
 	MemoryOverlap
 }
 

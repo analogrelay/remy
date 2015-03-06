@@ -6,22 +6,48 @@ use mem::Memory;
 use cpu::mos6502;
 use cpu::mos6502::Mos6502;
 
+/// Represents an operand that can be provided to an instruction
 #[derive(Copy,Debug,Eq,PartialEq)]
 pub enum Operand {
+    /// Indicates an operand provided inline with the instruction
     Immediate(u8),
+    /// Indicates an operand stored in a register
     Register(mos6502::RegisterName),
+    /// Indicates an operand stored at the provided memory address
+    ///
+    /// If the provided address is `m`, this operand is defined as `*m`
     Absolute(u16),
+    /// Indicates an operand stored at the provided index from the current value of the provided
+    /// register
+    ///
+    /// If the provided address is `m`, this operand is defined as `*(m+x)` or `*(m+y)` depending
+    /// on the register specified
     Indexed(u16, mos6502::RegisterName),
+    /// Indicates an operand stored at an address stored in the provided address
+    ///
+    /// If the provided address is `m`, this operand is defined as `**m`
     Indirect(u16),
+    /// Indicates an operand stored at an address stored in the provided address (indexed by the
+    /// `X` register)
+    ///
+    /// If the provided address is `m`, this operand is defined as `**(m+x)`
     PreIndexedIndirect(u8),
+    /// Indicates an operand stored at an address (indexed by the `Y` register) stored in the provided address
+    ///
+    /// If the provided address is `x`, this operand is defined as `*(*m+y)`
     PostIndexedIndirect(u8)
 }
 
+/// Represents an error that occurred which accessing an `Operand`
 #[derive(Clone,Debug,Eq,PartialEq)]
 pub enum OperandError {
+    /// Indicates an error occurred reading or writing memory
     ErrorAccessingMemory(mem::MemoryError),
-    OperandSizeMismatch,
+    /// Indicates that a request was made to write to a read-only operand such as
+    /// `Operand::Immediate`
     ReadOnlyOperand,
+    /// Indicates that a request was made to take the address of a non-addressable operand
+    /// such as `Operand::Immediate`
     NonAddressOperand
 }
 
@@ -32,6 +58,11 @@ impl error::FromError<mem::MemoryError> for OperandError {
 }
 
 impl Operand {
+    /// Retrieves the operand value
+    ///
+    /// # Arguments
+    ///
+    /// * `cpu` - The cpu from which to get the operand value
     pub fn get_u8<M>(&self, cpu: &Mos6502<M>) -> Result<u8, OperandError> where M: mem::Memory {
         Ok(match *self {
             Operand::Immediate(n)               => n,
@@ -40,6 +71,12 @@ impl Operand {
         })
     }
 
+    /// Sets the value of the operand on the specified cpu
+    ///
+    /// # Arguments
+    ///
+    /// * `cpu` - The cpu on which to set the operand value
+    /// * `val` - The value to set the operand to
     pub fn set_u8<M>(&self, cpu: &mut Mos6502<M>, val: u8) -> Result<(), OperandError> where M: mem::Memory {
         match *self {
             Operand::Absolute(addr)     => Ok(try!(cpu.mem.set_u8(addr as usize, val))),
@@ -52,6 +89,11 @@ impl Operand {
         }
     }
 
+    /// Retrieves the address of the operand on the specified cpu
+    ///
+    /// # Arguments
+    ///
+    /// * `cpu` - The cpu on which to get the operand value
     pub fn get_addr<M>(&self, cpu: &Mos6502<M>) -> Result<u16, OperandError> where M: mem::Memory {
         Ok(match *self {
             Operand::Absolute(addr)             => addr,

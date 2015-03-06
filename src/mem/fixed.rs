@@ -58,6 +58,12 @@ impl mem::Memory for FixedMemory {
         self.size
     }
 
+    /// Fills the provided buffer with data from the memory starting at the specified address
+    ///
+    /// # Arguments
+    ///
+    /// * `addr` - The address at which to start reading
+    /// * `buf` - The buffer to fill
     fn get(&self, addr: usize, buf: &mut [u8]) -> mem::MemoryResult<()> {
         let end = addr + buf.len() - 1;
         if end >= self.size {
@@ -78,6 +84,12 @@ impl mem::Memory for FixedMemory {
         }
     }
 
+    /// Writes the provided buffer to the memory starting at the specified address
+    ///
+    /// # Arguments
+    ///
+    /// * `addr` - The address at which to start writing
+    /// * `buf` - The buffer to write
     fn set(&mut self, addr: usize, buf: &[u8]) -> mem::MemoryResult<()> {
         let end = addr + buf.len() - 1;
         if end >= self.size {

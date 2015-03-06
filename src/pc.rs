@@ -1,21 +1,34 @@
+/// Represents a program counter value
 #[derive(Copy,Debug,Eq,PartialEq)]
 pub struct ProgramCounter {
 	pc: usize
 }
 
 impl ProgramCounter {
+    /// Allocates a new program counter value (initialized to 0)
 	pub fn new() -> ProgramCounter {
 		ProgramCounter { pc: 0 }
 	}
 
+    /// Retrieves the current value of the program counter
 	pub fn get(&self) -> usize {
 		self.pc
 	}
 
+    /// Sets the program counter to the provided value
+    ///
+    /// # Arguments
+    ///
+    /// * `val` - The value to set the program counter to
 	pub fn set(&mut self, val: usize) {
 		self.pc = val;
 	}
 
+    /// Advances or retreats the program counter by the provided (signed) amount
+    ///
+    /// # Argument
+    ///
+    /// * `amount` - The amount to advance (or retreat) the program counter by
 	pub fn advance(&mut self, amount: isize) {
 		self.pc = (self.pc as isize + amount) as usize;
 	}

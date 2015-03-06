@@ -231,6 +231,7 @@ impl Flags {
 impl ::std::ops::BitOr for Flags {
     type Output = Flags;
 
+    /// Returns a new flags value representing the bitwise OR of the provided flags
     fn bitor(self, rhs: Flags) -> Flags {
         Flags::new(self.bits | rhs.bits)
     }
@@ -239,6 +240,7 @@ impl ::std::ops::BitOr for Flags {
 impl ::std::ops::BitAnd for Flags {
     type Output = Flags;
 
+    /// Returns a new flags value representing the bitwise AND of the provided flags 
     fn bitand(self, rhs: Flags) -> Flags {
         Flags::new(self.bits & rhs.bits)
     }
@@ -247,6 +249,7 @@ impl ::std::ops::BitAnd for Flags {
 impl ::std::ops::Not for Flags {
     type Output = Flags;
 
+    /// Negates the value of the flags
     fn not(self) -> Flags {
         Flags::new(!self.bits)
     }

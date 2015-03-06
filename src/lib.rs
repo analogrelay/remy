@@ -3,7 +3,11 @@
 #![feature(alloc)]
 #![feature(core)]
 
+/// Contains code to emulate supported CPUs
 pub mod cpu;
-pub mod util;
+
+/// Contains abstractions useful for Memory Management
 pub mod mem;
+
+/// Contains a Program Counter object to track program counter position
 pub mod pc;

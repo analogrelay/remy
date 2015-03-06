@@ -2,52 +2,97 @@ use mem;
 
 use pc;
 
+/// Indicates the start of the MOS 6502 Stack
 pub const STACK_START   : usize = 0x0100;
+
+/// Indicates the end of the MOS 6502 Stack
 pub const STACK_END     : usize = 0x01FF;
 
+/// Denotes a particular register
 #[derive(Copy,Debug,Eq,PartialEq)]
 pub enum RegisterName {
+    /// Denotes the accumulator ("A" register)
     A,
+
+    /// Denotes the "X" register
     X,
+
+    /// Denotes the "Y" register
     Y,
-    P
+
+    /// Denotes the flags register
+    P,
+
+    /// Denotes the stack pointer
+    S
 }
 
 impl RegisterName {
+    /// Retrieves the value of the specified register from the provided cpu
+    ///
+    /// # Arguments
+    /// * `cpu` - The cpu to retrieve the register value from
     pub fn get<M>(self, cpu: &Mos6502<M>) -> u8 where M : mem::Memory {
         match self {
             RegisterName::A => cpu.registers.a,
             RegisterName::X => cpu.registers.x,
             RegisterName::Y => cpu.registers.y,
-            RegisterName::P => cpu.flags.bits
+            RegisterName::P => cpu.flags.bits,
+            RegisterName::S => cpu.registers.sp
         }
     }
 
+    /// Sets the value of the specified register on the provided cpu
+    ///
+    /// # Arguments
+    /// * `cpu` - The cpu to set the register value on
+    /// * `val` - The value to set the register to
     pub fn set<M>(self, cpu: &mut Mos6502<M>, val: u8) where M : mem::Memory {
         match self {
             RegisterName::A => cpu.registers.a = val,
             RegisterName::X => cpu.registers.x = val,
             RegisterName::Y => cpu.registers.y = val,
-            RegisterName::P => cpu.flags.replace(Flags::new(val))
+            RegisterName::P => cpu.flags.replace(Flags::new(val)),
+            RegisterName::S => cpu.registers.sp = val
         }
     }
 }
 
+/// Represents a MOS 6502 Central Processing Unit
+///
+/// Includes support for Binary Coded Decimal arithmetic, does
+/// NOT include an Audio Processing Unit.
 pub struct Mos6502<M> where M: mem::Memory {
+    /// The registers contained in the cpu
     pub registers: Registers,
+    /// The processor status flags
     pub flags: Flags,
+    /// The memory attached to the cpu, including external device registers and ROM
     pub mem: M,
+    /// The program counter for the cpu
     pub pc: pc::ProgramCounter,
+    /// Indicates if BCD arithmetic is enabled on this instance
     pub bcd_enabled: bool
 }
 
 impl Mos6502<mem::FixedMemory> {
+    /// Creates a `Mos6502` instance using a fixed memory
+    ///
+    /// The memory is attached at address `$0000`
+    ///
+    /// # Arguments
+    /// * `size` - The size of the memory to attach.
     pub fn with_fixed_memory(size: usize) -> Self {
         Mos6502::new(mem::FixedMemory::new(size))
     }
 }
 
 impl<M> Mos6502<M> where M: mem::Memory {
+    /// Creates a `Mos6502` instance using a provided memory,
+    /// with BCD arithmetic enabled
+    ///
+    /// Use of BCD arithmetic still requires that the
+    /// BCD flag be set.
     pub fn new(mem: M) -> Self {
         Mos6502 {
             registers: Registers::new(),
@@ -58,6 +103,11 @@ impl<M> Mos6502<M> where M: mem::Memory {
         }
     }
 
+    /// Creates a `Mos6502` instance using a provided memory,
+    /// with BCD arithmetic disabled
+    ///
+    /// BCD arithmetic will not be available, regardless of the
+    /// value of the BCD flag.
     pub fn without_bcd(mem: M) -> Self {
         Mos6502 {
             registers: Registers::new(),
@@ -68,6 +118,14 @@ impl<M> Mos6502<M> where M: mem::Memory {
         }
     }
 
+    /// Push a value on to the stack
+    ///
+    /// Note: A `MemoryError::OutOfBounds` result is returned
+    /// if there is no memory available in the stack range
+    /// ($0100 - $01FF)
+    ///
+    /// # Arguments
+    /// * `val` - The value to push on to the stack
     pub fn push(&mut self, val: u8) -> mem::MemoryResult<()> {
         let addr = (self.registers.sp as usize) + STACK_START;
         try!(self.mem.set_u8(addr, val));
@@ -75,6 +133,11 @@ impl<M> Mos6502<M> where M: mem::Memory {
         Ok(())
     }
 
+    /// Pulls a value from the stack
+    ///
+    /// Note: A `MemoryError::OutOfBounds` result is returned
+    /// if there is no memory available in the stack range
+    /// ($0100 - $01FF)
     pub fn pull(&mut self) -> mem::MemoryResult<u8> {
         self.registers.sp += 1;
         let addr = (self.registers.sp as usize) + STACK_START;
@@ -82,19 +145,26 @@ impl<M> Mos6502<M> where M: mem::Memory {
     }
 }
 
+/// Represents the 8-bit registers available on the MOS 6502 processor
 pub struct Registers {
+    /// Contains the value of the accumulator (`A` register)
     pub a: u8,
+    /// Contains the value of the `X` register
     pub x: u8,
+    /// Contains the value of the `Y` register
     pub y: u8,
+    /// Contains the value of the stack pointer (`S` register)
     pub sp: u8,
 }
 
 impl Registers {
+    /// Allocates an empty set of registers
     pub fn new() -> Registers {
         Registers { a: 0, x: 0, y: 0, sp: 0 }
     }
 }
 
+/// Represents the processor status flags supported by the MOS 6502 CPU
 #[derive(Copy,Debug,Eq,PartialEq)]
 pub struct Flags {
     pub bits: u8
@@ -110,30 +180,35 @@ impl Flags {
     #[inline] #[allow(non_snake_case)] pub fn ZERO() -> Flags        { Flags::new(0b00000010) }
     #[inline] #[allow(non_snake_case)] pub fn CARRY() -> Flags       { Flags::new(0b00000001) }
     #[inline] #[allow(non_snake_case)] pub fn NONE() -> Flags        { Flags::new(0b00000000) }
-    #[inline] #[allow(non_snake_case)] pub fn ARITHMETIC() -> Flags  { Flags::new(0b11000011) }
 
+    /// Creates a new `Flags` structure from the provided 8-bit value
     pub fn new(bits: u8) -> Flags {
         Flags { bits: bits }
     }
 
+    /// Returns a value indicating if the specified flags are set on this instance
     pub fn intersects(&self, other: Flags) -> bool {
         self.bits & other.bits == other.bits
     }
 
+    /// Returns a value indicating if the CARRY flag is set
     pub fn carry(&self) -> bool {
         self.intersects(Flags::CARRY())
     }
 
+    /// Clears the specified flags
     pub fn clear(&mut self, flags: Flags) {
         let new_val = *self & (!flags);
         self.replace(new_val);
     }
 
+    /// Sets the specified flags (leaving other flags alone)
     pub fn set(&mut self, flags: Flags) {
         let new_val = *self | flags;
         self.replace(new_val);
     }
 
+    /// Sets or clears the specified flags based on the provided condition
     pub fn set_if(&mut self, flag_selector: Flags, condition: bool) {
         self.clear(flag_selector);
         if condition {
@@ -141,10 +216,12 @@ impl Flags {
         }
     }
 
+    /// Replaces all flags with the provided value
     pub fn replace(&mut self, flags: Flags) {
         self.bits = (flags | Flags::RESERVED()).bits;
     }
 
+    /// Sets the sign and zero flags based on the provided value
     pub fn set_sign_and_zero(&mut self, val: u8) {
         self.set_if(Flags::ZERO(), val == 0);
         self.set_if(Flags::SIGN(), val & 0x80 != 0);

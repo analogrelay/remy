@@ -1,4 +1,3 @@
-#![allow(dead_code)]
 #![deny(deprecated,unused_imports)]
 
 #![feature(alloc)]

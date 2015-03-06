@@ -26,6 +26,7 @@ mod rotate;
 mod ret;
 mod sbc;
 mod set_flag;
+mod store;
 
 mod utils {
     pub fn bcd_to_int(bcd: isize) -> isize {
@@ -133,6 +134,7 @@ impl Instruction {
             Instruction::RTS => ret::from_sub(cpu),
             Instruction::SBC(op) => sbc::exec(cpu, op),
             Instruction::SetFlag(flag_selector) => set_flag::exec(cpu, flag_selector),
+            Instruction::Store(reg, op) => store::exec(cpu, reg, op),
 			_ => Err(ExecError::UnknownInstruction)
 		}
 	}

@@ -1,4 +1,4 @@
-use std::error;
+use std::{error,string};
 
 use mem;
 
@@ -110,6 +110,13 @@ impl error::FromError<mem::MemoryError> for ExecError {
 	}
 }
 
+instruction_set!(
+    ADC(op: Operand) => { adc::exec(cpu, op) },
+    AND(op: Operand) => { and::exec(cpu, op) },
+    ASL(op: Operand) => { asl::exec(cpu, op) },
+    BCC(offset: i8) => { branch::if_clear(cpu, offset, Flags::CARRY()) }
+)
+
 impl Instruction {
     /// Executes the instruction against the provided CPU
     ///
@@ -148,4 +155,72 @@ impl Instruction {
             Instruction::Transfer(src, dst) => transfer::exec(cpu, src, dst),
 		}
 	}
+
+    pub fn mnemonic(&self) -> &'static str {
+        match self {
+            Instruction::ADC(_)                                         => "ADC",
+            Instruction::AND(_)                                         => "AND",
+            Instruction::ASL(_)                                         => "ASL",
+            Instruction::BranchIfClear(_, Flags::CARRY())               => "BCC",
+            Instruction::BranchIfSet(_, Flags::CARRY())                 => "BCS",
+            Instruction::BranchIfSet(_, Flags::ZERO())                  => "BEQ",
+            Instruction::BIT(_)                                         => "BIT",
+            Instruction::BranchIfSet(_, Flags::SIGN())                  => "BMI",
+            Instruction::BranchIfClear(_, Flags::ZERO())                => "BNE",
+            Instruction::BranchIfClear(_, Flags::SIGN())                => "BPL",
+            Instruction::BRK                                            => "BRK",
+            Instruction::BranchIfClear(_, Flags::OVERFLOW())            => "BVC",
+            Instruction::BranchIfSet(_, Flags::OVERFLOW())              => "BVS",
+            Instruction::ClearFlag(Flags::CARRY())                      => "CLC",
+            Instruction::ClearFlag(Flags::BCD())                        => "CLD",
+            Instruction::ClearFlag(Flags::INTERRUPT())                  => "CLI",
+            Instruction::ClearFlag(Flags::OVERFLOW())                   => "CLV",
+            Instruction::Compare(RegisterName::A, _)                    => "CMP",
+            Instruction::Compare(RegisterName::X, _)                    => "CPX",
+            Instruction::Compare(RegisterName::Y, _)                    => "CPY",
+            Instruction::DEC(Operand::Register(RegisterName::X))        => "DEX",
+            Instruction::DEC(Operand::Register(RegisterName::Y))        => "DEY",
+            Instruction::DEC(_)                                         => "DEC",
+            Instruction::EOR(_)                                         => "EOR",
+            Instruction::INC(Operand::Register(RegisterName::X))        => "INX",
+            Instruction::INC(Operand::Register(RegisterName::Y))        => "INY",
+            Instruction::INC(_)                                         => "INC",
+            Instruction::JMP(_)                                         => "JMP",
+            Instruction::JSR(_)                                         => "JSR",
+            Instruction::Load(RegisterName::A, _)                       => "LDA",
+            Instruction::Load(RegisterName::X, _)                       => "LDX",
+            Instruction::Load(RegisterName::Y, _)                       => "LDY",
+            Instruction::LSR(_)                                         => "LSR",
+            Instruction::NOP                                            => "NOP",
+            Instruction::ORA(_)                                         => "ORA",
+            Instruction::Push(RegisterName::A)                          => "PHA",
+            Instruction::Push(RegisterName::P)                          => "PHP",
+            Instruction::Pull(RegisterName::A)                          => "PLA",
+            Instruction::Pull(RegisterName::P)                          => "PLP",
+            Instruction::ROL(_)                                         => "ROL",
+            Instruction::ROR(_)                                         => "ROR",
+            Instruction::RTI                                            => "RTI",
+            Instruction::RTS                                            => "RTS",
+            Instruction::SBC(_)                                         => "SBC",
+            Instruction::SetFlag(Flags::CARRY())                        => "SEC",
+            Instruction::SetFlag(Flags::BCD())                          => "SED",
+            Instruction::SetFlag(Flags::INTERRUPT())                    => "SEI",
+            Instruction::Store(RegisterName::A, _)                      => "STA",
+            Instruction::Store(RegisterName::X, _)                      => "STX",
+            Instruction::Store(RegisterName::Y, _)                      => "STY",
+            Instruction::Transfer(RegisterName::A, RegisterName::X)     => "TAX",
+            Instruction::Transfer(RegisterName::A, RegisterName::Y)     => "TAY",
+            Instruction::Transfer(RegisterName::S, RegisterName::X)     => "TSX",
+            Instruction::Transfer(RegisterName::X, RegisterName::A)     => "TXA",
+            Instruction::Transfer(RegisterName::X, RegisterName::S)     => "TXS",
+            Instruction::Transfer(RegisterName::Y, RegisterName::A)     => "TYA",
+            _                                                           => "UNKNOWN"
+        }
+    }
+}
+
+impl string::ToString for Instruction {
+    /// Returns a string representing the instruction
+    pub fn to_string(&self) -> String {
+    }
 }

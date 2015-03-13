@@ -1,5 +1,5 @@
 use mem::Memory;
-use cpu::mos6502::{ExecError,Mos6502,Flags};
+use cpus::mos6502::{ExecError,Mos6502,Flags};
 
 pub fn if_clear<M>(cpu: &mut Mos6502<M>, offset: i8, flags: Flags) -> Result<(), ExecError> where M: Memory {
     if !cpu.flags.intersects(flags) {
@@ -18,8 +18,8 @@ pub fn if_set<M>(cpu: &mut Mos6502<M>, offset: i8, flags: Flags) -> Result<(), E
 #[cfg(test)]
 mod test {
     use mem::VirtualMemory;
-	use cpu::mos6502::instr::branch;
-	use cpu::mos6502::{Mos6502,Flags};
+	use cpus::mos6502::instr::branch;
+	use cpus::mos6502::{Mos6502,Flags};
 
     #[test]
     pub fn if_clear_does_not_modify_pc_if_flag_set() {

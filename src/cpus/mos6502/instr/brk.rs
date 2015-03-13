@@ -1,5 +1,5 @@
 use mem::Memory;
-use cpu::mos6502::{ExecError,Mos6502,Flags};
+use cpus::mos6502::{ExecError,Mos6502,Flags};
 
 pub fn exec<M>(cpu: &mut Mos6502<M>) -> Result<(), ExecError> where M: Memory {
     cpu.pc.advance(1);
@@ -17,9 +17,9 @@ pub fn exec<M>(cpu: &mut Mos6502<M>) -> Result<(), ExecError> where M: Memory {
 #[cfg(test)]
 mod test {
     use mem::{Memory,FixedMemory,VirtualMemory};
-	use cpu::mos6502::instr::brk;
-	use cpu::mos6502::{Mos6502,Flags};
-    use cpu::mos6502::cpu::STACK_START;
+	use cpus::mos6502::instr::brk;
+	use cpus::mos6502::{Mos6502,Flags};
+    use cpus::mos6502::cpu::STACK_START;
 
     #[test]
     pub fn brk_increments_and_pushes_pc_on_to_stack() {

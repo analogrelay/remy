@@ -1,5 +1,5 @@
 use mem::Memory;
-use cpu::mos6502::{ExecError,Mos6502,RegisterName};
+use cpus::mos6502::{ExecError,Mos6502,RegisterName};
 
 pub fn exec<M>(cpu: &mut Mos6502<M>, src: RegisterName, dst: RegisterName) -> Result<(), ExecError> where M: Memory {
     let val = src.get(cpu);
@@ -10,8 +10,8 @@ pub fn exec<M>(cpu: &mut Mos6502<M>, src: RegisterName, dst: RegisterName) -> Re
 #[cfg(test)]
 mod test {
     use mem::VirtualMemory;
-    use cpu::mos6502::instr::transfer;
-    use cpu::mos6502::{Mos6502,RegisterName};
+    use cpus::mos6502::instr::transfer;
+    use cpus::mos6502::{Mos6502,RegisterName};
 
     #[test]
     pub fn transfer_sets_destination_register_to_source_register_value() {

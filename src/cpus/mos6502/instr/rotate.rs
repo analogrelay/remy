@@ -1,5 +1,5 @@
 use mem::Memory;
-use cpu::mos6502::{ExecError,Mos6502,Operand,Flags};
+use cpus::mos6502::{ExecError,Mos6502,Operand,Flags};
 
 pub fn left<M>(cpu: &mut Mos6502<M>, op: Operand) -> Result<(), ExecError> where M : Memory {
     exec(cpu, op, true)
@@ -37,8 +37,8 @@ fn exec<M>(cpu: &mut Mos6502<M>, op: Operand, left: bool) -> Result<(), ExecErro
 #[cfg(test)]
 mod test {
     use mem::VirtualMemory;
-    use cpu::mos6502::instr::rotate;
-    use cpu::mos6502::{Mos6502,Operand,Flags,RegisterName};
+    use cpus::mos6502::instr::rotate;
+    use cpus::mos6502::{Mos6502,Operand,Flags,RegisterName};
 
     #[test]
     pub fn rotate_can_rotate_left() {

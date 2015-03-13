@@ -2,7 +2,7 @@ use std::{error,string};
 
 use mem;
 
-use cpu::mos6502::{Mos6502,Operand,OperandError,RegisterName,Flags};
+use cpus::mos6502::{Mos6502,Operand,OperandError,RegisterName,Flags};
 
 mod adc;
 mod and;
@@ -110,13 +110,6 @@ impl error::FromError<mem::MemoryError> for ExecError {
 	}
 }
 
-instruction_set!(
-    ADC(op: Operand) => { adc::exec(cpu, op) },
-    AND(op: Operand) => { and::exec(cpu, op) },
-    ASL(op: Operand) => { asl::exec(cpu, op) },
-    BCC(offset: i8) => { branch::if_clear(cpu, offset, Flags::CARRY()) }
-)
-
 impl Instruction {
     /// Executes the instruction against the provided CPU
     ///
@@ -156,7 +149,7 @@ impl Instruction {
 		}
 	}
 
-    pub fn mnemonic(&self) -> &'static str {
+    /*pub fn mnemonic(&self) -> &'static str {
         match self {
             Instruction::ADC(_)                                         => "ADC",
             Instruction::AND(_)                                         => "AND",
@@ -216,11 +209,12 @@ impl Instruction {
             Instruction::Transfer(RegisterName::Y, RegisterName::A)     => "TYA",
             _                                                           => "UNKNOWN"
         }
-    }
+    }*/
 }
 
 impl string::ToString for Instruction {
     /// Returns a string representing the instruction
-    pub fn to_string(&self) -> String {
+    fn to_string(&self) -> String {
+        unimplemented!()
     }
 }

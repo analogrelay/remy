@@ -1,5 +1,5 @@
 use mem::Memory;
-use cpu::mos6502::{ExecError,Operand,Mos6502,Flags};
+use cpus::mos6502::{ExecError,Operand,Mos6502,Flags};
 
 pub fn exec<M>(cpu: &mut Mos6502<M>, op: Operand) -> Result<(), ExecError> where M: Memory {
     let b = try!(op.get_u8(cpu));
@@ -20,8 +20,8 @@ pub fn exec<M>(cpu: &mut Mos6502<M>, op: Operand) -> Result<(), ExecError> where
 #[cfg(test)]
 mod test {
     use mem::VirtualMemory;
-	use cpu::mos6502::instr::asl;
-	use cpu::mos6502::{Mos6502,Operand,RegisterName,Flags};
+	use cpus::mos6502::instr::asl;
+	use cpus::mos6502::{Mos6502,Operand,RegisterName,Flags};
     
     #[test]
     pub fn asl_shifts_value_left() {

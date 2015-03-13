@@ -1,6 +1,6 @@
 use mem::Memory;
-use cpu::mos6502::{ExecError,Operand,Mos6502,Flags};
-use cpu::mos6502::instr::utils::{bcd_to_int,int_to_bcd};
+use cpus::mos6502::{ExecError,Operand,Mos6502,Flags};
+use cpus::mos6502::instr::utils::{bcd_to_int,int_to_bcd};
 
 pub fn exec<M>(cpu: &mut Mos6502<M>, op: Operand) -> Result<(), ExecError> where M: Memory {
     let n = try!(op.get_u8(cpu)) as isize;
@@ -27,8 +27,8 @@ pub fn exec<M>(cpu: &mut Mos6502<M>, op: Operand) -> Result<(), ExecError> where
 #[cfg(test)]
 mod test {
     use mem::VirtualMemory;
-	use cpu::mos6502::instr::sbc;
-	use cpu::mos6502::{Mos6502,Operand,Flags};
+	use cpus::mos6502::instr::sbc;
+	use cpus::mos6502::{Mos6502,Operand,Flags};
 
     // The "Borrow" psuedo-flag is defined as !Carry
     // Thus, when Carry is SET, NO Borrow is performed

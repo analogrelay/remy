@@ -37,8 +37,13 @@ fn exec<M>(cpu: &mut Mos6502<M>, op: Operand, left: bool) -> Result<(), ExecErro
 #[cfg(test)]
 mod test {
     use mem::VirtualMemory;
+<<<<<<< master:src/cpu/mos6502/instr/rotate.rs
     use cpu::mos6502::instr::rotate;
     use cpu::mos6502::{Mos6502,Operand,Flags,RegisterName};
+=======
+    use cpus::mos6502::instr::rotate;
+    use cpus::mos6502::{Mos6502,Operand,Flags};
+>>>>>>> local:src/cpus/mos6502/instr/rotate.rs
 
     #[test]
     pub fn rotate_can_rotate_left() {
@@ -48,7 +53,7 @@ mod test {
         cpu.flags.set(Flags::CARRY());
         cpu.registers.a = 0b01101100;
 
-        rotate::left(&mut cpu, Operand::Register(RegisterName::A)).unwrap();
+        rotate::left(&mut cpu, Operand::Accumulator).unwrap();
 
         assert_eq!(cpu.registers.a, 0b11011001);
         assert!(!cpu.flags.intersects(Flags::CARRY()));
@@ -60,10 +65,10 @@ mod test {
         let mut cpu = Mos6502::new(vm);
 
         cpu.registers.a = 0b10000000;
-        rotate::left(&mut cpu, Operand::Register(RegisterName::A)).unwrap();
+        rotate::left(&mut cpu, Operand::Accumulator).unwrap();
         assert!(cpu.flags.intersects(Flags::CARRY()));
         cpu.registers.a = 0b01111111;
-        rotate::left(&mut cpu, Operand::Register(RegisterName::A)).unwrap();
+        rotate::left(&mut cpu, Operand::Accumulator).unwrap();
         assert!(!cpu.flags.intersects(Flags::CARRY()));
     }
 
@@ -73,7 +78,7 @@ mod test {
         let mut cpu = Mos6502::new(vm);
 
         cpu.registers.a = 0b01111111;
-        rotate::left(&mut cpu, Operand::Register(RegisterName::A)).unwrap();
+        rotate::left(&mut cpu, Operand::Accumulator).unwrap();
         assert!(cpu.flags.intersects(Flags::SIGN()));
     }
 
@@ -83,7 +88,7 @@ mod test {
         let mut cpu = Mos6502::new(vm);
 
         cpu.registers.a = 0b10000000;
-        rotate::left(&mut cpu, Operand::Register(RegisterName::A)).unwrap();
+        rotate::left(&mut cpu, Operand::Accumulator).unwrap();
         assert!(cpu.flags.intersects(Flags::ZERO()));
     }
 
@@ -95,7 +100,7 @@ mod test {
         cpu.flags.set(Flags::CARRY());
         cpu.registers.a = 0b01101100;
 
-        rotate::right(&mut cpu, Operand::Register(RegisterName::A)).unwrap();
+        rotate::right(&mut cpu, Operand::Accumulator).unwrap();
 
         assert_eq!(cpu.registers.a, 0b10110110);
         assert!(!cpu.flags.intersects(Flags::CARRY()));
@@ -107,10 +112,10 @@ mod test {
         let mut cpu = Mos6502::new(vm);
 
         cpu.registers.a = 0b00000001;
-        rotate::right(&mut cpu, Operand::Register(RegisterName::A)).unwrap();
+        rotate::right(&mut cpu, Operand::Accumulator).unwrap();
         assert!(cpu.flags.intersects(Flags::CARRY()));
         cpu.registers.a = 0b11111110;
-        rotate::right(&mut cpu, Operand::Register(RegisterName::A)).unwrap();
+        rotate::right(&mut cpu, Operand::Accumulator).unwrap();
         assert!(!cpu.flags.intersects(Flags::CARRY()));
     }
 
@@ -121,7 +126,7 @@ mod test {
 
         cpu.flags.set(Flags::CARRY());
         cpu.registers.a = 0b00000000;
-        rotate::right(&mut cpu, Operand::Register(RegisterName::A)).unwrap();
+        rotate::right(&mut cpu, Operand::Accumulator).unwrap();
         assert!(cpu.flags.intersects(Flags::SIGN()));
     }
 
@@ -131,7 +136,7 @@ mod test {
         let mut cpu = Mos6502::new(vm);
 
         cpu.registers.a = 0b00000001;
-        rotate::right(&mut cpu, Operand::Register(RegisterName::A)).unwrap();
+        rotate::right(&mut cpu, Operand::Accumulator).unwrap();
         assert!(cpu.flags.intersects(Flags::ZERO()));
     }
 }

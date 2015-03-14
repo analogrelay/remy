@@ -1,3 +1,5 @@
+use std::fmt;
+
 use mem;
 
 use pc;
@@ -54,6 +56,18 @@ impl RegisterName {
             RegisterName::Y => cpu.registers.y = val,
             RegisterName::P => cpu.flags.replace(Flags::new(val)),
             RegisterName::S => cpu.registers.sp = val
+        }
+    }
+}
+
+impl fmt::Display for RegisterName {
+    fn fmt(&self, formatter: &mut fmt::Formatter) -> Result<(), fmt::Error> {
+        match self {
+            &RegisterName::A => formatter.write_str("A"),
+            &RegisterName::X => formatter.write_str("X"),
+            &RegisterName::Y => formatter.write_str("Y"),
+            &RegisterName::S => formatter.write_str("S"),
+            &RegisterName::P => formatter.write_str("P")
         }
     }
 }
@@ -260,7 +274,7 @@ mod test {
     mod mos6502 {
         use mem::{Memory,FixedMemory,VirtualMemory};
 
-        use cpu::mos6502;
+        use cpus::mos6502;
 
         #[test]
         pub fn push_places_value_at_current_sp_location() {
@@ -303,7 +317,7 @@ mod test {
     }
 
     mod flags {
-        use cpu::mos6502::Flags;
+        use cpus::mos6502::Flags;
 
         #[test]
         pub fn intersects_returns_true_if_all_of_provided_flags_are_set() {
@@ -411,7 +425,7 @@ mod test {
 
     mod register_name {
         use mem::VirtualMemory;
-        use cpu::mos6502::{Mos6502,RegisterName,Flags};
+        use cpus::mos6502::{Mos6502,RegisterName,Flags};
 
         #[test]
         pub fn gets_a() {

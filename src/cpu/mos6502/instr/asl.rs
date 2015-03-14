@@ -20,14 +20,19 @@ pub fn exec<M>(cpu: &mut Mos6502<M>, op: Operand) -> Result<(), ExecError> where
 #[cfg(test)]
 mod test {
     use mem::VirtualMemory;
+<<<<<<< master:src/cpu/mos6502/instr/asl.rs
 	use cpu::mos6502::instr::asl;
 	use cpu::mos6502::{Mos6502,Operand,RegisterName,Flags};
+=======
+	use cpus::mos6502::instr::asl;
+	use cpus::mos6502::{Mos6502,Operand,Flags};
+>>>>>>> local:src/cpus/mos6502/instr/asl.rs
     
     #[test]
     pub fn asl_shifts_value_left() {
         let mut cpu = init_cpu();
         cpu.registers.a = 0x0F;
-        asl::exec(&mut cpu, Operand::Register(RegisterName::A)).unwrap();
+        asl::exec(&mut cpu, Operand::Accumulator).unwrap();
         assert_eq!(cpu.registers.a, 0x1E);
     }
 
@@ -35,7 +40,7 @@ mod test {
     pub fn asl_sets_carry_if_bit_7_is_set_before_shifting() {
         let mut cpu = init_cpu();
         cpu.registers.a = 0x81;
-        asl::exec(&mut cpu, Operand::Register(RegisterName::A)).unwrap();
+        asl::exec(&mut cpu, Operand::Accumulator).unwrap();
         assert_eq!(cpu.registers.a, 0x02);
         assert_eq!(cpu.flags, Flags::CARRY() | Flags::RESERVED());
     }
@@ -44,7 +49,7 @@ mod test {
     pub fn asl_sets_sign_if_bit_7_is_set_after_shifting() {
         let mut cpu = init_cpu();
         cpu.registers.a = 0x40;
-        asl::exec(&mut cpu, Operand::Register(RegisterName::A)).unwrap();
+        asl::exec(&mut cpu, Operand::Accumulator).unwrap();
         assert_eq!(cpu.registers.a, 0x80);
         assert_eq!(cpu.flags, Flags::SIGN() | Flags::RESERVED());
     }
@@ -53,7 +58,7 @@ mod test {
     pub fn asl_sets_zero_if_value_is_zero_after_shifting() {
         let mut cpu = init_cpu();
         cpu.registers.a = 0x00;
-        asl::exec(&mut cpu, Operand::Register(RegisterName::A)).unwrap();
+        asl::exec(&mut cpu, Operand::Accumulator).unwrap();
         assert_eq!(cpu.registers.a, 0x00);
         assert_eq!(cpu.flags, Flags::ZERO() | Flags::RESERVED());
     }

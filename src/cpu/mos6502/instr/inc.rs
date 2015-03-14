@@ -1,7 +1,18 @@
 use mem::Memory;
+<<<<<<< master:src/cpu/mos6502/instr/inc.rs
 use cpu::mos6502::{ExecError,Mos6502,Operand};
+=======
+use cpus::mos6502::{ExecError,Mos6502,Operand,RegisterName};
+>>>>>>> local:src/cpus/mos6502/instr/inc.rs
 
-pub fn exec<M>(cpu: &mut Mos6502<M>, op: Operand) -> Result<(), ExecError> where M: Memory {
+pub fn reg<M>(cpu: &mut Mos6502<M>, reg: RegisterName) -> Result<(), ExecError> where M: Memory {
+    let new_val = (reg.get(cpu).wrapping_add(1)) & 0xFF;
+    cpu.flags.set_sign_and_zero(new_val);
+    reg.set(cpu, new_val);
+    Ok(())
+}
+
+pub fn mem<M>(cpu: &mut Mos6502<M>, op: Operand) -> Result<(), ExecError> where M: Memory {
     let new_val = (try!(op.get_u8(cpu)).wrapping_add(1)) & 0xFF;
     cpu.flags.set_sign_and_zero(new_val);
     try!(op.set_u8(cpu, new_val));
@@ -18,7 +29,7 @@ mod test {
     fn inc_sets_sign_flag_if_new_value_is_negative() {
         let mut cpu = init_cpu();
         cpu.mem.set_u8(0, 127u8).unwrap();
-        inc::exec(&mut cpu, Operand::Absolute(0)).unwrap();
+        inc::mem(&mut cpu, Operand::Absolute(0)).unwrap();
         assert!(cpu.flags.intersects(Flags::SIGN()));
     }
     
@@ -27,7 +38,7 @@ mod test {
         let mut cpu = init_cpu();
         cpu.flags.set(Flags::SIGN());
         cpu.mem.set_u8(0, -1).unwrap();
-        inc::exec(&mut cpu, Operand::Absolute(0)).unwrap();
+        inc::mem(&mut cpu, Operand::Absolute(0)).unwrap();
         assert!(!cpu.flags.intersects(Flags::SIGN()));
     }
 
@@ -35,7 +46,7 @@ mod test {
     fn inc_sets_zero_flag_if_new_value_is_zero() {
         let mut cpu = init_cpu();
         cpu.mem.set_u8(0, -1).unwrap();
-        inc::exec(&mut cpu, Operand::Absolute(0)).unwrap();
+        inc::mem(&mut cpu, Operand::Absolute(0)).unwrap();
         assert!(cpu.flags.intersects(Flags::ZERO()));
     }
 
@@ -44,7 +55,7 @@ mod test {
         let mut cpu = init_cpu();
         cpu.flags.set(Flags::ZERO());
         cpu.mem.set_u8(0, 0).unwrap();
-        inc::exec(&mut cpu, Operand::Absolute(0)).unwrap();
+        inc::mem(&mut cpu, Operand::Absolute(0)).unwrap();
         assert!(!cpu.flags.intersects(Flags::ZERO()));
     }
 
@@ -52,7 +63,7 @@ mod test {
     fn inc_sets_operand_to_original_value_plus_one() {
         let mut cpu = init_cpu();
         cpu.mem.set_u8(0, 42).unwrap();
-        inc::exec(&mut cpu, Operand::Absolute(0)).unwrap();
+        inc::mem(&mut cpu, Operand::Absolute(0)).unwrap();
         assert_eq!(Ok(43), cpu.mem.get_u8(0));
     }
     

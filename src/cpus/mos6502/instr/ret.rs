@@ -1,5 +1,5 @@
 use mem::Memory;
-use cpu::mos6502::{ExecError,Flags,Mos6502};
+use cpus::mos6502::{ExecError,Flags,Mos6502};
 
 pub fn from_interrupt<M>(cpu: &mut Mos6502<M>) -> Result<(), ExecError> where M : Memory {
     let p = try!(cpu.pull());
@@ -22,8 +22,8 @@ pub fn from_sub<M>(cpu: &mut Mos6502<M>) -> Result<(), ExecError> where M : Memo
 #[cfg(test)]
 mod test {
     use mem::{FixedMemory,VirtualMemory};
-	use cpu::mos6502::instr::ret;
-	use cpu::mos6502::{Mos6502,STACK_START};
+	use cpus::mos6502::instr::ret;
+	use cpus::mos6502::{Mos6502,STACK_START};
 
     #[test]
     pub fn rti_loads_flags_from_stack() {

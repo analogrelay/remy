@@ -1,5 +1,5 @@
 use mem::Memory;
-use cpu::mos6502::{ExecError,Mos6502,Operand};
+use cpus::mos6502::{ExecError,Mos6502,Operand};
 
 pub fn exec<M>(cpu: &mut Mos6502<M>, op: Operand) -> Result<(), ExecError> where M: Memory {
     let addr = try!(op.get_addr(cpu));
@@ -11,8 +11,8 @@ pub fn exec<M>(cpu: &mut Mos6502<M>, op: Operand) -> Result<(), ExecError> where
 #[cfg(test)]
 mod test {
     use mem::{Memory,FixedMemory,VirtualMemory};
-	use cpu::mos6502::instr::jmp;
-	use cpu::mos6502::{Mos6502,Operand};
+	use cpus::mos6502::instr::jmp;
+	use cpus::mos6502::{Mos6502,Operand};
 
     #[test]
     pub fn jmp_sets_pc_to_address_if_absolute_argument() {

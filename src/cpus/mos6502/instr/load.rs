@@ -1,5 +1,5 @@
 use mem::Memory;
-use cpu::mos6502::{ExecError,Mos6502,RegisterName,Operand};
+use cpus::mos6502::{ExecError,Mos6502,RegisterName,Operand};
 
 pub fn exec<M>(cpu: &mut Mos6502<M>, reg: RegisterName, op: Operand) -> Result<(), ExecError> where M: Memory {
     let val = try!(op.get_u8(cpu));
@@ -11,8 +11,8 @@ pub fn exec<M>(cpu: &mut Mos6502<M>, reg: RegisterName, op: Operand) -> Result<(
 #[cfg(test)]
 mod test {
     use mem::VirtualMemory;
-    use cpu::mos6502::instr::load;
-    use cpu::mos6502::{Mos6502,RegisterName,Flags,Operand};
+    use cpus::mos6502::instr::load;
+    use cpus::mos6502::{Mos6502,RegisterName,Flags,Operand};
 
     #[test]
     pub fn load_sets_register_to_operand_value() {

@@ -1,23 +1,23 @@
 use mem::Memory;
-use cpu::mos6502::{ExecError,Mos6502,Flags};
+use cpus::mos6502::{ExecError,Mos6502,Flags};
 
 pub fn exec<M>(cpu: &mut Mos6502<M>, flag_selector: Flags) -> Result<(), ExecError> where M: Memory {
-    cpu.flags.clear(flag_selector);
+    cpu.flags.set(flag_selector);
     Ok(())
 }
 
 #[cfg(test)]
 mod test {
     use mem::VirtualMemory;
-	use cpu::mos6502::instr::clear_flag;
-	use cpu::mos6502::{Mos6502,Flags};
+	use cpus::mos6502::instr::set_flag;
+	use cpus::mos6502::{Mos6502,Flags};
 
     #[test]
-    pub fn clear_flag_clears_flag() {
+    pub fn set_flag_sets_flag() {
         let mut cpu = init_cpu();
-        cpu.flags.set(Flags::CARRY() | Flags::SIGN());
-        clear_flag::exec(&mut cpu, Flags::CARRY()).unwrap();
-        assert!(!cpu.flags.intersects(Flags::CARRY()));
+        cpu.flags.set(Flags::SIGN());
+        set_flag::exec(&mut cpu, Flags::CARRY()).unwrap();
+        assert!(cpu.flags.intersects(Flags::CARRY()));
         assert!(cpu.flags.intersects(Flags::SIGN()));
     }
 

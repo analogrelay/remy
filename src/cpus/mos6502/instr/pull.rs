@@ -1,5 +1,5 @@
 use mem::Memory;
-use cpu::mos6502::{ExecError,Mos6502,RegisterName};
+use cpus::mos6502::{ExecError,Mos6502,RegisterName};
 
 pub fn exec<M>(cpu: &mut Mos6502<M>, r: RegisterName) -> Result<(), ExecError> where M : Memory {
     let val = try!(cpu.pull());
@@ -11,8 +11,8 @@ pub fn exec<M>(cpu: &mut Mos6502<M>, r: RegisterName) -> Result<(), ExecError> w
 #[cfg(test)]
 mod test {
     use mem::{FixedMemory,VirtualMemory};
-	use cpu::mos6502::instr::pull;
-	use cpu::mos6502::{Mos6502,RegisterName,Flags,STACK_START};
+	use cpus::mos6502::instr::pull;
+	use cpus::mos6502::{Mos6502,RegisterName,Flags,STACK_START};
 
     #[test]
     pub fn pull_puts_register_value_on_top_of_stack() {

@@ -1,5 +1,5 @@
 use mem::Memory;
-use cpu::mos6502::{ExecError,Mos6502,Operand,Flags};
+use cpus::mos6502::{ExecError,Mos6502,Operand,Flags};
 
 pub fn exec<M>(cpu: &mut Mos6502<M>, op: Operand) -> Result<(), ExecError> where M : Memory {
     let n = try!(op.get_u8(cpu));
@@ -14,13 +14,8 @@ pub fn exec<M>(cpu: &mut Mos6502<M>, op: Operand) -> Result<(), ExecError> where
 #[cfg(test)]
 mod test {
     use mem::VirtualMemory;
-<<<<<<< master:src/cpu/mos6502/instr/lsr.rs
-    use cpu::mos6502::instr::lsr;
-    use cpu::mos6502::{Mos6502,Operand,Flags,RegisterName};
-=======
     use cpus::mos6502::instr::lsr;
     use cpus::mos6502::{Mos6502,Operand,Flags};
->>>>>>> local:src/cpus/mos6502/instr/lsr.rs
 
     #[test]
     pub fn lsr_clears_sign_flag() {

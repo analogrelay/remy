@@ -1,5 +1,5 @@
 use mem::Memory;
-use cpu::mos6502::{ExecError,Mos6502,RegisterName,Operand};
+use cpus::mos6502::{ExecError,Mos6502,RegisterName,Operand};
 
 pub fn exec<M>(cpu: &mut Mos6502<M>, reg: RegisterName, op: Operand) -> Result<(), ExecError> where M: Memory {
     let val = reg.get(cpu);
@@ -10,8 +10,8 @@ pub fn exec<M>(cpu: &mut Mos6502<M>, reg: RegisterName, op: Operand) -> Result<(
 #[cfg(test)]
 mod test {
     use mem::Memory;
-    use cpu::mos6502::instr::store;
-    use cpu::mos6502::{Mos6502,RegisterName,Operand};
+    use cpus::mos6502::instr::store;
+    use cpus::mos6502::{Mos6502,RegisterName,Operand};
 
     #[test]
     pub fn store_sets_operand_to_register_value() {

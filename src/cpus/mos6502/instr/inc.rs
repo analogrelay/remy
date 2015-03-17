@@ -1,9 +1,5 @@
 use mem::Memory;
-<<<<<<< master:src/cpu/mos6502/instr/inc.rs
-use cpu::mos6502::{ExecError,Mos6502,Operand};
-=======
 use cpus::mos6502::{ExecError,Mos6502,Operand,RegisterName};
->>>>>>> local:src/cpus/mos6502/instr/inc.rs
 
 pub fn reg<M>(cpu: &mut Mos6502<M>, reg: RegisterName) -> Result<(), ExecError> where M: Memory {
     let new_val = (reg.get(cpu).wrapping_add(1)) & 0xFF;
@@ -22,8 +18,8 @@ pub fn mem<M>(cpu: &mut Mos6502<M>, op: Operand) -> Result<(), ExecError> where 
 #[cfg(test)]
 mod test {
     use mem::{Memory,FixedMemory,VirtualMemory};
-	use cpu::mos6502::instr::inc;
-	use cpu::mos6502::{Mos6502,Flags,Operand};
+	use cpus::mos6502::instr::inc;
+	use cpus::mos6502::{Mos6502,Flags,Operand};
 
     #[test]
     fn inc_sets_sign_flag_if_new_value_is_negative() {

@@ -1,5 +1,5 @@
 use mem::Memory;
-use cpu::mos6502::{ExecError,Operand,Mos6502,Flags};
+use cpus::mos6502::{ExecError,Operand,Mos6502,Flags};
 
 pub fn exec<M>(cpu: &mut Mos6502<M>, op: Operand) -> Result<(), ExecError> where M: Memory {
     let opv = try!(op.get_u8(cpu));
@@ -17,8 +17,8 @@ pub fn exec<M>(cpu: &mut Mos6502<M>, op: Operand) -> Result<(), ExecError> where
 #[cfg(test)]
 mod test {
     use mem::VirtualMemory;
-	use cpu::mos6502::instr::and;
-	use cpu::mos6502::{Mos6502,Operand,Flags};
+	use cpus::mos6502::instr::and;
+	use cpus::mos6502::{Mos6502,Operand,Flags};
 
     #[test]
     pub fn and_ands_value_with_accumulator() {

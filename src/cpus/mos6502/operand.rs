@@ -3,8 +3,8 @@ use std::{error,fmt};
 use mem;
 use mem::Memory;
 
-use cpu::mos6502;
-use cpu::mos6502::Mos6502;
+use cpus::mos6502;
+use cpus::mos6502::Mos6502;
 
 /// Represents an operand that can be provided to an instruction
 #[derive(Copy,Debug,Eq,PartialEq)]

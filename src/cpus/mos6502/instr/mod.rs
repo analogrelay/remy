@@ -269,50 +269,49 @@ impl Instruction {
 
 impl fmt::Display for Instruction {
     fn fmt(&self, formatter: &mut fmt::Formatter) -> Result<(), fmt::Error> {
-        use std::num::SignedInt;
 		match self {
             // Instructions with operands
-			i @ &Instruction::ADC(op) |
-            i @ &Instruction::AND(op) |
-            i @ &Instruction::ASL(op) |
-            i @ &Instruction::BIT(op) |
-            i @ &Instruction::STA(op) |
-            i @ &Instruction::STX(op) |
-            i @ &Instruction::STY(op) |
-            i @ &Instruction::CMP(op) |
-            i @ &Instruction::CPX(op) |
-            i @ &Instruction::CPY(op) |
-            i @ &Instruction::DEC(op) |
-            i @ &Instruction::EOR(op) |
-            i @ &Instruction::INC(op) |
-            i @ &Instruction::JMP(op) |
-            i @ &Instruction::LDA(op) |
-            i @ &Instruction::LDX(op) |
-            i @ &Instruction::LDY(op) |
-            i @ &Instruction::LSR(op) |
-            i @ &Instruction::ORA(op) |
-            i @ &Instruction::ROL(op) |
-            i @ &Instruction::ROR(op) |
-            i @ &Instruction::SBC(op) => formatter.write_fmt(format_args!("{} {}", i.mnemonic(), op)), 
+			&Instruction::ADC(op) |
+            &Instruction::AND(op) |
+            &Instruction::ASL(op) |
+            &Instruction::BIT(op) |
+            &Instruction::STA(op) |
+            &Instruction::STX(op) |
+            &Instruction::STY(op) |
+            &Instruction::CMP(op) |
+            &Instruction::CPX(op) |
+            &Instruction::CPY(op) |
+            &Instruction::DEC(op) |
+            &Instruction::EOR(op) |
+            &Instruction::INC(op) |
+            &Instruction::JMP(op) |
+            &Instruction::LDA(op) |
+            &Instruction::LDX(op) |
+            &Instruction::LDY(op) |
+            &Instruction::LSR(op) |
+            &Instruction::ORA(op) |
+            &Instruction::ROL(op) |
+            &Instruction::ROR(op) |
+            &Instruction::SBC(op) => formatter.write_fmt(format_args!("{} {}", self.mnemonic(), op)), 
 
             // Instructions with signed offsets
-            i @ &Instruction::BCC(x) |
-            i @ &Instruction::BCS(x) |
-            i @ &Instruction::BEQ(x) |
-            i @ &Instruction::BMI(x) |
-            i @ &Instruction::BNE(x) |
-            i @ &Instruction::BVC(x) |
-            i @ &Instruction::BVS(x) |
-            i @ &Instruction::BPL(x) => formatter.write_fmt(format_args!(
+            &Instruction::BCC(x) |
+            &Instruction::BCS(x) |
+            &Instruction::BEQ(x) |
+            &Instruction::BMI(x) |
+            &Instruction::BNE(x) |
+            &Instruction::BVC(x) |
+            &Instruction::BVS(x) |
+            &Instruction::BPL(x) => formatter.write_fmt(format_args!(
                     "{} ${:X}",
-                    i.mnemonic(),
+                    self.mnemonic(),
                     x)),
 
             // Instructions with absolute addresses
-            i @ &Instruction::JSR(x) => formatter.write_fmt(format_args!("{} ${:X}", i.mnemonic(), x)), 
+            &Instruction::JSR(x) => formatter.write_fmt(format_args!("{} ${:X}", self.mnemonic(), x)), 
 
             // Instructions with no operands (others)
-            x => formatter.write_str(x.mnemonic())
+            _ => formatter.write_str(self.mnemonic())
         }
     }
 }

@@ -1,14 +1,15 @@
 use mem::Memory;
-use cpus::mos6502::{ExecError,Mos6502,Operand,RegisterName};
+use cpus::mos6502::exec;
+use cpus::mos6502::{cpu,Mos6502,Operand};
 
-pub fn reg<M>(cpu: &mut Mos6502<M>, reg: RegisterName) -> Result<(), ExecError> where M: Memory {
+pub fn reg<M>(cpu: &mut Mos6502<M>, reg: cpu::RegisterName) -> Result<(), exec::Error> where M: Memory {
     let new_val = (reg.get(cpu).wrapping_sub(1)) & 0xFF;
     cpu.flags.set_sign_and_zero(new_val); 
     reg.set(cpu, new_val);
     Ok(())
 }
 
-pub fn mem<M>(cpu: &mut Mos6502<M>, op: Operand) -> Result<(), ExecError> where M: Memory {
+pub fn mem<M>(cpu: &mut Mos6502<M>, op: Operand) -> Result<(), exec::Error> where M: Memory {
     let new_val = (try!(op.get_u8(cpu)).wrapping_sub(1)) & 0xFF;
     cpu.flags.set_sign_and_zero(new_val); 
     try!(op.set_u8(cpu, new_val));
@@ -18,7 +19,7 @@ pub fn mem<M>(cpu: &mut Mos6502<M>, op: Operand) -> Result<(), ExecError> where 
 #[cfg(test)]
 mod test {
     use mem::{Memory,FixedMemory,VirtualMemory};
-	use cpus::mos6502::instr::dec;
+	use cpus::mos6502::exec::dec;
 	use cpus::mos6502::{Mos6502,Flags,Operand};
 
     #[test]

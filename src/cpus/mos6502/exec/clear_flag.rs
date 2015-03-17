@@ -1,7 +1,8 @@
 use mem::Memory;
-use cpus::mos6502::{ExecError,Mos6502,Flags};
+use cpus::mos6502::exec;
+use cpus::mos6502::{Mos6502,Flags};
 
-pub fn exec<M>(cpu: &mut Mos6502<M>, flag_selector: Flags) -> Result<(), ExecError> where M: Memory {
+pub fn exec<M>(cpu: &mut Mos6502<M>, flag_selector: Flags) -> Result<(), exec::Error> where M: Memory {
     cpu.flags.clear(flag_selector);
     Ok(())
 }
@@ -9,7 +10,7 @@ pub fn exec<M>(cpu: &mut Mos6502<M>, flag_selector: Flags) -> Result<(), ExecErr
 #[cfg(test)]
 mod test {
     use mem::VirtualMemory;
-	use cpus::mos6502::instr::clear_flag;
+	use cpus::mos6502::exec::clear_flag;
 	use cpus::mos6502::{Mos6502,Flags};
 
     #[test]

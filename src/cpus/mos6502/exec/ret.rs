@@ -1,7 +1,8 @@
 use mem::Memory;
-use cpus::mos6502::{ExecError,Flags,Mos6502};
+use cpus::mos6502::exec;
+use cpus::mos6502::{Flags,Mos6502};
 
-pub fn from_interrupt<M>(cpu: &mut Mos6502<M>) -> Result<(), ExecError> where M : Memory {
+pub fn from_interrupt<M>(cpu: &mut Mos6502<M>) -> Result<(), exec::Error> where M : Memory {
     let p = try!(cpu.pull());
     let l = try!(cpu.pull()) as usize;
     let h = try!(cpu.pull()) as usize;
@@ -11,7 +12,7 @@ pub fn from_interrupt<M>(cpu: &mut Mos6502<M>) -> Result<(), ExecError> where M 
     Ok(())
 }
 
-pub fn from_sub<M>(cpu: &mut Mos6502<M>) -> Result<(), ExecError> where M : Memory {
+pub fn from_sub<M>(cpu: &mut Mos6502<M>) -> Result<(), exec::Error> where M : Memory {
     let l = try!(cpu.pull()) as usize;
     let h = try!(cpu.pull()) as usize;
     
@@ -22,8 +23,8 @@ pub fn from_sub<M>(cpu: &mut Mos6502<M>) -> Result<(), ExecError> where M : Memo
 #[cfg(test)]
 mod test {
     use mem::{FixedMemory,VirtualMemory};
-	use cpus::mos6502::instr::ret;
-	use cpus::mos6502::{Mos6502,STACK_START};
+	use cpus::mos6502::exec::ret;
+	use cpus::mos6502::{cpu,Mos6502};
 
     #[test]
     pub fn rti_loads_flags_from_stack() {
@@ -70,7 +71,7 @@ mod test {
         let stack_memory = FixedMemory::new(32);
         let mut vm = VirtualMemory::new();
 
-        vm.attach(STACK_START, Box::new(stack_memory)).unwrap();
+        vm.attach(cpu::STACK_START, Box::new(stack_memory)).unwrap();
 
         let mut cpu = Mos6502::new(vm);
 

@@ -1,7 +1,8 @@
 use mem::Memory;
-use cpus::mos6502::{ExecError,Mos6502,Flags,Operand};
+use cpus::mos6502::exec;
+use cpus::mos6502::{Mos6502,Flags,Operand};
 
-pub fn exec<M>(cpu: &mut Mos6502<M>, op: Operand) -> Result<(), ExecError> where M: Memory {
+pub fn exec<M>(cpu: &mut Mos6502<M>, op: Operand) -> Result<(), exec::Error> where M: Memory {
     let m = try!(op.get_u8(cpu));
     let t = cpu.registers.a & m;
 
@@ -29,7 +30,7 @@ pub fn exec<M>(cpu: &mut Mos6502<M>, op: Operand) -> Result<(), ExecError> where
 #[cfg(test)]
 mod test {
     use mem::VirtualMemory;
-	use cpus::mos6502::instr::bit;
+	use cpus::mos6502::exec::bit;
 	use cpus::mos6502::{Mos6502,Flags,Operand};
 
     #[test]

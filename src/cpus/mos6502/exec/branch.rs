@@ -1,14 +1,14 @@
 use mem::Memory;
-use cpus::mos6502::{ExecError,Mos6502,Flags};
+use cpus::mos6502::{exec,Mos6502,Flags};
 
-pub fn if_clear<M>(cpu: &mut Mos6502<M>, offset: i8, flags: Flags) -> Result<(), ExecError> where M: Memory {
+pub fn if_clear<M>(cpu: &mut Mos6502<M>, offset: i8, flags: Flags) -> Result<(), exec::Error> where M: Memory {
     if !cpu.flags.intersects(flags) {
         cpu.pc.advance(offset as isize)
     }
     Ok(())
 }
 
-pub fn if_set<M>(cpu: &mut Mos6502<M>, offset: i8, flags: Flags) -> Result<(), ExecError> where M: Memory {
+pub fn if_set<M>(cpu: &mut Mos6502<M>, offset: i8, flags: Flags) -> Result<(), exec::Error> where M: Memory {
     if cpu.flags.intersects(flags) {
         cpu.pc.advance(offset as isize)
     }
@@ -18,7 +18,7 @@ pub fn if_set<M>(cpu: &mut Mos6502<M>, offset: i8, flags: Flags) -> Result<(), E
 #[cfg(test)]
 mod test {
     use mem::VirtualMemory;
-	use cpus::mos6502::instr::branch;
+	use cpus::mos6502::exec::branch;
 	use cpus::mos6502::{Mos6502,Flags};
 
     #[test]

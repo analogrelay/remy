@@ -3,7 +3,7 @@ use std::{error,fmt};
 use mem;
 use mem::Memory;
 
-use cpus::mos6502;
+use cpus::mos6502::cpu;
 use cpus::mos6502::Mos6502;
 
 /// Represents an operand that can be provided to an instruction
@@ -22,7 +22,7 @@ pub enum Operand {
     ///
     /// If the provided address is `m`, this operand is defined as `*(m+x)` or `*(m+y)` depending
     /// on the register specified
-    Indexed(u16, mos6502::RegisterName),
+    Indexed(u16, cpu::RegisterName),
     /// Indicates an operand stored at an address stored in the provided address
     ///
     /// If the provided address is `m`, this operand is defined as `**m`
@@ -40,7 +40,7 @@ pub enum Operand {
 
 /// Represents an error that occurred which accessing an `Operand`
 #[derive(Clone,Debug,Eq,PartialEq)]
-pub enum OperandError {
+pub enum Error {
     /// Indicates an error occurred reading or writing memory
     ErrorAccessingMemory(mem::MemoryError),
     /// Indicates that a request was made to write to a read-only operand such as
@@ -51,9 +51,9 @@ pub enum OperandError {
     NonAddressOperand
 }
 
-impl error::FromError<mem::MemoryError> for OperandError {
-    fn from_error(err: mem::MemoryError) -> OperandError {
-        OperandError::ErrorAccessingMemory(err)
+impl error::FromError<mem::MemoryError> for Error {
+    fn from_error(err: mem::MemoryError) -> Error {
+        Error::ErrorAccessingMemory(err)
     }
 }
 
@@ -63,7 +63,7 @@ impl Operand {
     /// # Arguments
     ///
     /// * `cpu` - The cpu from which to get the operand value
-    pub fn get_u8<M>(&self, cpu: &Mos6502<M>) -> Result<u8, OperandError> where M: mem::Memory {
+    pub fn get_u8<M>(&self, cpu: &Mos6502<M>) -> Result<u8, Error> where M: mem::Memory {
         Ok(match self {
             &Operand::Immediate(n)      => n,
             &Operand::Accumulator       => cpu.registers.a,
@@ -77,7 +77,7 @@ impl Operand {
     ///
     /// * `cpu` - The cpu on which to set the operand value
     /// * `val` - The value to set the operand to
-    pub fn set_u8<M>(&self, cpu: &mut Mos6502<M>, val: u8) -> Result<(), OperandError> where M: mem::Memory {
+    pub fn set_u8<M>(&self, cpu: &mut Mos6502<M>, val: u8) -> Result<(), Error> where M: mem::Memory {
         match self {
             &Operand::Absolute(addr)     => Ok(try!(cpu.mem.set_u8(addr as usize, val))),
             &Operand::Indexed(addr, r)   => {
@@ -85,7 +85,7 @@ impl Operand {
                 Ok(try!(cpu.mem.set_u8(addr as usize + rv, val)))
             }
             &Operand::Accumulator        => { cpu.registers.a = val; Ok(()) },
-            _                            => Err(OperandError::ReadOnlyOperand)
+            _                            => Err(Error::ReadOnlyOperand)
         }
     }
 
@@ -94,14 +94,14 @@ impl Operand {
     /// # Arguments
     ///
     /// * `cpu` - The cpu on which to get the operand value
-    pub fn get_addr<M>(&self, cpu: &Mos6502<M>) -> Result<u16, OperandError> where M: mem::Memory {
+    pub fn get_addr<M>(&self, cpu: &Mos6502<M>) -> Result<u16, Error> where M: mem::Memory {
         Ok(match self {
             &Operand::Absolute(addr)             => addr,
             &Operand::Indirect(addr)             => try!(cpu.mem.get_le_u16(addr as usize)),
             &Operand::Indexed(addr, r)           => addr + r.get(cpu) as u16,
             &Operand::PreIndexedIndirect(addr)   => try!(cpu.mem.get_le_u16(addr as usize + cpu.registers.x as usize)),
             &Operand::PostIndexedIndirect(addr)  => try!(cpu.mem.get_le_u16(addr as usize)) + cpu.registers.y as u16,
-            _                                   => return Err(OperandError::NonAddressOperand)
+            _                                   => return Err(Error::NonAddressOperand)
         })
     }
 }
@@ -125,7 +125,7 @@ impl fmt::Display for Operand {
 mod test {
     mod operand {
         use mem::Memory;
-        use cpus::mos6502::{Mos6502,Operand,RegisterName};
+        use cpus::mos6502::{cpu,Mos6502,Operand};
 
         #[test]
         pub fn to_string_test() {
@@ -133,10 +133,10 @@ mod test {
             assert_eq!("A", Operand::Accumulator.to_string());
             assert_eq!("$ABCD", Operand::Absolute(0xABCD).to_string());
             assert_eq!("$AB", Operand::Absolute(0x00AB).to_string());
-            assert_eq!("$ABCD,X", Operand::Indexed(0xABCD, RegisterName::X).to_string());
-            assert_eq!("$ABCD,Y", Operand::Indexed(0xABCD, RegisterName::Y).to_string());
-            assert_eq!("$AB,X", Operand::Indexed(0x00AB, RegisterName::X).to_string());
-            assert_eq!("$AB,Y", Operand::Indexed(0x00AB, RegisterName::Y).to_string());
+            assert_eq!("$ABCD,X", Operand::Indexed(0xABCD, cpu::RegisterName::X).to_string());
+            assert_eq!("$ABCD,Y", Operand::Indexed(0xABCD, cpu::RegisterName::Y).to_string());
+            assert_eq!("$AB,X", Operand::Indexed(0x00AB, cpu::RegisterName::X).to_string());
+            assert_eq!("$AB,Y", Operand::Indexed(0x00AB, cpu::RegisterName::Y).to_string());
             assert_eq!("$ABCD", Operand::Indirect(0xABCD).to_string());
             assert_eq!("($AB,X)", Operand::PreIndexedIndirect(0xAB).to_string());
             assert_eq!("($AB),Y", Operand::PostIndexedIndirect(0xAB).to_string());
@@ -154,7 +154,7 @@ mod test {
         pub fn set_indexed_x_puts_value_in_memory_location() {
             let mut cpu = Mos6502::with_fixed_memory(10);
             cpu.registers.x = 1;
-            assert!(Operand::Indexed(2, RegisterName::X).set_u8(&mut cpu, 24).is_ok());
+            assert!(Operand::Indexed(2, cpu::RegisterName::X).set_u8(&mut cpu, 24).is_ok());
             let val : u8 = cpu.mem.get_u8(3).unwrap();
             assert_eq!(val, 24);
         }
@@ -163,7 +163,7 @@ mod test {
         pub fn set_indexed_y_puts_value_in_memory_location() {
             let mut cpu = Mos6502::with_fixed_memory(10);
             cpu.registers.y = 1;
-            assert!(Operand::Indexed(2, RegisterName::Y).set_u8(&mut cpu, 24).is_ok());
+            assert!(Operand::Indexed(2, cpu::RegisterName::Y).set_u8(&mut cpu, 24).is_ok());
             let val : u8 = cpu.mem.get_u8(3).unwrap();
             assert_eq!(val, 24);
         }
@@ -203,7 +203,7 @@ mod test {
             let mut cpu = Mos6502::with_fixed_memory(10);
             assert!(cpu.mem.set_u8(4, 42).is_ok());
             cpu.registers.x = 2;
-            let val = Operand::Indexed(2, RegisterName::X).get_u8(&cpu).unwrap();
+            let val = Operand::Indexed(2, cpu::RegisterName::X).get_u8(&cpu).unwrap();
             assert_eq!(val, 42);
         }
 
@@ -212,7 +212,7 @@ mod test {
             let mut cpu = Mos6502::with_fixed_memory(10);
             assert!(cpu.mem.set_u8(4, 42).is_ok());
             cpu.registers.y = 2;
-            let val = Operand::Indexed(2, RegisterName::Y).get_u8(&cpu).unwrap();
+            let val = Operand::Indexed(2, cpu::RegisterName::Y).get_u8(&cpu).unwrap();
             assert_eq!(val, 42);
         }
 

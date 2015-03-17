@@ -1,7 +1,8 @@
 use mem::Memory;
-use cpus::mos6502::{ExecError,Mos6502,Flags};
+use cpus::mos6502::exec;
+use cpus::mos6502::{Mos6502,Flags};
 
-pub fn exec<M>(cpu: &mut Mos6502<M>) -> Result<(), ExecError> where M: Memory {
+pub fn exec<M>(cpu: &mut Mos6502<M>) -> Result<(), exec::Error> where M: Memory {
     cpu.pc.advance(1);
     let pc = cpu.pc.get();
     try!(cpu.push(((pc & 0xFF00) >> 8) as u8));
@@ -17,7 +18,7 @@ pub fn exec<M>(cpu: &mut Mos6502<M>) -> Result<(), ExecError> where M: Memory {
 #[cfg(test)]
 mod test {
     use mem::{Memory,FixedMemory,VirtualMemory};
-	use cpus::mos6502::instr::brk;
+	use cpus::mos6502::exec::brk;
 	use cpus::mos6502::{Mos6502,Flags};
     use cpus::mos6502::cpu::STACK_START;
 

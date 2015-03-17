@@ -1,7 +1,8 @@
 use mem::Memory;
-use cpus::mos6502::{ExecError,Mos6502,Operand};
+use cpus::mos6502::exec;
+use cpus::mos6502::{Mos6502,Operand};
 
-pub fn exec<M>(cpu: &mut Mos6502<M>, op: Operand) -> Result<(), ExecError> where M: Memory {
+pub fn exec<M>(cpu: &mut Mos6502<M>, op: Operand) -> Result<(), exec::Error> where M: Memory {
     let addr = try!(op.get_addr(cpu));
 
     cpu.pc.set(addr as usize);
@@ -11,7 +12,7 @@ pub fn exec<M>(cpu: &mut Mos6502<M>, op: Operand) -> Result<(), ExecError> where
 #[cfg(test)]
 mod test {
     use mem::{Memory,FixedMemory,VirtualMemory};
-	use cpus::mos6502::instr::jmp;
+	use cpus::mos6502::exec::jmp;
 	use cpus::mos6502::{Mos6502,Operand};
 
     #[test]

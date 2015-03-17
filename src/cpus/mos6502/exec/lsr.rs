@@ -1,7 +1,8 @@
 use mem::Memory;
-use cpus::mos6502::{ExecError,Mos6502,Operand,Flags};
+use cpus::mos6502::exec;
+use cpus::mos6502::{Mos6502,Operand,Flags};
 
-pub fn exec<M>(cpu: &mut Mos6502<M>, op: Operand) -> Result<(), ExecError> where M : Memory {
+pub fn exec<M>(cpu: &mut Mos6502<M>, op: Operand) -> Result<(), exec::Error> where M : Memory {
     let n = try!(op.get_u8(cpu));
     cpu.flags.clear(Flags::SIGN());
     cpu.flags.set_if(Flags::CARRY(), (n & 0x01) != 0);
@@ -14,7 +15,7 @@ pub fn exec<M>(cpu: &mut Mos6502<M>, op: Operand) -> Result<(), ExecError> where
 #[cfg(test)]
 mod test {
     use mem::VirtualMemory;
-    use cpus::mos6502::instr::lsr;
+    use cpus::mos6502::exec::lsr;
     use cpus::mos6502::{Mos6502,Operand,Flags};
 
     #[test]

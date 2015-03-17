@@ -1,7 +1,8 @@
 use mem::Memory;
-use cpus::mos6502::{ExecError,Mos6502,RegisterName};
+use cpus::mos6502::{exec, cpu};
+use cpus::mos6502::Mos6502;
 
-pub fn exec<M>(cpu: &mut Mos6502<M>, r: RegisterName) -> Result<(), ExecError> where M : Memory {
+pub fn exec<M>(cpu: &mut Mos6502<M>, r: cpu::RegisterName) -> Result<(), exec::Error> where M : Memory {
     let val = r.get(cpu);
     try!(cpu.push(val));
     Ok(())
@@ -10,14 +11,14 @@ pub fn exec<M>(cpu: &mut Mos6502<M>, r: RegisterName) -> Result<(), ExecError> w
 #[cfg(test)]
 mod test {
     use mem::{FixedMemory,VirtualMemory};
-	use cpus::mos6502::instr::push;
-	use cpus::mos6502::{Mos6502,RegisterName,STACK_START};
+	use cpus::mos6502::exec::push;
+	use cpus::mos6502::{cpu,Mos6502};
 
     #[test]
     pub fn push_puts_register_value_on_top_of_stack() {
         let mut cpu = init_cpu();
         cpu.registers.a = 42;
-        push::exec(&mut cpu, RegisterName::A).unwrap();
+        push::exec(&mut cpu, cpu::RegisterName::A).unwrap();
         assert_eq!(Ok(42), cpu.pull());
     }
 
@@ -25,7 +26,7 @@ mod test {
         let stack_memory = FixedMemory::new(32);
         let mut vm = VirtualMemory::new();
 
-        vm.attach(STACK_START, Box::new(stack_memory)).unwrap();
+        vm.attach(cpu::STACK_START, Box::new(stack_memory)).unwrap();
 
         let mut cpu = Mos6502::new(vm);
 

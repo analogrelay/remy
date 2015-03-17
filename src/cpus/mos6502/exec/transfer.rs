@@ -1,7 +1,8 @@
 use mem::Memory;
-use cpus::mos6502::{ExecError,Mos6502,RegisterName};
+use cpus::mos6502::{exec,cpu};
+use cpus::mos6502::Mos6502;
 
-pub fn exec<M>(cpu: &mut Mos6502<M>, src: RegisterName, dst: RegisterName) -> Result<(), ExecError> where M: Memory {
+pub fn exec<M>(cpu: &mut Mos6502<M>, src: cpu::RegisterName, dst: cpu::RegisterName) -> Result<(), exec::Error> where M: Memory {
     let val = src.get(cpu);
     dst.set(cpu, val);
     Ok(())
@@ -10,8 +11,8 @@ pub fn exec<M>(cpu: &mut Mos6502<M>, src: RegisterName, dst: RegisterName) -> Re
 #[cfg(test)]
 mod test {
     use mem::VirtualMemory;
-    use cpus::mos6502::instr::transfer;
-    use cpus::mos6502::{Mos6502,RegisterName};
+    use cpus::mos6502::exec::transfer;
+    use cpus::mos6502::{cpu,Mos6502};
 
     #[test]
     pub fn transfer_sets_destination_register_to_source_register_value() {
@@ -19,7 +20,7 @@ mod test {
         let mut cpu = Mos6502::new(vm); 
 
         cpu.registers.a = 42;
-        transfer::exec(&mut cpu, RegisterName::A, RegisterName::X).unwrap();
+        transfer::exec(&mut cpu, cpu::RegisterName::A, cpu::RegisterName::X).unwrap();
 
         assert_eq!(42, cpu.registers.x);
     }

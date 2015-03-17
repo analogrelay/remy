@@ -1,15 +1,16 @@
 use mem::Memory;
-use cpus::mos6502::{ExecError,Mos6502,Operand,Flags};
+use cpus::mos6502::exec;
+use cpus::mos6502::{Mos6502,Operand,Flags};
 
-pub fn left<M>(cpu: &mut Mos6502<M>, op: Operand) -> Result<(), ExecError> where M : Memory {
+pub fn left<M>(cpu: &mut Mos6502<M>, op: Operand) -> Result<(), exec::Error> where M : Memory {
     exec(cpu, op, true)
 }
 
-pub fn right<M>(cpu: &mut Mos6502<M>, op: Operand) -> Result<(), ExecError> where M : Memory {
+pub fn right<M>(cpu: &mut Mos6502<M>, op: Operand) -> Result<(), exec::Error> where M : Memory {
     exec(cpu, op, false)
 }
 
-fn exec<M>(cpu: &mut Mos6502<M>, op: Operand, left: bool) -> Result<(), ExecError> where M : Memory {
+fn exec<M>(cpu: &mut Mos6502<M>, op: Operand, left: bool) -> Result<(), exec::Error> where M : Memory {
     let n = try!(op.get_u8(cpu));    
 
     // Grab the bit that's about to fall off
@@ -37,7 +38,7 @@ fn exec<M>(cpu: &mut Mos6502<M>, op: Operand, left: bool) -> Result<(), ExecErro
 #[cfg(test)]
 mod test {
     use mem::VirtualMemory;
-    use cpus::mos6502::instr::rotate;
+    use cpus::mos6502::exec::rotate;
     use cpus::mos6502::{Mos6502,Operand,Flags};
 
     #[test]

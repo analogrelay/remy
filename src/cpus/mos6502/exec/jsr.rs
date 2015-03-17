@@ -1,7 +1,8 @@
 use mem::Memory;
-use cpus::mos6502::{ExecError,Mos6502};
+use cpus::mos6502::exec;
+use cpus::mos6502::Mos6502;
 
-pub fn exec<M>(cpu: &mut Mos6502<M>, addr: u16) -> Result<(), ExecError> where M: Memory {
+pub fn exec<M>(cpu: &mut Mos6502<M>, addr: u16) -> Result<(), exec::Error> where M: Memory {
     let pc = cpu.pc.get() - 1;
     try!(cpu.push(((pc & 0xFF00) >> 8) as u8));
     try!(cpu.push((pc & 0x00FF) as u8));
@@ -14,7 +15,7 @@ mod test {
     use mem::{Memory,FixedMemory,VirtualMemory};
 	use cpus::mos6502::Mos6502;
     use cpus::mos6502::cpu::STACK_START;
-	use cpus::mos6502::instr::jsr;
+	use cpus::mos6502::exec::jsr;
 
     #[test]
     pub fn jsr_sets_pc_to_address() {

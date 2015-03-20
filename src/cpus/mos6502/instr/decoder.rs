@@ -106,6 +106,11 @@ pub fn decode<R>(reader: &mut R) -> Result<Instruction, Error> where R: io::Read
 
         0xE8 => Instruction::INX,
         0xC8 => Instruction::INY,
+
+        0x4C => Instruction::JMP(try!(read_abs(reader))),
+        0x6C => Instruction::JMP(Operand::Indirect(try!(read_u16(reader)))),
+        
+        0x20 => Instruction::JSR(try!(read_u16(reader))),
         
         _ => return Err(Error::UnknownOpcode)
     };
@@ -305,6 +310,17 @@ mod test {
     #[test]
     pub fn can_decode_iny() {
         decoder_test(vec![0xC8], Instruction::INY);
+    }
+
+    #[test]
+    pub fn can_decode_jmp() {
+        decoder_test(vec![0x4C, 0xCD, 0xAB], Instruction::JMP(Operand::Absolute(0xABCD)));
+        decoder_test(vec![0x6C, 0xCD, 0xAB], Instruction::JMP(Operand::Indirect(0xABCD)));
+    }
+
+    #[test]
+    pub fn can_decode_jsr() {
+        decoder_test(vec![0x20, 0xCD, 0xAB], Instruction::JSR(0xABCD));
     }
 
     fn decoder_test(bytes: Vec<u8>, expected: Instruction) {

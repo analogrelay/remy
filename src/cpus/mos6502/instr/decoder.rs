@@ -141,6 +141,15 @@ pub fn decode<R>(reader: &mut R) -> Result<Instruction, Error> where R: io::Read
 
         0xEA => Instruction::NOP,
 
+        0x09 => Instruction::ORA(try!(read_imm(reader))),
+        0x05 => Instruction::ORA(try!(read_zp(reader))),
+        0x15 => Instruction::ORA(try!(read_zp_x(reader))),
+        0x0D => Instruction::ORA(try!(read_abs(reader))),
+        0x1D => Instruction::ORA(try!(read_abs_x(reader))),
+        0x19 => Instruction::ORA(try!(read_abs_y(reader))),
+        0x01 => Instruction::ORA(try!(read_ind_x(reader))),
+        0x11 => Instruction::ORA(try!(read_ind_y(reader))),
+
         _ => return Err(Error::UnknownOpcode)
     };
 
@@ -399,6 +408,18 @@ mod test {
     #[test]
     pub fn can_decode_nop() {
         decoder_test(vec![0xEA], Instruction::NOP);
+    }
+
+    #[test]
+    pub fn can_decode_ora() {
+        decoder_test(vec![0x09, 0x42], Instruction::ORA(Operand::Immediate(0x42)));
+        decoder_test(vec![0x05, 0xAB], Instruction::ORA(Operand::Absolute(0x00AB)));
+        decoder_test(vec![0x15, 0xAB], Instruction::ORA(Operand::Indexed(0x00AB, RegisterName::X)));
+        decoder_test(vec![0x0D, 0xCD, 0xAB], Instruction::ORA(Operand::Absolute(0xABCD)));
+        decoder_test(vec![0x1D, 0xCD, 0xAB], Instruction::ORA(Operand::Indexed(0xABCD, RegisterName::X)));
+        decoder_test(vec![0x19, 0xCD, 0xAB], Instruction::ORA(Operand::Indexed(0xABCD, RegisterName::Y)));
+        decoder_test(vec![0x01, 0xAB], Instruction::ORA(Operand::PreIndexedIndirect(0xAB)));
+        decoder_test(vec![0x11, 0xAB], Instruction::ORA(Operand::PostIndexedIndirect(0xAB)));
     }
 
     fn decoder_test(bytes: Vec<u8>, expected: Instruction) {

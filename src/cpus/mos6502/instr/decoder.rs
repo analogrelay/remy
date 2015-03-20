@@ -150,6 +150,23 @@ pub fn decode<R>(reader: &mut R) -> Result<Instruction, Error> where R: io::Read
         0x01 => Instruction::ORA(try!(read_ind_x(reader))),
         0x11 => Instruction::ORA(try!(read_ind_y(reader))),
 
+        0x48 => Instruction::PHA,
+        0x08 => Instruction::PHP,
+        0x68 => Instruction::PLA,
+        0x28 => Instruction::PLP,
+
+        0x2A => Instruction::ROL(Operand::Accumulator),
+        0x26 => Instruction::ROL(try!(read_zp(reader))),
+        0x36 => Instruction::ROL(try!(read_zp_x(reader))),
+        0x2E => Instruction::ROL(try!(read_abs(reader))),
+        0x3E => Instruction::ROL(try!(read_abs_x(reader))),
+
+        0x6A => Instruction::ROR(Operand::Accumulator),
+        0x66 => Instruction::ROR(try!(read_zp(reader))),
+        0x76 => Instruction::ROR(try!(read_zp_x(reader))),
+        0x6E => Instruction::ROR(try!(read_abs(reader))),
+        0x7E => Instruction::ROR(try!(read_abs_x(reader))),
+
         _ => return Err(Error::UnknownOpcode)
     };
 
@@ -420,6 +437,44 @@ mod test {
         decoder_test(vec![0x19, 0xCD, 0xAB], Instruction::ORA(Operand::Indexed(0xABCD, RegisterName::Y)));
         decoder_test(vec![0x01, 0xAB], Instruction::ORA(Operand::PreIndexedIndirect(0xAB)));
         decoder_test(vec![0x11, 0xAB], Instruction::ORA(Operand::PostIndexedIndirect(0xAB)));
+    }
+
+    #[test]
+    pub fn can_decode_pha() {
+        decoder_test(vec![0x48], Instruction::PHA);
+    }
+
+    #[test]
+    pub fn can_decode_php() {
+        decoder_test(vec![0x08], Instruction::PHP);
+    }
+
+    #[test]
+    pub fn can_decode_pla() {
+        decoder_test(vec![0x68], Instruction::PLA);
+    }
+
+    #[test]
+    pub fn can_decode_plp() {
+        decoder_test(vec![0x28], Instruction::PLP);
+    }
+
+    #[test]
+    pub fn can_decode_rol() {
+        decoder_test(vec![0x2A], Instruction::ROL(Operand::Accumulator));
+        decoder_test(vec![0x26, 0xAB], Instruction::ROL(Operand::Absolute(0x00AB)));
+        decoder_test(vec![0x36, 0xAB], Instruction::ROL(Operand::Indexed(0x00AB, RegisterName::X)));
+        decoder_test(vec![0x2E, 0xCD, 0xAB], Instruction::ROL(Operand::Absolute(0xABCD)));
+        decoder_test(vec![0x3E, 0xCD, 0xAB], Instruction::ROL(Operand::Indexed(0xABCD, RegisterName::X)));
+    }
+
+    #[test]
+    pub fn can_decode_ror() {
+        decoder_test(vec![0x6A], Instruction::ROR(Operand::Accumulator));
+        decoder_test(vec![0x66, 0xAB], Instruction::ROR(Operand::Absolute(0x00AB)));
+        decoder_test(vec![0x76, 0xAB], Instruction::ROR(Operand::Indexed(0x00AB, RegisterName::X)));
+        decoder_test(vec![0x6E, 0xCD, 0xAB], Instruction::ROR(Operand::Absolute(0xABCD)));
+        decoder_test(vec![0x7E, 0xCD, 0xAB], Instruction::ROR(Operand::Indexed(0xABCD, RegisterName::X)));
     }
 
     fn decoder_test(bytes: Vec<u8>, expected: Instruction) {

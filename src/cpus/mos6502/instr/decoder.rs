@@ -43,6 +43,28 @@ pub fn decode<R>(reader: &mut R) -> Result<Instruction, Error> where R: io::Read
         0x16 => Instruction::ASL(try!(read_zp_x(reader))),
         0x0E => Instruction::ASL(try!(read_abs(reader))),
         0x1E => Instruction::ASL(try!(read_abs_x(reader))),
+
+        0x90 => Instruction::BCC(try!(read_byte(reader)) as i8),
+        0xB0 => Instruction::BCS(try!(read_byte(reader)) as i8),
+        0xF0 => Instruction::BEQ(try!(read_byte(reader)) as i8),
+
+        0x24 => Instruction::BIT(try!(read_zp(reader))),
+        0x2C => Instruction::BIT(try!(read_abs(reader))),
+
+        0x30 => Instruction::BMI(try!(read_byte(reader)) as i8),
+        0xD0 => Instruction::BNE(try!(read_byte(reader)) as i8),
+        0x10 => Instruction::BPL(try!(read_byte(reader)) as i8),
+
+        0x00 => Instruction::BRK,
+
+        0x50 => Instruction::BVC(try!(read_byte(reader)) as i8),
+        0x70 => Instruction::BVS(try!(read_byte(reader)) as i8),
+
+        0x18 => Instruction::CLC,
+        0xD8 => Instruction::CLD,
+        0x58 => Instruction::CLI,
+        0xB8 => Instruction::CLV,
+
         _ => return Err(Error::UnknownOpcode)
     };
 
@@ -136,6 +158,37 @@ mod test {
         decoder_test(vec![0x16, 0xAB], Instruction::ASL(Operand::Indexed(0x00AB, RegisterName::X)));
         decoder_test(vec![0x0E, 0xCD, 0xAB], Instruction::ASL(Operand::Absolute(0xABCD)));
         decoder_test(vec![0x1E, 0xCD, 0xAB], Instruction::ASL(Operand::Indexed(0xABCD, RegisterName::X)));
+    }
+
+    #[test]
+    pub fn can_decode_branches() {
+        decoder_test(vec![0x90, 0x82], Instruction::BCC(-126));
+        decoder_test(vec![0xB0, 0x82], Instruction::BCS(-126));
+        decoder_test(vec![0xF0, 0x82], Instruction::BEQ(-126));
+        decoder_test(vec![0x30, 0x82], Instruction::BMI(-126));
+        decoder_test(vec![0xD0, 0x82], Instruction::BNE(-126));
+        decoder_test(vec![0x10, 0x82], Instruction::BPL(-126));
+        decoder_test(vec![0x50, 0x82], Instruction::BVC(-126));
+        decoder_test(vec![0x70, 0x82], Instruction::BVS(-126));
+    }
+
+    #[test]
+    pub fn can_decode_brk() {
+        decoder_test(vec![0x00], Instruction::BRK);
+    }
+
+    #[test]
+    pub fn can_decode_bit() {
+        decoder_test(vec![0x24, 0xAB], Instruction::BIT(Operand::Absolute(0x00AB)));
+        decoder_test(vec![0x2C, 0xCD, 0xAB], Instruction::BIT(Operand::Absolute(0xABCD)));
+    }
+
+    #[test]
+    pub fn can_decode_clear_flags() {
+        decoder_test(vec![0x18], Instruction::CLC);
+        decoder_test(vec![0xD8], Instruction::CLD);
+        decoder_test(vec![0x58], Instruction::CLI);
+        decoder_test(vec![0xB8], Instruction::CLV);
     }
 
     fn decoder_test(bytes: Vec<u8>, expected: Instruction) {

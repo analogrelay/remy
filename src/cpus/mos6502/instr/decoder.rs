@@ -167,6 +167,9 @@ pub fn decode<R>(reader: &mut R) -> Result<Instruction, Error> where R: io::Read
         0x6E => Instruction::ROR(try!(read_abs(reader))),
         0x7E => Instruction::ROR(try!(read_abs_x(reader))),
 
+        0x40 => Instruction::RTI,
+        0x60 => Instruction::RTS,
+
         _ => return Err(Error::UnknownOpcode)
     };
 
@@ -475,6 +478,16 @@ mod test {
         decoder_test(vec![0x76, 0xAB], Instruction::ROR(Operand::Indexed(0x00AB, RegisterName::X)));
         decoder_test(vec![0x6E, 0xCD, 0xAB], Instruction::ROR(Operand::Absolute(0xABCD)));
         decoder_test(vec![0x7E, 0xCD, 0xAB], Instruction::ROR(Operand::Indexed(0xABCD, RegisterName::X)));
+    }
+
+    #[test]
+    pub fn can_decode_rti() {
+        decoder_test(vec![0x40], Instruction::RTI);
+    }
+
+    #[test]
+    pub fn can_decode_rts() {
+        decoder_test(vec![0x60], Instruction::RTS);
     }
 
     fn decoder_test(bytes: Vec<u8>, expected: Instruction) {

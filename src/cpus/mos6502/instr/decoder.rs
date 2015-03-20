@@ -98,6 +98,14 @@ pub fn decode<R>(reader: &mut R) -> Result<Instruction, Error> where R: io::Read
         0x59 => Instruction::EOR(try!(read_abs_y(reader))),
         0x41 => Instruction::EOR(try!(read_ind_x(reader))),
         0x51 => Instruction::EOR(try!(read_ind_y(reader))),
+
+        0xE6 => Instruction::INC(try!(read_zp(reader))),
+        0xF6 => Instruction::INC(try!(read_zp_x(reader))),
+        0xEE => Instruction::INC(try!(read_abs(reader))),
+        0xFE => Instruction::INC(try!(read_abs_x(reader))),
+
+        0xE8 => Instruction::INX,
+        0xC8 => Instruction::INY,
         
         _ => return Err(Error::UnknownOpcode)
     };
@@ -279,6 +287,24 @@ mod test {
         decoder_test(vec![0x59, 0xCD, 0xAB], Instruction::EOR(Operand::Indexed(0xABCD, RegisterName::Y)));
         decoder_test(vec![0x41, 0xAB], Instruction::EOR(Operand::PreIndexedIndirect(0xAB)));
         decoder_test(vec![0x51, 0xAB], Instruction::EOR(Operand::PostIndexedIndirect(0xAB)));
+    }
+
+    #[test]
+    pub fn can_decode_inc() {
+        decoder_test(vec![0xE6, 0xAB], Instruction::INC(Operand::Absolute(0x00AB)));
+        decoder_test(vec![0xF6, 0xAB], Instruction::INC(Operand::Indexed(0x00AB, RegisterName::X)));
+        decoder_test(vec![0xEE, 0xCD, 0xAB], Instruction::INC(Operand::Absolute(0xABCD)));
+        decoder_test(vec![0xFE, 0xCD, 0xAB], Instruction::INC(Operand::Indexed(0xABCD, RegisterName::X)));
+    }
+
+    #[test]
+    pub fn can_decode_inx() {
+        decoder_test(vec![0xE8], Instruction::INX);
+    }
+
+    #[test]
+    pub fn can_decode_iny() {
+        decoder_test(vec![0xC8], Instruction::INY);
     }
 
     fn decoder_test(bytes: Vec<u8>, expected: Instruction) {

@@ -65,6 +65,23 @@ pub fn decode<R>(reader: &mut R) -> Result<Instruction, Error> where R: io::Read
         0x58 => Instruction::CLI,
         0xB8 => Instruction::CLV,
 
+        0xC9 => Instruction::CMP(try!(read_imm(reader))),
+        0xC5 => Instruction::CMP(try!(read_zp(reader))),
+        0xD5 => Instruction::CMP(try!(read_zp_x(reader))),
+        0xCD => Instruction::CMP(try!(read_abs(reader))),
+        0xDD => Instruction::CMP(try!(read_abs_x(reader))),
+        0xD9 => Instruction::CMP(try!(read_abs_y(reader))),
+        0xC1 => Instruction::CMP(try!(read_ind_x(reader))),
+        0xD1 => Instruction::CMP(try!(read_ind_y(reader))),
+
+        0xE0 => Instruction::CPX(try!(read_imm(reader))),
+        0xE4 => Instruction::CPX(try!(read_zp(reader))),
+        0xEC => Instruction::CPX(try!(read_abs(reader))),
+
+        0xC0 => Instruction::CPY(try!(read_imm(reader))),
+        0xC4 => Instruction::CPY(try!(read_zp(reader))),
+        0xCC => Instruction::CPY(try!(read_abs(reader))),
+
         _ => return Err(Error::UnknownOpcode)
     };
 
@@ -189,6 +206,32 @@ mod test {
         decoder_test(vec![0xD8], Instruction::CLD);
         decoder_test(vec![0x58], Instruction::CLI);
         decoder_test(vec![0xB8], Instruction::CLV);
+    }
+
+    #[test]
+    pub fn can_decode_cmp() {
+        decoder_test(vec![0xC9, 0x42], Instruction::CMP(Operand::Immediate(0x42)));
+        decoder_test(vec![0xC5, 0xAB], Instruction::CMP(Operand::Absolute(0x00AB)));
+        decoder_test(vec![0xD5, 0xAB], Instruction::CMP(Operand::Indexed(0x00AB, RegisterName::X)));
+        decoder_test(vec![0xCD, 0xCD, 0xAB], Instruction::CMP(Operand::Absolute(0xABCD)));
+        decoder_test(vec![0xDD, 0xCD, 0xAB], Instruction::CMP(Operand::Indexed(0xABCD, RegisterName::X)));
+        decoder_test(vec![0xD9, 0xCD, 0xAB], Instruction::CMP(Operand::Indexed(0xABCD, RegisterName::Y)));
+        decoder_test(vec![0xC1, 0xAB], Instruction::CMP(Operand::PreIndexedIndirect(0xAB)));
+        decoder_test(vec![0xD1, 0xAB], Instruction::CMP(Operand::PostIndexedIndirect(0xAB)));
+    }
+
+    #[test]
+    pub fn can_decode_cpx() {
+        decoder_test(vec![0xE0, 0x42], Instruction::CPX(Operand::Immediate(0x42)));
+        decoder_test(vec![0xE4, 0xAB], Instruction::CPX(Operand::Absolute(0x00AB)));
+        decoder_test(vec![0xEC, 0xCD, 0xAB], Instruction::CPX(Operand::Absolute(0xABCD)));
+    }
+
+    #[test]
+    pub fn can_decode_cpy() {
+        decoder_test(vec![0xC0, 0x42], Instruction::CPY(Operand::Immediate(0x42)));
+        decoder_test(vec![0xC4, 0xAB], Instruction::CPY(Operand::Absolute(0x00AB)));
+        decoder_test(vec![0xCC, 0xCD, 0xAB], Instruction::CPY(Operand::Absolute(0xABCD)));
     }
 
     fn decoder_test(bytes: Vec<u8>, expected: Instruction) {

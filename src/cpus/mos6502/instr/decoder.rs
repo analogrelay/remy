@@ -111,7 +111,28 @@ pub fn decode<R>(reader: &mut R) -> Result<Instruction, Error> where R: io::Read
         0x6C => Instruction::JMP(Operand::Indirect(try!(read_u16(reader)))),
         
         0x20 => Instruction::JSR(try!(read_u16(reader))),
+
+        0xA9 => Instruction::LDA(try!(read_imm(reader))),
+        0xA5 => Instruction::LDA(try!(read_zp(reader))),
+        0xB5 => Instruction::LDA(try!(read_zp_x(reader))),
+        0xAD => Instruction::LDA(try!(read_abs(reader))),
+        0xBD => Instruction::LDA(try!(read_abs_x(reader))),
+        0xB9 => Instruction::LDA(try!(read_abs_y(reader))),
+        0xA1 => Instruction::LDA(try!(read_ind_x(reader))),
+        0xB1 => Instruction::LDA(try!(read_ind_y(reader))),
+
+        0xA2 => Instruction::LDX(try!(read_imm(reader))),
+        0xA6 => Instruction::LDX(try!(read_zp(reader))),
+        0xB6 => Instruction::LDX(try!(read_zp_y(reader))),
+        0xAE => Instruction::LDX(try!(read_abs(reader))),
+        0xBE => Instruction::LDX(try!(read_abs_y(reader))),
         
+        0xA0 => Instruction::LDY(try!(read_imm(reader))),
+        0xA4 => Instruction::LDY(try!(read_zp(reader))),
+        0xB4 => Instruction::LDY(try!(read_zp_x(reader))),
+        0xAC => Instruction::LDY(try!(read_abs(reader))),
+        0xBC => Instruction::LDY(try!(read_abs_x(reader))),
+
         _ => return Err(Error::UnknownOpcode)
     };
 
@@ -148,6 +169,11 @@ fn read_zp<R>(reader: &mut R) -> Result<Operand, io::Error> where R: io::Read {
 fn read_zp_x<R>(reader: &mut R) -> Result<Operand, io::Error> where R: io::Read {
     let zp = try!(read_byte(reader));
     Ok(Operand::Indexed(zp as u16, RegisterName::X))
+}
+
+fn read_zp_y<R>(reader: &mut R) -> Result<Operand, io::Error> where R: io::Read {
+    let zp = try!(read_byte(reader));
+    Ok(Operand::Indexed(zp as u16, RegisterName::Y))
 }
 
 fn read_ind_x<R>(reader: &mut R) -> Result<Operand, io::Error> where R: io::Read {
@@ -321,6 +347,36 @@ mod test {
     #[test]
     pub fn can_decode_jsr() {
         decoder_test(vec![0x20, 0xCD, 0xAB], Instruction::JSR(0xABCD));
+    }
+
+    #[test]
+    pub fn can_decode_lda() {
+        decoder_test(vec![0xA9, 0x42], Instruction::LDA(Operand::Immediate(0x42)));
+        decoder_test(vec![0xA5, 0xAB], Instruction::LDA(Operand::Absolute(0x00AB)));
+        decoder_test(vec![0xB5, 0xAB], Instruction::LDA(Operand::Indexed(0x00AB, RegisterName::X)));
+        decoder_test(vec![0xAD, 0xCD, 0xAB], Instruction::LDA(Operand::Absolute(0xABCD)));
+        decoder_test(vec![0xBD, 0xCD, 0xAB], Instruction::LDA(Operand::Indexed(0xABCD, RegisterName::X)));
+        decoder_test(vec![0xB9, 0xCD, 0xAB], Instruction::LDA(Operand::Indexed(0xABCD, RegisterName::Y)));
+        decoder_test(vec![0xA1, 0xAB], Instruction::LDA(Operand::PreIndexedIndirect(0xAB)));
+        decoder_test(vec![0xB1, 0xAB], Instruction::LDA(Operand::PostIndexedIndirect(0xAB)));
+    }
+
+    #[test]
+    pub fn can_decode_ldx() {
+        decoder_test(vec![0xA2, 0x42], Instruction::LDX(Operand::Immediate(0x42)));
+        decoder_test(vec![0xA6, 0xAB], Instruction::LDX(Operand::Absolute(0x00AB)));
+        decoder_test(vec![0xB6, 0xAB], Instruction::LDX(Operand::Indexed(0x00AB, RegisterName::Y)));
+        decoder_test(vec![0xAE, 0xCD, 0xAB], Instruction::LDX(Operand::Absolute(0xABCD)));
+        decoder_test(vec![0xBE, 0xCD, 0xAB], Instruction::LDX(Operand::Indexed(0xABCD, RegisterName::Y)));
+    }
+
+    #[test]
+    pub fn can_decode_ldy() {
+        decoder_test(vec![0xA0, 0x42], Instruction::LDY(Operand::Immediate(0x42)));
+        decoder_test(vec![0xA4, 0xAB], Instruction::LDY(Operand::Absolute(0x00AB)));
+        decoder_test(vec![0xB4, 0xAB], Instruction::LDY(Operand::Indexed(0x00AB, RegisterName::X)));
+        decoder_test(vec![0xAC, 0xCD, 0xAB], Instruction::LDY(Operand::Absolute(0xABCD)));
+        decoder_test(vec![0xBC, 0xCD, 0xAB], Instruction::LDY(Operand::Indexed(0xABCD, RegisterName::X)));
     }
 
     fn decoder_test(bytes: Vec<u8>, expected: Instruction) {

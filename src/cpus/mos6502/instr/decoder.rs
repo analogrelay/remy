@@ -133,6 +133,14 @@ pub fn decode<R>(reader: &mut R) -> Result<Instruction, Error> where R: io::Read
         0xAC => Instruction::LDY(try!(read_abs(reader))),
         0xBC => Instruction::LDY(try!(read_abs_x(reader))),
 
+        0x4A => Instruction::LSR(Operand::Accumulator),
+        0x46 => Instruction::LSR(try!(read_zp(reader))),
+        0x56 => Instruction::LSR(try!(read_zp_x(reader))),
+        0x4E => Instruction::LSR(try!(read_abs(reader))),
+        0x5E => Instruction::LSR(try!(read_abs_x(reader))),
+
+        0xEA => Instruction::NOP,
+
         _ => return Err(Error::UnknownOpcode)
     };
 
@@ -377,6 +385,20 @@ mod test {
         decoder_test(vec![0xB4, 0xAB], Instruction::LDY(Operand::Indexed(0x00AB, RegisterName::X)));
         decoder_test(vec![0xAC, 0xCD, 0xAB], Instruction::LDY(Operand::Absolute(0xABCD)));
         decoder_test(vec![0xBC, 0xCD, 0xAB], Instruction::LDY(Operand::Indexed(0xABCD, RegisterName::X)));
+    }
+
+    #[test]
+    pub fn can_decode_lsr() {
+        decoder_test(vec![0x4A], Instruction::LSR(Operand::Accumulator));
+        decoder_test(vec![0x46, 0xAB], Instruction::LSR(Operand::Absolute(0x00AB)));
+        decoder_test(vec![0x56, 0xAB], Instruction::LSR(Operand::Indexed(0x00AB, RegisterName::X)));
+        decoder_test(vec![0x4E, 0xCD, 0xAB], Instruction::LSR(Operand::Absolute(0xABCD)));
+        decoder_test(vec![0x5E, 0xCD, 0xAB], Instruction::LSR(Operand::Indexed(0xABCD, RegisterName::X)));
+    }
+
+    #[test]
+    pub fn can_decode_nop() {
+        decoder_test(vec![0xEA], Instruction::NOP);
     }
 
     fn decoder_test(bytes: Vec<u8>, expected: Instruction) {

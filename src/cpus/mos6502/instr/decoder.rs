@@ -199,6 +199,13 @@ pub fn decode<R>(reader: &mut R) -> Result<Instruction, Error> where R: io::Read
         0x94 => Instruction::STY(try!(read_zp_x(reader))),
         0x8C => Instruction::STY(try!(read_abs(reader))),
 
+        0xAA => Instruction::TAX,
+        0xA8 => Instruction::TAY,
+        0xBA => Instruction::TSX,
+        0x8A => Instruction::TXA,
+        0x9A => Instruction::TXS,
+        0x98 => Instruction::TYA,
+
         _ => return Err(Error::UnknownOpcode)
     };
 
@@ -561,6 +568,16 @@ mod test {
         decoder_test(vec![0x84, 0xAB], Instruction::STY(Operand::Absolute(0x00AB)));
         decoder_test(vec![0x94, 0xAB], Instruction::STY(Operand::Indexed(0x00AB, RegisterName::X)));
         decoder_test(vec![0x8C, 0xCD, 0xAB], Instruction::STY(Operand::Absolute(0xABCD)));
+    }
+
+    #[test]
+    pub fn can_decode_transfers() {
+        decoder_test(vec![0xAA], Instruction::TAX);
+        decoder_test(vec![0xA8], Instruction::TAY);
+        decoder_test(vec![0xBA], Instruction::TSX);
+        decoder_test(vec![0x8A], Instruction::TXA);
+        decoder_test(vec![0x9A], Instruction::TXS);
+        decoder_test(vec![0x98], Instruction::TYA);
     }
 
     fn decoder_test(bytes: Vec<u8>, expected: Instruction) {

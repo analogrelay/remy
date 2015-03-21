@@ -170,6 +170,15 @@ pub fn decode<R>(reader: &mut R) -> Result<Instruction, Error> where R: io::Read
         0x40 => Instruction::RTI,
         0x60 => Instruction::RTS,
 
+        0xE9 => Instruction::SBC(try!(read_imm(reader))),
+        0xE5 => Instruction::SBC(try!(read_zp(reader))),
+        0xF5 => Instruction::SBC(try!(read_zp_x(reader))),
+        0xED => Instruction::SBC(try!(read_abs(reader))),
+        0xFD => Instruction::SBC(try!(read_abs_x(reader))),
+        0xF9 => Instruction::SBC(try!(read_abs_y(reader))),
+        0xE1 => Instruction::SBC(try!(read_ind_x(reader))),
+        0xF1 => Instruction::SBC(try!(read_ind_y(reader))),
+
         _ => return Err(Error::UnknownOpcode)
     };
 
@@ -488,6 +497,18 @@ mod test {
     #[test]
     pub fn can_decode_rts() {
         decoder_test(vec![0x60], Instruction::RTS);
+    }
+
+    #[test]
+    pub fn can_decode_sbc() {
+        decoder_test(vec![0xE9, 0x42], Instruction::SBC(Operand::Immediate(0x42)));
+        decoder_test(vec![0xE5, 0xAB], Instruction::SBC(Operand::Absolute(0x00AB)));
+        decoder_test(vec![0xF5, 0xAB], Instruction::SBC(Operand::Indexed(0x00AB, RegisterName::X)));
+        decoder_test(vec![0xED, 0xCD, 0xAB], Instruction::SBC(Operand::Absolute(0xABCD)));
+        decoder_test(vec![0xFD, 0xCD, 0xAB], Instruction::SBC(Operand::Indexed(0xABCD, RegisterName::X)));
+        decoder_test(vec![0xF9, 0xCD, 0xAB], Instruction::SBC(Operand::Indexed(0xABCD, RegisterName::Y)));
+        decoder_test(vec![0xE1, 0xAB], Instruction::SBC(Operand::PreIndexedIndirect(0xAB)));
+        decoder_test(vec![0xF1, 0xAB], Instruction::SBC(Operand::PostIndexedIndirect(0xAB)));
     }
 
     fn decoder_test(bytes: Vec<u8>, expected: Instruction) {

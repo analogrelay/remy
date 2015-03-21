@@ -183,6 +183,22 @@ pub fn decode<R>(reader: &mut R) -> Result<Instruction, Error> where R: io::Read
         0xF8 => Instruction::SED,
         0x78 => Instruction::SEI,
 
+        0x85 => Instruction::STA(try!(read_zp(reader))),
+        0x95 => Instruction::STA(try!(read_zp_x(reader))),
+        0x8D => Instruction::STA(try!(read_abs(reader))),
+        0x9D => Instruction::STA(try!(read_abs_x(reader))),
+        0x99 => Instruction::STA(try!(read_abs_y(reader))),
+        0x81 => Instruction::STA(try!(read_ind_x(reader))),
+        0x91 => Instruction::STA(try!(read_ind_y(reader))),
+
+        0x86 => Instruction::STX(try!(read_zp(reader))),
+        0x96 => Instruction::STX(try!(read_zp_y(reader))),
+        0x8E => Instruction::STX(try!(read_abs(reader))),
+        
+        0x84 => Instruction::STY(try!(read_zp(reader))),
+        0x94 => Instruction::STY(try!(read_zp_x(reader))),
+        0x8C => Instruction::STY(try!(read_abs(reader))),
+
         _ => return Err(Error::UnknownOpcode)
     };
 
@@ -520,6 +536,31 @@ mod test {
         decoder_test(vec![0x38], Instruction::SEC);
         decoder_test(vec![0xF8], Instruction::SED);
         decoder_test(vec![0x78], Instruction::SEI);
+    }
+
+    #[test]
+    pub fn can_decode_sta() {
+        decoder_test(vec![0x85, 0xAB], Instruction::STA(Operand::Absolute(0x00AB)));
+        decoder_test(vec![0x95, 0xAB], Instruction::STA(Operand::Indexed(0x00AB, RegisterName::X)));
+        decoder_test(vec![0x8D, 0xCD, 0xAB], Instruction::STA(Operand::Absolute(0xABCD)));
+        decoder_test(vec![0x9D, 0xCD, 0xAB], Instruction::STA(Operand::Indexed(0xABCD, RegisterName::X)));
+        decoder_test(vec![0x99, 0xCD, 0xAB], Instruction::STA(Operand::Indexed(0xABCD, RegisterName::Y)));
+        decoder_test(vec![0x81, 0xAB], Instruction::STA(Operand::PreIndexedIndirect(0xAB)));
+        decoder_test(vec![0x91, 0xAB], Instruction::STA(Operand::PostIndexedIndirect(0xAB)));
+    }
+
+    #[test]
+    pub fn can_decode_stx() {
+        decoder_test(vec![0x86, 0xAB], Instruction::STX(Operand::Absolute(0x00AB)));
+        decoder_test(vec![0x96, 0xAB], Instruction::STX(Operand::Indexed(0x00AB, RegisterName::Y)));
+        decoder_test(vec![0x8E, 0xCD, 0xAB], Instruction::STX(Operand::Absolute(0xABCD)));
+    }
+
+    #[test]
+    pub fn can_decode_sty() {
+        decoder_test(vec![0x84, 0xAB], Instruction::STY(Operand::Absolute(0x00AB)));
+        decoder_test(vec![0x94, 0xAB], Instruction::STY(Operand::Indexed(0x00AB, RegisterName::X)));
+        decoder_test(vec![0x8C, 0xCD, 0xAB], Instruction::STY(Operand::Absolute(0xABCD)));
     }
 
     fn decoder_test(bytes: Vec<u8>, expected: Instruction) {

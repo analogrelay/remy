@@ -179,6 +179,10 @@ pub fn decode<R>(reader: &mut R) -> Result<Instruction, Error> where R: io::Read
         0xE1 => Instruction::SBC(try!(read_ind_x(reader))),
         0xF1 => Instruction::SBC(try!(read_ind_y(reader))),
 
+        0x38 => Instruction::SEC,
+        0xF8 => Instruction::SED,
+        0x78 => Instruction::SEI,
+
         _ => return Err(Error::UnknownOpcode)
     };
 
@@ -509,6 +513,13 @@ mod test {
         decoder_test(vec![0xF9, 0xCD, 0xAB], Instruction::SBC(Operand::Indexed(0xABCD, RegisterName::Y)));
         decoder_test(vec![0xE1, 0xAB], Instruction::SBC(Operand::PreIndexedIndirect(0xAB)));
         decoder_test(vec![0xF1, 0xAB], Instruction::SBC(Operand::PostIndexedIndirect(0xAB)));
+    }
+
+    #[test]
+    pub fn can_decode_set_flags() {
+        decoder_test(vec![0x38], Instruction::SEC);
+        decoder_test(vec![0xF8], Instruction::SED);
+        decoder_test(vec![0x78], Instruction::SEI);
     }
 
     fn decoder_test(bytes: Vec<u8>, expected: Instruction) {

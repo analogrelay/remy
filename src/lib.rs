@@ -2,6 +2,7 @@
 
 #![feature(alloc)]
 #![feature(core)]
+#![feature(debug_builders)]
 
 /// Contains code to emulate supported CPUs
 pub mod cpus;

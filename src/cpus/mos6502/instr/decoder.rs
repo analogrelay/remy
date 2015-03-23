@@ -2,19 +2,28 @@ use std::{error,io};
 
 use cpus::mos6502::{Operand,Instruction,RegisterName};
 
+pub type Result<T> = ::std::result::Result<T, Error>;
+
 #[derive(Debug,Eq,PartialEq)]
 pub enum Error {
-    UnknownOpcode,
+    UnknownOpcode(u8),
+    EndOfFile,
     IoError(io::Error)
 }
 
-impl error::FromError<io::Error> for Error {
-    fn from_error(err: io::Error) -> Error {
+impl Error {
+    fn from_io(err: io::Error) -> Error {
         Error::IoError(err)
     }
 }
 
-pub fn decode<R>(reader: &mut R) -> Result<Instruction, Error> where R: io::Read {
+impl error::FromError<io::Error> for Error {
+    fn from_error(err: io::Error) -> Error {
+        Error::from_io(err)
+    }
+}
+
+pub fn decode<R>(reader: &mut R) -> Result<Instruction> where R: io::Read {
     // Read the opcode
     let opcode = try!(read_byte(reader));
 
@@ -206,63 +215,64 @@ pub fn decode<R>(reader: &mut R) -> Result<Instruction, Error> where R: io::Read
         0x9A => Instruction::TXS,
         0x98 => Instruction::TYA,
 
-        _ => return Err(Error::UnknownOpcode)
+        x => return Err(Error::UnknownOpcode(x))
     };
 
     Ok(instr)
 }
 
-fn read_abs<R>(reader: &mut R) -> Result<Operand, io::Error> where R: io::Read {
+fn read_abs<R>(reader: &mut R) -> Result<Operand> where R: io::Read {
     Ok(Operand::Absolute(try!(read_u16(reader))))
 }
 
-fn read_abs_x<R>(reader: &mut R) -> Result<Operand, io::Error> where R: io::Read {
+fn read_abs_x<R>(reader: &mut R) -> Result<Operand> where R: io::Read {
     Ok(Operand::Indexed(try!(read_u16(reader)), RegisterName::X))
 }
 
-fn read_abs_y<R>(reader: &mut R) -> Result<Operand, io::Error> where R: io::Read {
+fn read_abs_y<R>(reader: &mut R) -> Result<Operand> where R: io::Read {
     Ok(Operand::Indexed(try!(read_u16(reader)), RegisterName::Y))
 }
 
-fn read_u16<R>(reader: &mut R) -> Result<u16, io::Error> where R: io::Read {
+fn read_u16<R>(reader: &mut R) -> Result<u16> where R: io::Read {
     let low : u16 = try!(read_byte(reader)) as u16;
     let high : u16 = try!(read_byte(reader)) as u16;
     Ok((high << 8) | low)
 }
 
-fn read_imm<R>(reader: &mut R) -> Result<Operand, io::Error> where R: io::Read {
+fn read_imm<R>(reader: &mut R) -> Result<Operand> where R: io::Read {
     Ok(Operand::Immediate(try!(read_byte(reader))))
 }
 
-fn read_zp<R>(reader: &mut R) -> Result<Operand, io::Error> where R: io::Read {
+fn read_zp<R>(reader: &mut R) -> Result<Operand> where R: io::Read {
     let zp = try!(read_byte(reader));
     Ok(Operand::Absolute(zp as u16))
 }
 
-fn read_zp_x<R>(reader: &mut R) -> Result<Operand, io::Error> where R: io::Read {
+fn read_zp_x<R>(reader: &mut R) -> Result<Operand> where R: io::Read {
     let zp = try!(read_byte(reader));
     Ok(Operand::Indexed(zp as u16, RegisterName::X))
 }
 
-fn read_zp_y<R>(reader: &mut R) -> Result<Operand, io::Error> where R: io::Read {
+fn read_zp_y<R>(reader: &mut R) -> Result<Operand> where R: io::Read {
     let zp = try!(read_byte(reader));
     Ok(Operand::Indexed(zp as u16, RegisterName::Y))
 }
 
-fn read_ind_x<R>(reader: &mut R) -> Result<Operand, io::Error> where R: io::Read {
+fn read_ind_x<R>(reader: &mut R) -> Result<Operand> where R: io::Read {
     Ok(Operand::PreIndexedIndirect(try!(read_byte(reader))))
 }
 
-fn read_ind_y<R>(reader: &mut R) -> Result<Operand, io::Error> where R: io::Read {
+fn read_ind_y<R>(reader: &mut R) -> Result<Operand> where R: io::Read {
     Ok(Operand::PostIndexedIndirect(try!(read_byte(reader))))
 }
 
-fn read_byte<R>(reader: &mut R) -> Result<u8, io::Error> where R: io::Read {
+fn read_byte<R>(reader: &mut R) -> Result<u8> where R: io::Read {
     let mut buf : [u8; 1] = [0; 1];
     
     match reader.read(&mut buf) {
+        Ok(0) => Err(Error::EndOfFile),
         Ok(_) => Ok(buf[0]),
-        Err(e) => Err(e)
+        Err(e) => Err(Error::from_io(e))
     }
 }
 

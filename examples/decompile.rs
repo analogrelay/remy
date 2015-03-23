@@ -4,6 +4,8 @@ use std::{env,fs,io};
 use std::path::Path;
 use std::io::Write;
 
+use remy::cpus::mos6502;
+
 fn main() {
     // Load the rom
     let args : Vec<String> = env::args().collect();
@@ -26,8 +28,28 @@ fn main() {
     writeln!(&mut output, "Decompilation of {:?}", file.file_name().unwrap()).unwrap();
     writeln!(&mut output, "{}", "").unwrap();
     
-    write_banks(&mut output, "PRG", rom.prg_banks);
+    decompile_banks(&mut output, "PRG", rom.prg_banks);
     write_banks(&mut output, "CHR", rom.chr_banks);
+}
+
+fn decompile_banks<W>(output: &mut W, bank_type: &'static str, banks: Vec<Vec<u8>>) where W: io::Write {
+    for (i, bank) in banks.iter().enumerate() {
+        writeln!(output, "{} ROM Bank {}", bank_type, i).unwrap();
+
+        let mut cursor = io::Cursor::new(&bank[..]);
+
+        loop {
+            let pos = cursor.position();
+            match mos6502::instr::decode(&mut cursor) {
+                Ok(i) => writeln!(output, "  0x{:04X}  {}", pos, i).unwrap(),
+                Err(mos6502::instr::decoder::Error::EndOfFile) => break,
+                Err(e) => {
+                    println!("Error decoding at 0x{:04X}: {:?}", pos, e);
+                    break;
+                }
+            }
+        }
+    }
 }
 
 fn write_banks<W>(output: &mut W, bank_type: &'static str, banks: Vec<Vec<u8>>) where W: io::Write {

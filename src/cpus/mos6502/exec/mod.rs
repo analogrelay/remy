@@ -140,6 +140,7 @@ pub fn dispatch<M>(inst: Instruction, cpu: &mut Mos6502<M>) -> Result<(), Error>
         Instruction::TSX => transfer::exec(cpu, cpu::RegisterName::S, cpu::RegisterName::X),
         Instruction::TXA => transfer::exec(cpu, cpu::RegisterName::X, cpu::RegisterName::A),
         Instruction::TXS => transfer::exec(cpu, cpu::RegisterName::X, cpu::RegisterName::S),
-        Instruction::TYA => transfer::exec(cpu, cpu::RegisterName::Y, cpu::RegisterName::A)
+        Instruction::TYA => transfer::exec(cpu, cpu::RegisterName::Y, cpu::RegisterName::A),
+        _ => panic!("Unknown instruction. Temporary!")
     }
 }

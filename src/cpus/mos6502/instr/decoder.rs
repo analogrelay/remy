@@ -1,10 +1,10 @@
-use std::{error,io};
+use std::{error,io,fmt};
 
 use cpus::mos6502::{Operand,Instruction,RegisterName};
 
 pub type Result<T> = ::std::result::Result<T, Error>;
 
-#[derive(Debug,Eq,PartialEq)]
+#[derive(Eq,PartialEq)]
 pub enum Error {
     UnknownOpcode(u8),
     EndOfFile,
@@ -14,6 +14,16 @@ pub enum Error {
 impl Error {
     fn from_io(err: io::Error) -> Error {
         Error::IoError(err)
+    }
+}
+
+impl fmt::Debug for Error {
+    fn fmt(&self, fmt: &mut fmt::Formatter) -> fmt::Result {
+        match self {
+            &Error::UnknownOpcode(opcode) => write!(fmt, "UnknownOpcode(0x{:02X})", opcode),
+            &Error::EndOfFile => fmt.write_str("EndOfFile"),
+            &Error::IoError(ref err) => fmt.debug_tuple("IoError").field(err).finish()
+        }
     }
 }
 
@@ -38,6 +48,10 @@ pub fn decode<R>(reader: &mut R) -> Result<Instruction> where R: io::Read {
         0x61 => Instruction::ADC(try!(read_ind_x(reader))),
         0x71 => Instruction::ADC(try!(read_ind_y(reader))),
 
+        0x4B => Instruction::ALR(try!(read_imm(reader))),
+
+        0x0B | 0x2B => Instruction::ANC(try!(read_imm(reader))),
+
         0x29 => Instruction::AND(try!(read_imm(reader))),
         0x25 => Instruction::AND(try!(read_zp(reader))),
         0x35 => Instruction::AND(try!(read_zp_x(reader))),
@@ -47,11 +61,15 @@ pub fn decode<R>(reader: &mut R) -> Result<Instruction> where R: io::Read {
         0x21 => Instruction::AND(try!(read_ind_x(reader))),
         0x31 => Instruction::AND(try!(read_ind_y(reader))),
 
+        0x6B => Instruction::ARR(try!(read_imm(reader))),
+
         0x0A => Instruction::ASL(Operand::Accumulator),
         0x06 => Instruction::ASL(try!(read_zp(reader))),
         0x16 => Instruction::ASL(try!(read_zp_x(reader))),
         0x0E => Instruction::ASL(try!(read_abs(reader))),
         0x1E => Instruction::ASL(try!(read_abs_x(reader))),
+
+        0xCB => Instruction::AXS(try!(read_imm(reader))),
 
         0x90 => Instruction::BCC(try!(read_byte(reader)) as i8),
         0xB0 => Instruction::BCS(try!(read_byte(reader)) as i8),
@@ -99,6 +117,14 @@ pub fn decode<R>(reader: &mut R) -> Result<Instruction> where R: io::Read {
         0xCA => Instruction::DEX,
         0x88 => Instruction::DEY,
 
+        0xC3 => Instruction::DCP(try!(read_ind_x(reader))),
+        0xC7 => Instruction::DCP(try!(read_zp(reader))),
+        0xCF => Instruction::DCP(try!(read_abs(reader))),
+        0xD3 => Instruction::DCP(try!(read_ind_y(reader))),
+        0xD7 => Instruction::DCP(try!(read_zp_x(reader))),
+        0xDB => Instruction::DCP(try!(read_abs_y(reader))),
+        0xDF => Instruction::DCP(try!(read_abs_x(reader))),
+
         0x49 => Instruction::EOR(try!(read_imm(reader))),
         0x45 => Instruction::EOR(try!(read_zp(reader))),
         0x55 => Instruction::EOR(try!(read_zp_x(reader))),
@@ -116,10 +142,25 @@ pub fn decode<R>(reader: &mut R) -> Result<Instruction> where R: io::Read {
         0xE8 => Instruction::INX,
         0xC8 => Instruction::INY,
 
+        0xE3 => Instruction::ISC(try!(read_ind_x(reader))),
+        0xE7 => Instruction::ISC(try!(read_zp(reader))),
+        0xEF => Instruction::ISC(try!(read_abs(reader))),
+        0xF3 => Instruction::ISC(try!(read_ind_y(reader))),
+        0xF7 => Instruction::ISC(try!(read_zp_x(reader))),
+        0xFB => Instruction::ISC(try!(read_abs_y(reader))),
+        0xFF => Instruction::ISC(try!(read_abs_x(reader))),
+
         0x4C => Instruction::JMP(try!(read_abs(reader))),
         0x6C => Instruction::JMP(Operand::Indirect(try!(read_u16(reader)))),
         
         0x20 => Instruction::JSR(try!(read_u16(reader))),
+
+        0xA3 => Instruction::LAX(try!(read_ind_x(reader))),
+        0xA7 => Instruction::LAX(try!(read_zp(reader))),
+        0xAF => Instruction::LAX(try!(read_abs(reader))),
+        0xB3 => Instruction::LAX(try!(read_ind_y(reader))),
+        0xB7 => Instruction::LAX(try!(read_zp_y(reader))),
+        0xBF => Instruction::LAX(try!(read_abs_y(reader))),
 
         0xA9 => Instruction::LDA(try!(read_imm(reader))),
         0xA5 => Instruction::LDA(try!(read_zp(reader))),
@@ -164,6 +205,14 @@ pub fn decode<R>(reader: &mut R) -> Result<Instruction> where R: io::Read {
         0x68 => Instruction::PLA,
         0x28 => Instruction::PLP,
 
+        0x23 => Instruction::RLA(try!(read_ind_x(reader))),
+        0x27 => Instruction::RLA(try!(read_zp(reader))),
+        0x2F => Instruction::RLA(try!(read_abs(reader))),
+        0x33 => Instruction::RLA(try!(read_ind_y(reader))),
+        0x37 => Instruction::RLA(try!(read_zp_x(reader))),
+        0x3B => Instruction::RLA(try!(read_abs_y(reader))),
+        0x3F => Instruction::RLA(try!(read_abs_x(reader))),
+
         0x2A => Instruction::ROL(Operand::Accumulator),
         0x26 => Instruction::ROL(try!(read_zp(reader))),
         0x36 => Instruction::ROL(try!(read_zp_x(reader))),
@@ -176,8 +225,21 @@ pub fn decode<R>(reader: &mut R) -> Result<Instruction> where R: io::Read {
         0x6E => Instruction::ROR(try!(read_abs(reader))),
         0x7E => Instruction::ROR(try!(read_abs_x(reader))),
 
+        0x63 => Instruction::RRA(try!(read_ind_x(reader))),
+        0x67 => Instruction::RRA(try!(read_zp(reader))),
+        0x6F => Instruction::RRA(try!(read_abs(reader))),
+        0x73 => Instruction::RRA(try!(read_ind_y(reader))),
+        0x77 => Instruction::RRA(try!(read_zp_x(reader))),
+        0x7B => Instruction::RRA(try!(read_abs_y(reader))),
+        0x7F => Instruction::RRA(try!(read_abs_x(reader))),
+
         0x40 => Instruction::RTI,
         0x60 => Instruction::RTS,
+
+        0x83 => Instruction::SAX(try!(read_ind_x(reader))),
+        0x87 => Instruction::SAX(try!(read_zp(reader))),
+        0x8F => Instruction::SAX(try!(read_abs(reader))),
+        0x97 => Instruction::SAX(try!(read_zp_y(reader))),
 
         0xE9 => Instruction::SBC(try!(read_imm(reader))),
         0xE5 => Instruction::SBC(try!(read_zp(reader))),
@@ -191,6 +253,22 @@ pub fn decode<R>(reader: &mut R) -> Result<Instruction> where R: io::Read {
         0x38 => Instruction::SEC,
         0xF8 => Instruction::SED,
         0x78 => Instruction::SEI,
+
+        0x03 => Instruction::SLO(try!(read_ind_x(reader))),
+        0x07 => Instruction::SLO(try!(read_zp(reader))),
+        0x0F => Instruction::SLO(try!(read_abs(reader))),
+        0x13 => Instruction::SLO(try!(read_ind_y(reader))),
+        0x17 => Instruction::SLO(try!(read_zp_x(reader))),
+        0x1B => Instruction::SLO(try!(read_abs_y(reader))),
+        0x1F => Instruction::SLO(try!(read_abs_x(reader))),
+
+        0x43 => Instruction::SRE(try!(read_ind_x(reader))),
+        0x47 => Instruction::SRE(try!(read_zp(reader))),
+        0x4F => Instruction::SRE(try!(read_abs(reader))),
+        0x53 => Instruction::SRE(try!(read_ind_y(reader))),
+        0x57 => Instruction::SRE(try!(read_zp_x(reader))),
+        0x5B => Instruction::SRE(try!(read_abs_y(reader))),
+        0x5F => Instruction::SRE(try!(read_abs_x(reader))),
 
         0x85 => Instruction::STA(try!(read_zp(reader))),
         0x95 => Instruction::STA(try!(read_zp_x(reader))),
@@ -474,6 +552,14 @@ mod test {
     #[test]
     pub fn can_decode_nop() {
         decoder_test(vec![0xEA], Instruction::NOP);
+
+        // Unofficial NOPs
+        decoder_test(vec![0x1A], Instruction::NOP);
+        decoder_test(vec![0x3A], Instruction::NOP);
+        decoder_test(vec![0x5A], Instruction::NOP);
+        decoder_test(vec![0x7A], Instruction::NOP);
+        decoder_test(vec![0xDA], Instruction::NOP);
+        decoder_test(vec![0xFA], Instruction::NOP);
     }
 
     #[test]
@@ -546,6 +632,9 @@ mod test {
         decoder_test(vec![0xF9, 0xCD, 0xAB], Instruction::SBC(Operand::Indexed(0xABCD, RegisterName::Y)));
         decoder_test(vec![0xE1, 0xAB], Instruction::SBC(Operand::PreIndexedIndirect(0xAB)));
         decoder_test(vec![0xF1, 0xAB], Instruction::SBC(Operand::PostIndexedIndirect(0xAB)));
+
+        // Unofficial SBC variant
+        decoder_test(vec![0xEB, 0x42], Instruction::SBC(Operand::Immediate(0x42)));
     }
 
     #[test]
@@ -588,6 +677,146 @@ mod test {
         decoder_test(vec![0x8A], Instruction::TXA);
         decoder_test(vec![0x9A], Instruction::TXS);
         decoder_test(vec![0x98], Instruction::TYA);
+    }
+
+    // Unofficial opcodes
+    // http://wiki.nesdev.com/w/index.php/Programming_with_unofficial_opcodes
+    
+    #[test]
+    pub fn can_decode_alr() {
+        decoder_test(vec![0x4B, 0x42], Instruction::ALR(Operand::Immediate(0x42)));
+    }
+
+    #[test]
+    pub fn can_decode_anc() {
+        decoder_test(vec![0x0B, 0x42], Instruction::ANC(Operand::Immediate(0x42)));
+        decoder_test(vec![0x2B, 0x42], Instruction::ANC(Operand::Immediate(0x42)));
+    }
+
+    #[test]
+    pub fn can_decode_arr() {
+        decoder_test(vec![0x6B, 0x42], Instruction::ARR(Operand::Immediate(0x42)));
+    }
+
+    #[test]
+    pub fn can_decode_axs() {
+        decoder_test(vec![0xCB, 0x42], Instruction::AXS(Operand::Immediate(0x42)));
+    }
+
+    #[test]
+    pub fn can_decode_lax() {
+        decoder_test(vec![0xA3, 0xAB], Instruction::LAX(Operand::PreIndexedIndirect(0xAB)));
+        decoder_test(vec![0xA7, 0xAB], Instruction::LAX(Operand::Absolute(0x00AB)));
+        decoder_test(vec![0xAF, 0xCD, 0xAB], Instruction::LAX(Operand::Absolute(0xABCD)));
+        decoder_test(vec![0xB3, 0xAB], Instruction::LAX(Operand::PostIndexedIndirect(0xAB)));
+        decoder_test(vec![0xB7, 0xAB], Instruction::LAX(Operand::Indexed(0x00AB, RegisterName::Y)));
+        decoder_test(vec![0xBF, 0xCD, 0xAB], Instruction::LAX(Operand::Indexed(0xABCD, RegisterName::Y)));
+    }
+
+    #[test]
+    pub fn can_decode_sax() {
+        decoder_test(vec![0x83, 0xAB], Instruction::SAX(Operand::PreIndexedIndirect(0xAB)));
+        decoder_test(vec![0x87, 0xAB], Instruction::SAX(Operand::Absolute(0x00AB)));
+        decoder_test(vec![0x8F, 0xCD, 0xAB], Instruction::SAX(Operand::Absolute(0xABCD)));
+        decoder_test(vec![0x97, 0xAB], Instruction::SAX(Operand::Indexed(0x00AB, RegisterName::Y)));
+    }
+
+    #[test]
+    pub fn can_decode_dcp() {
+        decoder_test(vec![0xC3, 0xAB], Instruction::DCP(Operand::PreIndexedIndirect(0xAB)));
+        decoder_test(vec![0xC7, 0xAB], Instruction::DCP(Operand::Absolute(0x00AB)));
+        decoder_test(vec![0xCF, 0xCD, 0xAB], Instruction::DCP(Operand::Absolute(0xABCD)));
+        decoder_test(vec![0xD3, 0xAB], Instruction::DCP(Operand::PostIndexedIndirect(0xAB)));
+        decoder_test(vec![0xD7, 0xAB], Instruction::DCP(Operand::Indexed(0x00AB, RegisterName::X)));
+        decoder_test(vec![0xDB, 0xCD, 0xAB], Instruction::DCP(Operand::Indexed(0xABCD, RegisterName::Y)));
+        decoder_test(vec![0xDF, 0xCD, 0xAB], Instruction::DCP(Operand::Indexed(0xABCD, RegisterName::X)));
+    }
+
+    #[test]
+    pub fn can_decode_isc() {
+        decoder_test(vec![0xE3, 0xAB], Instruction::ISC(Operand::PreIndexedIndirect(0xAB)));
+        decoder_test(vec![0xE7, 0xAB], Instruction::ISC(Operand::Absolute(0x00AB)));
+        decoder_test(vec![0xEF, 0xCD, 0xAB], Instruction::ISC(Operand::Absolute(0xABCD)));
+        decoder_test(vec![0xF3, 0xAB], Instruction::ISC(Operand::PostIndexedIndirect(0xAB)));
+        decoder_test(vec![0xF7, 0xAB], Instruction::ISC(Operand::Indexed(0x00AB, RegisterName::X)));
+        decoder_test(vec![0xFB, 0xCD, 0xAB], Instruction::ISC(Operand::Indexed(0xABCD, RegisterName::Y)));
+        decoder_test(vec![0xFF, 0xCD, 0xAB], Instruction::ISC(Operand::Indexed(0xABCD, RegisterName::X)));
+    }
+
+    #[test]
+    pub fn can_decode_rla() {
+        decoder_test(vec![0x23, 0xAB], Instruction::RLA(Operand::PreIndexedIndirect(0xAB)));
+        decoder_test(vec![0x27, 0xAB], Instruction::RLA(Operand::Absolute(0x00AB)));
+        decoder_test(vec![0x2F, 0xCD, 0xAB], Instruction::RLA(Operand::Absolute(0xABCD)));
+        decoder_test(vec![0x33, 0xAB], Instruction::RLA(Operand::PostIndexedIndirect(0xAB)));
+        decoder_test(vec![0x37, 0xAB], Instruction::RLA(Operand::Indexed(0x00AB, RegisterName::X)));
+        decoder_test(vec![0x3B, 0xCD, 0xAB], Instruction::RLA(Operand::Indexed(0xABCD, RegisterName::Y)));
+        decoder_test(vec![0x3F, 0xCD, 0xAB], Instruction::RLA(Operand::Indexed(0xABCD, RegisterName::X)));
+    }
+
+    #[test]
+    pub fn can_decode_rra() {
+        decoder_test(vec![0x63, 0xAB], Instruction::RRA(Operand::PreIndexedIndirect(0xAB)));
+        decoder_test(vec![0x67, 0xAB], Instruction::RRA(Operand::Absolute(0x00AB)));
+        decoder_test(vec![0x6F, 0xCD, 0xAB], Instruction::RRA(Operand::Absolute(0xABCD)));
+        decoder_test(vec![0x73, 0xAB], Instruction::RRA(Operand::PostIndexedIndirect(0xAB)));
+        decoder_test(vec![0x77, 0xAB], Instruction::RRA(Operand::Indexed(0x00AB, RegisterName::X)));
+        decoder_test(vec![0x7B, 0xCD, 0xAB], Instruction::RRA(Operand::Indexed(0xABCD, RegisterName::Y)));
+        decoder_test(vec![0x7F, 0xCD, 0xAB], Instruction::RRA(Operand::Indexed(0xABCD, RegisterName::X)));
+    }
+
+    #[test]
+    pub fn can_decode_slo() {
+        decoder_test(vec![0x03, 0xAB], Instruction::SLO(Operand::PreIndexedIndirect(0xAB)));
+        decoder_test(vec![0x07, 0xAB], Instruction::SLO(Operand::Absolute(0x00AB)));
+        decoder_test(vec![0x0F, 0xCD, 0xAB], Instruction::SLO(Operand::Absolute(0xABCD)));
+        decoder_test(vec![0x13, 0xAB], Instruction::SLO(Operand::PostIndexedIndirect(0xAB)));
+        decoder_test(vec![0x17, 0xAB], Instruction::SLO(Operand::Indexed(0x00AB, RegisterName::X)));
+        decoder_test(vec![0x1B, 0xCD, 0xAB], Instruction::SLO(Operand::Indexed(0xABCD, RegisterName::Y)));
+        decoder_test(vec![0x1F, 0xCD, 0xAB], Instruction::SLO(Operand::Indexed(0xABCD, RegisterName::X)));
+    }
+
+    #[test]
+    pub fn can_decode_sre() {
+        decoder_test(vec![0x43, 0xAB], Instruction::SRE(Operand::PreIndexedIndirect(0xAB)));
+        decoder_test(vec![0x47, 0xAB], Instruction::SRE(Operand::Absolute(0x00AB)));
+        decoder_test(vec![0x4F, 0xCD, 0xAB], Instruction::SRE(Operand::Absolute(0xABCD)));
+        decoder_test(vec![0x53, 0xAB], Instruction::SRE(Operand::PostIndexedIndirect(0xAB)));
+        decoder_test(vec![0x57, 0xAB], Instruction::SRE(Operand::Indexed(0x00AB, RegisterName::X)));
+        decoder_test(vec![0x5B, 0xCD, 0xAB], Instruction::SRE(Operand::Indexed(0xABCD, RegisterName::Y)));
+        decoder_test(vec![0x5F, 0xCD, 0xAB], Instruction::SRE(Operand::Indexed(0xABCD, RegisterName::X)));
+    }
+
+    #[test]
+    pub fn can_decode_skb() {
+        decoder_test(vec![0x80, 0x42], Instruction::SKB(Operand::Immediate(0x42)));
+        decoder_test(vec![0x82, 0x42], Instruction::SKB(Operand::Immediate(0x42)));
+        decoder_test(vec![0x89, 0x42], Instruction::SKB(Operand::Immediate(0x42)));
+        decoder_test(vec![0xC2, 0x42], Instruction::SKB(Operand::Immediate(0x42)));
+        decoder_test(vec![0xE2, 0x42], Instruction::SKB(Operand::Immediate(0x42)));
+    }
+
+    #[test]
+    pub fn can_decode_ign() {
+        decoder_test(vec![0x0C, 0xCD, 0xAB], Instruction::IGN(Operand::Absolute(0xABCD)));
+
+        decoder_test(vec![0x1C, 0xCD, 0xAB], Instruction::IGN(Operand::Indexed(0xABCD, RegisterName::X)));
+        decoder_test(vec![0x3C, 0xCD, 0xAB], Instruction::IGN(Operand::Indexed(0xABCD, RegisterName::X)));
+        decoder_test(vec![0x5C, 0xCD, 0xAB], Instruction::IGN(Operand::Indexed(0xABCD, RegisterName::X)));
+        decoder_test(vec![0x7C, 0xCD, 0xAB], Instruction::IGN(Operand::Indexed(0xABCD, RegisterName::X)));
+        decoder_test(vec![0xDC, 0xCD, 0xAB], Instruction::IGN(Operand::Indexed(0xABCD, RegisterName::X)));
+        decoder_test(vec![0xFC, 0xCD, 0xAB], Instruction::IGN(Operand::Indexed(0xABCD, RegisterName::X)));
+
+        decoder_test(vec![0x04, 0xAB], Instruction::IGN(Operand::Absolute(0x00AB)));
+        decoder_test(vec![0x44, 0xAB], Instruction::IGN(Operand::Absolute(0x00AB)));
+        decoder_test(vec![0x64, 0xAB], Instruction::IGN(Operand::Absolute(0x00AB)));
+        
+        decoder_test(vec![0x14, 0xAB], Instruction::IGN(Operand::Indexed(0x00AB, RegisterName::X)));
+        decoder_test(vec![0x34, 0xAB], Instruction::IGN(Operand::Indexed(0x00AB, RegisterName::X)));
+        decoder_test(vec![0x54, 0xAB], Instruction::IGN(Operand::Indexed(0x00AB, RegisterName::X)));
+        decoder_test(vec![0x74, 0xAB], Instruction::IGN(Operand::Indexed(0x00AB, RegisterName::X)));
+        decoder_test(vec![0xD4, 0xAB], Instruction::IGN(Operand::Indexed(0x00AB, RegisterName::X)));
+        decoder_test(vec![0xF4, 0xAB], Instruction::IGN(Operand::Indexed(0x00AB, RegisterName::X)));
     }
 
     fn decoder_test(bytes: Vec<u8>, expected: Instruction) {

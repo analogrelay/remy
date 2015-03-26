@@ -189,7 +189,13 @@ pub fn decode<R>(reader: &mut R) -> Result<Instruction> where R: io::Read {
         0x4E => Instruction::LSR(try!(read_abs(reader))),
         0x5E => Instruction::LSR(try!(read_abs_x(reader))),
 
+        0x1A => Instruction::NOP,
+        0x3A => Instruction::NOP,
+        0x5A => Instruction::NOP,
+        0x7A => Instruction::NOP,
+        0xDA => Instruction::NOP,
         0xEA => Instruction::NOP,
+        0xFA => Instruction::NOP,
 
         0x09 => Instruction::ORA(try!(read_imm(reader))),
         0x05 => Instruction::ORA(try!(read_zp(reader))),
@@ -249,6 +255,12 @@ pub fn decode<R>(reader: &mut R) -> Result<Instruction> where R: io::Read {
         0xF9 => Instruction::SBC(try!(read_abs_y(reader))),
         0xE1 => Instruction::SBC(try!(read_ind_x(reader))),
         0xF1 => Instruction::SBC(try!(read_ind_y(reader))),
+
+        0x80 => Instruction::SKB(try!(read_imm(reader))),
+        0x82 => Instruction::SKB(try!(read_imm(reader))),
+        0x89 => Instruction::SKB(try!(read_imm(reader))),
+        0xC2 => Instruction::SKB(try!(read_imm(reader))),
+        0xE2 => Instruction::SKB(try!(read_imm(reader))),
 
         0x38 => Instruction::SEC,
         0xF8 => Instruction::SED,

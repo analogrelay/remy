@@ -86,8 +86,13 @@ impl error::FromError<mem::MemoryError> for Error {
 pub fn dispatch<M>(inst: Instruction, cpu: &mut Mos6502<M>) -> Result<(), Error> where M: mem::Memory {
     match inst {
         Instruction::ADC(op) => adc::exec(cpu, op),
+        Instruction::AHX(op) => ahx::exec(cpu, op),
+        Instruction::ALR(op) => alr::exec(cpu, op),
         Instruction::AND(op) => and::exec(cpu, op),
+        Instruction::ANC(op) => anc::exec(cpu, op),
         Instruction::ASL(op) => asl::exec(cpu, op), 
+        Instruction::ARR(op) => arr::exec(cpu, op),
+        Instruction::AXS(op) => axs::exec(cpu, op),
         Instruction::BCC(offset) => branch::if_clear(cpu, offset, Flags::CARRY()),
         Instruction::BCS(offset) => branch::if_set(cpu, offset, Flags::CARRY()),
         Instruction::BEQ(offset) => branch::if_set(cpu, offset, Flags::ZERO()),
@@ -140,7 +145,6 @@ pub fn dispatch<M>(inst: Instruction, cpu: &mut Mos6502<M>) -> Result<(), Error>
         Instruction::TSX => transfer::exec(cpu, cpu::RegisterName::S, cpu::RegisterName::X),
         Instruction::TXA => transfer::exec(cpu, cpu::RegisterName::X, cpu::RegisterName::A),
         Instruction::TXS => transfer::exec(cpu, cpu::RegisterName::X, cpu::RegisterName::S),
-        Instruction::TYA => transfer::exec(cpu, cpu::RegisterName::Y, cpu::RegisterName::A),
-        _ => panic!("Unknown instruction. Temporary!")
+        Instruction::TYA => transfer::exec(cpu, cpu::RegisterName::Y, cpu::RegisterName::A)
     }
 }

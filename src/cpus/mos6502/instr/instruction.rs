@@ -9,6 +9,7 @@ use std::fmt;
 #[derive(Copy,Debug,Eq,PartialEq)]
 pub enum Instruction {
 	ADC(Operand),
+    AHX(Operand),
     ALR(Operand),
 	AND(Operand),
     ANC(Operand),
@@ -37,6 +38,7 @@ pub enum Instruction {
     DEX,
     DEY,
 	EOR(Operand),
+    HLT,
     IGN(Operand),
 	INC(Operand),
     INX,
@@ -44,6 +46,7 @@ pub enum Instruction {
     ISC(Operand),
 	JMP(Operand),
 	JSR(u16),
+    LAS(Operand),
     LAX(Operand),
     LDA(Operand),
     LDX(Operand),
@@ -66,18 +69,22 @@ pub enum Instruction {
     SEC,
     SED,
     SEI,
+    SHY(Operand),
+    SHX(Operand),
     SKB(Operand),
     SLO(Operand),
     SRE(Operand),
     STA(Operand),
     STX(Operand),
     STY(Operand),
+    TAS(Operand),
     TAX,
     TAY,
     TSX,
     TXA,
     TXS,
-    TYA
+    TYA,
+    XAA(Operand)
 }
 
 impl Instruction {
@@ -93,8 +100,13 @@ impl Instruction {
     pub fn mnemonic(&self) -> &'static str {
 		match self {
 			&Instruction::ADC(_) => "ADC",
+            &Instruction::AHX(_) => "AHX",
+            &Instruction::ALR(_) => "ALR",
+            &Instruction::ANC(_) => "ANC",
 			&Instruction::AND(_) => "AND",
+            &Instruction::ARR(_) => "ARR",
 			&Instruction::ASL(_) => "ASL",
+            &Instruction::AXS(_) => "AXS",
             &Instruction::BCC(_) => "BCC",
             &Instruction::BCS(_) => "BCS",
             &Instruction::BEQ(_) => "BEQ",
@@ -112,15 +124,21 @@ impl Instruction {
             &Instruction::CMP(_) => "CMP",
             &Instruction::CPX(_) => "CPX",
             &Instruction::CPY(_) => "CPY",
+            &Instruction::DCP(_) => "DCP",
             &Instruction::DEC(_) => "DEC",
             &Instruction::DEX => "DEX",
             &Instruction::DEY => "DEY",
             &Instruction::EOR(_) => "EOR",
+            &Instruction::HLT => "HLT",
+            &Instruction::IGN(_) => "IGN",
             &Instruction::INC(_) => "INC",
             &Instruction::INX => "INX",
             &Instruction::INY => "INY",
+            &Instruction::ISC(_) => "ISC",
             &Instruction::JMP(_) => "JMP",
             &Instruction::JSR(_) => "JSR",
+            &Instruction::LAS(_) => "LAS",
+            &Instruction::LAX(_) => "LAX",
             &Instruction::LDA(_) => "LDA",
             &Instruction::LDX(_) => "LDX",
             &Instruction::LDY(_) => "LDY",
@@ -131,24 +149,33 @@ impl Instruction {
             &Instruction::PHP => "PHP",
             &Instruction::PLA => "PLA",
             &Instruction::PLP => "PLP",
+            &Instruction::RLA(_) => "RLA",
             &Instruction::ROL(_) => "ROL",
             &Instruction::ROR(_) => "ROR",
+            &Instruction::RRA(_) => "RRA",
             &Instruction::RTI => "RTI",
             &Instruction::RTS => "RTS",
+            &Instruction::SAX(_) => "SAX",
             &Instruction::SBC(_) => "SBC",
             &Instruction::SEC => "SEC",
             &Instruction::SED => "SED",
             &Instruction::SEI => "SEI",
+            &Instruction::SHY(_) => "SHY",
+            &Instruction::SHX(_) => "SHX",
+            &Instruction::SKB(_) => "SKB",
+            &Instruction::SLO(_) => "SLO",
+            &Instruction::SRE(_) => "SRE",
             &Instruction::STA(_) => "STA",
             &Instruction::STX(_) => "STX",
             &Instruction::STY(_) => "STY",
+            &Instruction::TAS(_) => "TAS",
             &Instruction::TAX => "TAX",
             &Instruction::TAY => "TAY",
             &Instruction::TSX => "TSX",
             &Instruction::TXA => "TXA",
             &Instruction::TXS => "TXS",
             &Instruction::TYA => "TYA",
-            _ => unimplemented!()
+            &Instruction::XAA(_) => "XAA"
 		}
     }
 }
@@ -158,8 +185,13 @@ impl fmt::Display for Instruction {
 		match self {
             // Instructions with operands
 			&Instruction::ADC(op) |
+            &Instruction::AHX(op) |
+            &Instruction::ALR(op) |
             &Instruction::AND(op) |
+            &Instruction::ANC(op) |
+            &Instruction::ARR(op) |
             &Instruction::ASL(op) |
+            &Instruction::AXS(op) |
             &Instruction::BIT(op) |
             &Instruction::STA(op) |
             &Instruction::STX(op) |
@@ -167,18 +199,32 @@ impl fmt::Display for Instruction {
             &Instruction::CMP(op) |
             &Instruction::CPX(op) |
             &Instruction::CPY(op) |
+            &Instruction::DCP(op) |
             &Instruction::DEC(op) |
             &Instruction::EOR(op) |
+            &Instruction::IGN(op) |
             &Instruction::INC(op) |
+            &Instruction::ISC(op) |
             &Instruction::JMP(op) |
+            &Instruction::LAS(op) |
             &Instruction::LDA(op) |
             &Instruction::LDX(op) |
             &Instruction::LDY(op) |
             &Instruction::LSR(op) |
             &Instruction::ORA(op) |
+            &Instruction::RLA(op) |
             &Instruction::ROL(op) |
             &Instruction::ROR(op) |
-            &Instruction::SBC(op) => formatter.write_fmt(format_args!("{} {}", self.mnemonic(), op)), 
+            &Instruction::RRA(op) |
+            &Instruction::SAX(op) |
+            &Instruction::SBC(op) |
+            &Instruction::SHY(op) |
+            &Instruction::SHX(op) |
+            &Instruction::SKB(op) |
+            &Instruction::SLO(op) |
+            &Instruction::SRE(op) |
+            &Instruction::TAS(op) |
+            &Instruction::XAA(op) => formatter.write_fmt(format_args!("{} {}", self.mnemonic(), op)), 
 
             // Instructions with signed offsets
             &Instruction::BCC(x) |

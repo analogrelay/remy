@@ -1,4 +1,4 @@
-#![deny(deprecated,unused_imports)]
+#![deny(deprecated,unused_imports,unused_must_use)]
 
 #![feature(alloc)]
 #![feature(core)]

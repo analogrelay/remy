@@ -7,6 +7,7 @@ use cpus::mos6502::{cpu,operand,Mos6502,Flags,Instruction};
 mod adc;
 mod and;
 mod asl;
+mod axs;
 mod bit;
 mod branch;
 mod brk;
@@ -94,6 +95,7 @@ pub fn dispatch<M>(inst: Instruction, cpu: &mut Mos6502<M>) -> Result where M: m
         Instruction::ANC(op) => and::exec(cpu, op, true),
         Instruction::ARR(op) => { try!(and::exec(cpu, op, true)); rotate::right(cpu, operand::Operand::Accumulator) },
         Instruction::ASL(op) => asl::exec(cpu, op), 
+        Instruction::AXS(op) => axs::exec(cpu, op),
         Instruction::BCC(offset) => branch::if_clear(cpu, offset, Flags::CARRY()),
         Instruction::BCS(offset) => branch::if_set(cpu, offset, Flags::CARRY()),
         Instruction::BEQ(offset) => branch::if_set(cpu, offset, Flags::ZERO()),

@@ -65,7 +65,9 @@ pub enum Error {
     /// Indicates that an error occurred reading or writing memory
 	ErrorReadingMemory(mem::MemoryError),
     /// Indicates that a provided operand is illegal for use with the executed instruction
-    IllegalOperand
+    IllegalOperand,
+    /// Indicates that the HLT instruction was invoked
+    HaltInstruction
 }
 
 impl error::FromError<operand::Error> for Error {
@@ -113,15 +115,20 @@ pub fn dispatch<M>(inst: Instruction, cpu: &mut Mos6502<M>) -> Result where M: m
         Instruction::CMP(op) => compare::exec(cpu, cpu::RegisterName::A, op),
         Instruction::CPX(op) => compare::exec(cpu, cpu::RegisterName::X, op),
         Instruction::CPY(op) => compare::exec(cpu, cpu::RegisterName::Y, op),
+        Instruction::DCP(op) => { try!(dec::mem(cpu, op)); compare::exec(cpu, cpu::RegisterName::A, op) },
         Instruction::DEC(op) => dec::mem(cpu, op),
         Instruction::DEX => dec::reg(cpu, cpu::RegisterName::X),
         Instruction::DEY => dec::reg(cpu, cpu::RegisterName::Y),
         Instruction::EOR(op) => eor::exec(cpu, op),
+        Instruction::HLT => Err(Error::HaltInstruction),
+        Instruction::IGN(op) => { try!(op.get_u8(cpu)); Ok(()) }, // Read the byte to get the side effects
         Instruction::INC(op) => inc::mem(cpu, op),
         Instruction::INX => inc::reg(cpu, cpu::RegisterName::X),
         Instruction::INY => inc::reg(cpu, cpu::RegisterName::Y),
+        Instruction::ISC(op) => { try!(inc::mem(cpu, op)); sbc::exec(cpu, op) },
         Instruction::JMP(op) => jmp::exec(cpu, op),
         Instruction::JSR(addr) => jsr::exec(cpu, addr),
+        Instruction::LAS(op) => load::las(cpu, op),
         Instruction::LAX(op) => { try!(load::exec(cpu, cpu::RegisterName::A, op)); load::exec(cpu, cpu::RegisterName::X, op) },
         Instruction::LDA(op) => load::exec(cpu, cpu::RegisterName::A, op),
         Instruction::LDX(op) => load::exec(cpu, cpu::RegisterName::X, op),
@@ -133,8 +140,10 @@ pub fn dispatch<M>(inst: Instruction, cpu: &mut Mos6502<M>) -> Result where M: m
         Instruction::PHP => push::exec(cpu, cpu::RegisterName::P),
         Instruction::PLA => pull::exec(cpu, cpu::RegisterName::A),
         Instruction::PLP => pull::exec(cpu, cpu::RegisterName::P),
+        Instruction::RLA(op) => { try!(rotate::left(cpu, op)); and::exec(cpu, op, true) },
         Instruction::ROL(op) => rotate::left(cpu, op),
         Instruction::ROR(op) => rotate::right(cpu, op),
+        Instruction::RRA(op) => { try!(rotate::right(cpu, op)); adc::exec(cpu, op) },
         Instruction::RTI => ret::from_interrupt(cpu),
         Instruction::RTS => ret::from_sub(cpu),
         Instruction::SAX(op) => store::sax(cpu, op),
@@ -142,6 +151,9 @@ pub fn dispatch<M>(inst: Instruction, cpu: &mut Mos6502<M>) -> Result where M: m
         Instruction::SEC => set_flag::exec(cpu, Flags::CARRY()),
         Instruction::SED => set_flag::exec(cpu, Flags::BCD()),
         Instruction::SEI => set_flag::exec(cpu, Flags::INTERRUPT()),
+        Instruction::SKB(_) => Ok(()),
+        Instruction::SLO(op) => { try!(asl::exec(cpu, op)); ora::exec(cpu, op) },
+        Instruction::SRE(op) => { try!(lsr::exec(cpu, op)); eor::exec(cpu, op) },
         Instruction::STA(op) => store::exec(cpu, cpu::RegisterName::A, op),
         Instruction::STX(op) => store::exec(cpu, cpu::RegisterName::X, op),
         Instruction::STY(op) => store::exec(cpu, cpu::RegisterName::Y, op),

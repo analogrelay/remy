@@ -1,16 +1,27 @@
 use std::{error,io};
 
+use systems::nes;
+
 const HEADER_SIZE: usize = 16;
 const PRG_BANK_SIZE: usize = 16384;
 const CHR_BANK_SIZE: usize = 8192;
 
+/// Represents the result of an operation performed on a ROM file
 pub type Result<T> = ::std::result::Result<T, Error>;
 
+/// Represents an error that occurs while operating on a ROM file
 #[derive(Debug, PartialEq, Eq)]
 pub enum Error {
+    /// Indicates that the head of the ROM file is invalid
     InvalidHeader,
+
+    /// Indicates that the signature in the ROM file is invalid
     InvalidSignature,
+
+    /// Indicates that an unexpected end-of-file was reached while reading a ROM bank
     EndOfFileDuringBank,
+
+    /// Indicates that an I/O error occurred while reading/writing to a ROM file
     IoError(io::Error)
 }
 
@@ -20,35 +31,53 @@ impl error::FromError<io::Error> for Error {
     }
 }
 
-#[derive(Copy, Debug, PartialEq, Eq)]
-pub enum RomVersion {
-    INES,
-    NES2
-}
-
+/// Describes the television system expected by the ROM
 #[derive(Copy, Debug, PartialEq, Eq)]
 pub enum TvSystem {
+    /// Indicates that the television system is not known 
     Unknown,
+
+    /// Indicates that the ROM requires the NTSC television system
     NTSC,
+
+    /// Indicates that the ROM requires the PAL television system
     PAL,
+
+    /// Indicates that the ROM is compatible with either the NTSC or the PAL television system
     Dual
 }
 
+/// Describes the version of a ROM
+#[derive(Copy, Debug, PartialEq, Eq)]
+pub enum Version {
+    /// Indicates that the ROM is in INES format
+    INES,
+
+    /// Indicates that the ROM is in NES 2.0 format
+    NES2
+}
+
+/// Describes the size of a RAM bank
 #[derive(Debug)]
 pub struct RamSize {
-    battery_backed: u16,
-    total: u16
+    /// Indicates the amount of RAM that is battery-backed
+    pub battery_backed: u16,
+
+    /// Indicates the total amount of RAM (sum of battery-backed and non-battery-backed RAM)
+    pub total: u16
 }
 
 impl RamSize {
+    /// Creates a `RamSize` indicating no RAM
     pub fn empty() -> RamSize {
         RamSize { battery_backed: 0, total: 0 }
     }
 
-    pub fn from_header_byte(val: u8, version: RomVersion) -> RamSize {
+    /// Creates a `RamSize` based on the RAM size byte of the iNES/NES2.0 header
+    pub fn from_header_byte(val: u8, version: Version) -> RamSize {
         match version {
-            RomVersion::INES => RamSize::empty(),
-            RomVersion::NES2 => {
+            Version::INES => RamSize::empty(),
+            Version::NES2 => {
                 let bat = get_full_size(((val & 0xF0) >> 4) as u16);
                 let non_bat = get_full_size((val & 0x0F) as u16);
 
@@ -69,29 +98,61 @@ fn get_full_size(inp: u16) -> u16 {
     }
 }
 
+/// Represents the header values of an iNES/NES2.0 ROM
 #[derive(Debug)]
 pub struct Header {
-    prg_rom_size: u16,
-    chr_rom_size: u16,
-    prg_ram_size: RamSize,
-    chr_ram_size: RamSize,
-    mapper: u16,
-    submapper: u8,
-    version: RomVersion,
-    vertical_arrangement: bool,
-    four_screen_vram: bool,
-    sram_battery_backed: bool,
-    sram_present: bool,
-    trainer_present: bool,
-    vs_unisystem: bool,
-    playchoice_10: bool,
-    tv_system: TvSystem,
-    bus_conflicts: bool
+    /// The size of the PRG ROM in 16K Banks
+    pub prg_rom_size: u16,
+
+    /// The size of the CHR ROM in 8K Banks
+    pub chr_rom_size: u16,
+
+    /// The size of the PRG RAM, if any
+    pub prg_ram_size: RamSize,
+
+    /// The size of the CHR RAM, if any
+    pub chr_ram_size: RamSize,
+
+    /// The Cartridge to use to emulate cartridge hardware
+    pub cartridge: nes::Cartridge,
+
+    /// The version of the ROM
+    pub version: Version,
+
+    /// Indicates if Vertical Arrangement should be used
+    pub vertical_arrangement: bool,
+
+    /// Indicates if a 4-screen VRAM should be used
+    pub four_screen_vram: bool,
+
+    /// Indicates if the SRAM is battery backed
+    pub sram_battery_backed: bool,
+
+    /// Indicates if the SRAM is present
+    pub sram_present: bool,
+
+    /// Indicates if a trainer is present
+    pub trainer_present: bool,
+
+    /// Indicates if this ROM was designed for the Vs. Unisystem
+    pub vs_unisystem: bool,
+
+    /// Indicates if this ROM was designed for the PlayChoice-10
+    pub playchoice_10: bool,
+
+    /// Indicates the TV system that this ROM was designed for
+    pub tv_system: TvSystem,
 }
 
+/// Represents an NES ROM, loaded from the iNES/NES2.0 format
 pub struct Rom {
-    header: Header,
+    /// Contains the information read from the ROM header
+    pub header: Header,
+
+    /// Contains each of the 16KB PRG ROM Banks contained in the ROM file
     pub prg_banks: Vec<Vec<u8>>,
+
+    /// Contains each of the 8KB CHR ROM Banks contained in the ROM file
     pub chr_banks: Vec<Vec<u8>>
 }
 
@@ -105,6 +166,10 @@ impl ::std::fmt::Debug for Rom {
     }
 }
 
+/// Reads an iNES/NES2.0 Rom file from the provided reader
+/// 
+/// # Arguments
+/// * `input` - The `std::io::Read` instance to read the ROM data from
 pub fn read<R>(input: &mut R) -> Result<Rom> where R: io::Read {
     // Load header
     let header = try!(read_header(input));
@@ -146,19 +211,19 @@ fn read_header<R>(input: &mut R) -> Result<Header> where R: io::Read {
     // Detect version
     // Based on algorithm in http://wiki.nesdev.com/w/index.php/INES#Variant_comparison
     let version = if header[7] & 0x0C == 0x08 {
-        RomVersion::NES2
+        Version::NES2
     } else {
-        RomVersion::INES
+        Version::INES
     };
 
     // Read ROM sizes 
     let prg_size = match version {
-        RomVersion::INES => header[4] as u16,
-        RomVersion::NES2 => header[4] as u16 | ((header[9] & 0x0F) as u16)
+        Version::INES => header[4] as u16,
+        Version::NES2 => header[4] as u16 | ((header[9] & 0x0F) as u16)
     };
     let chr_size = match version {
-        RomVersion::INES => header[5] as u16,
-        RomVersion::NES2 => header[5] as u16 | (((header[9] & 0xF0) >> 4) as u16)
+        Version::INES => header[5] as u16,
+        Version::NES2 => header[5] as u16 | (((header[9] & 0xF0) >> 4) as u16)
     };
 
 
@@ -168,21 +233,21 @@ fn read_header<R>(input: &mut R) -> Result<Header> where R: io::Read {
     let archaic = header[12..15].iter().all(|i| { *i == 0 });
 
     // If this isn't Archaic iNES, read the second nybble
-    if version == RomVersion::INES || !archaic {
+    if version == Version::INES || !archaic {
         mapper = (mapper | ((header[7] as u16 & 0xF0))) as u16;
     }
 
     // If this is NES 2.0, read the third nybble and submapper
-    if version == RomVersion::NES2 {
+    if version == Version::NES2 {
         mapper = (mapper | ((header[8] as u16 & 0x0F) << 8)) as u16;
         submapper = (header[8] & 0xF0) << 4;
     }
 
     // Read TV System
     let tv_system = match version {
-        RomVersion::INES if archaic => TvSystem::Unknown,
-        RomVersion::INES => if header[9] & 0x01 == 0 { TvSystem::NTSC } else { TvSystem::PAL },
-        RomVersion::NES2 => if header[12] & 0x02 != 0 { 
+        Version::INES if archaic => TvSystem::Unknown,
+        Version::INES => if header[9] & 0x01 == 0 { TvSystem::NTSC } else { TvSystem::PAL },
+        Version::NES2 => if header[12] & 0x02 != 0 { 
             TvSystem::Dual
         } else if header[12] & 0x01 != 0 {
             TvSystem::PAL
@@ -200,8 +265,7 @@ fn read_header<R>(input: &mut R) -> Result<Header> where R: io::Read {
         chr_rom_size: chr_size,
         prg_ram_size: prg_ram,
         chr_ram_size: chr_ram,
-        mapper: mapper,
-        submapper: submapper,
+        cartridge: nes::Cartridge::new(mapper, submapper, (header[10] & 0x20) != 0),
         version: version,
         vertical_arrangement: (header[6] & 0x01) == 0,
         four_screen_vram: (header[6] & 0x08) != 0,
@@ -210,8 +274,7 @@ fn read_header<R>(input: &mut R) -> Result<Header> where R: io::Read {
         trainer_present: (header[6] & 0x04) != 0,
         vs_unisystem: (header[7] & 0x01) != 0,
         playchoice_10: (header[7] & 0x02) != 0,
-        tv_system: tv_system,
-        bus_conflicts: (header[10] & 0x20) != 0
+        tv_system: tv_system
     })
 }
 

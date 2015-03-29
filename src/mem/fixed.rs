@@ -111,11 +111,12 @@ impl mem::Memory for FixedMemory {
 
 #[cfg(test)]
 mod test {
-    use mem::{FixedMemory,Memory,MemoryErrorKind};
+    use mem;
+    use mem::Memory;
 
     #[test]
     pub fn get_and_set_work() {
-        let mut mem = FixedMemory::new(10);
+        let mut mem = mem::FixedMemory::new(10);
         mem.set(1, &[42, 24, 44, 22]).unwrap();
 
         let mut buf = [0, 0, 0, 0];
@@ -126,14 +127,14 @@ mod test {
 
     #[test]
     pub fn get_returns_err_if_would_go_out_of_bounds() {
-        let mem = FixedMemory::new(10);
+        let mem = mem::FixedMemory::new(10);
         let mut buf = [0, 0, 0, 0];
-        assert_eq!(mem.get(8, &mut buf).unwrap_err().kind, MemoryErrorKind::OutOfBounds);
+        assert_eq!(mem.get(8, &mut buf).unwrap_err().kind, mem::ErrorKind::OutOfBounds);
     }
 
     #[test]
     pub fn get_does_not_fill_buffer_if_read_would_go_out_of_bounds() {
-        let mut mem = FixedMemory::new(10);
+        let mut mem = mem::FixedMemory::new(10);
         mem.set(8, &[42]).unwrap();
         let mut buf = [0, 0, 0, 0];
         mem.get(8, &mut buf).unwrap_err();
@@ -142,13 +143,13 @@ mod test {
 
     #[test]
     pub fn set_returns_err_if_would_go_out_of_bounds() {
-        let mut mem = FixedMemory::new(10);
-        assert_eq!(mem.set(8, &[42, 24, 44, 22]).unwrap_err().kind, MemoryErrorKind::OutOfBounds);
+        let mut mem = mem::FixedMemory::new(10);
+        assert_eq!(mem.set(8, &[42, 24, 44, 22]).unwrap_err().kind, mem::ErrorKind::OutOfBounds);
     }
 
     #[test]
     pub fn set_does_not_write_anything_unless_whole_write_fits() {
-        let mut mem = FixedMemory::new(10);
+        let mut mem = mem::FixedMemory::new(10);
         mem.set(8, &[42, 24, 44, 22]).unwrap_err();
 
         assert_eq!(0, mem.get_u8(8).unwrap());

@@ -3,8 +3,11 @@ use std::{isize,usize};
 pub use mem::fixed::FixedMemory;
 pub use mem::virt::VirtualMemory;
 
-mod fixed;
-mod virt;
+/// Provides types for working with fixed memory banks
+pub mod fixed;
+
+/// Provides types for working with virtual memory banks
+pub mod virt;
 
 pub type Result<T> = ::std::result::Result<T, Error>;
 

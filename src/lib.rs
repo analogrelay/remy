@@ -16,5 +16,5 @@ pub mod instruction_set;
 /// Contains a Program Counter object to track program counter position
 pub mod pc;
 
-/// Contains code to load various ROM formats
-pub mod roms;
+/// Contains code to run various complete systems 
+pub mod systems;

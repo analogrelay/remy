@@ -5,6 +5,7 @@ use std::path::Path;
 use std::io::Write;
 
 use remy::cpus::mos6502;
+use remy::systems::nes;
 
 fn main() {
     // Load the rom
@@ -18,7 +19,7 @@ fn main() {
     let file = Path::new(&args[1]);
     println!("Loading {:?}...", file);
 
-    let rom = remy::roms::nes::read(&mut fs::File::open(file).unwrap()).unwrap();
+    let rom = nes::rom::read(&mut fs::File::open(file).unwrap()).unwrap();
 
     // Determine the output file and delete it if already present
     let output_file = Path::new(file.file_name().unwrap()).with_extension("out");

@@ -158,12 +158,13 @@ impl<'a> mem::Memory for VirtualMemory<'a> {
 
 #[cfg(test)]
 mod test {
-    use mem::{Memory,FixedMemory,VirtualMemory,Error};
+    use mem;
+    use mem::Memory;
 
     #[test]
     pub fn attach_with_no_items() {
-    	let mem = FixedMemory::new(10);
-    	let mut vm = VirtualMemory::new();
+    	let mem = mem::FixedMemory::new(10);
+    	let mut vm = mem::VirtualMemory::new();
     	vm.attach(1000, Box::new(mem)).unwrap();
     	assert_eq!(vm.segments.len(), 1);
     	assert_eq!(vm.segments[0].base, 1000);
@@ -171,9 +172,9 @@ mod test {
 
     #[test]
     pub fn attach_at_end() {
-    	let mem1 = FixedMemory::new(10);
-    	let mem2 = FixedMemory::new(10);
-    	let mut vm = VirtualMemory::new();
+    	let mem1 = mem::FixedMemory::new(10);
+    	let mem2 = mem::FixedMemory::new(10);
+    	let mut vm = mem::VirtualMemory::new();
     	vm.attach(1000, Box::new(mem1)).unwrap();
     	vm.attach(1010, Box::new(mem2)).unwrap();
     	assert_eq!(vm.segments.len(), 2);
@@ -183,20 +184,20 @@ mod test {
 
     #[test]
     pub fn attach_at_end_with_overlap() {
-    	let mem1 = FixedMemory::new(10);
-    	let mem2 = FixedMemory::new(10);
-    	let mut vm = VirtualMemory::new();
+    	let mem1 = mem::FixedMemory::new(10);
+    	let mem2 = mem::FixedMemory::new(10);
+    	let mut vm = mem::VirtualMemory::new();
     	vm.attach(1000, Box::new(mem1)).unwrap();
     	assert_eq!(
     		vm.attach(1005, Box::new(mem2)),
-    		Err(Error::MemoryOverlap));
+    		Err(mem::virt::Error::MemoryOverlap));
     }
 
     #[test]
     pub fn attach_at_beginning() {
-    	let mem1 = FixedMemory::new(10);
-    	let mem2 = FixedMemory::new(10);
-    	let mut vm = VirtualMemory::new();
+    	let mem1 = mem::FixedMemory::new(10);
+    	let mem2 = mem::FixedMemory::new(10);
+    	let mut vm = mem::VirtualMemory::new();
     	vm.attach(1010, Box::new(mem1)).unwrap();
     	vm.attach(1000, Box::new(mem2)).unwrap();
     	assert_eq!(vm.segments.len(), 2);
@@ -206,21 +207,21 @@ mod test {
 
     #[test]
     pub fn attach_at_beginning_with_overlap() {
-    	let mem1 = FixedMemory::new(10);
-    	let mem2 = FixedMemory::new(10);
-    	let mut vm = VirtualMemory::new();
+    	let mem1 = mem::FixedMemory::new(10);
+    	let mem2 = mem::FixedMemory::new(10);
+    	let mut vm = mem::VirtualMemory::new();
     	vm.attach(0x1005, Box::new(mem1)).unwrap();
     	assert_eq!(
     		vm.attach(0x1000, Box::new(mem2)),
-    		Err(Error::MemoryOverlap));
+    		Err(mem::virt::Error::MemoryOverlap));
     }
 
     #[test]
     pub fn attach_in_middle() {
-    	let mem1 = FixedMemory::new(10);
-    	let mem2 = FixedMemory::new(10);
-    	let mem3 = FixedMemory::new(10);
-    	let mut vm = VirtualMemory::new();
+    	let mem1 = mem::FixedMemory::new(10);
+    	let mem2 = mem::FixedMemory::new(10);
+    	let mem3 = mem::FixedMemory::new(10);
+    	let mut vm = mem::VirtualMemory::new();
     	vm.attach(1000, Box::new(mem1)).unwrap();
     	vm.attach(1020, Box::new(mem2)).unwrap();
     	vm.attach(1010, Box::new(mem3)).unwrap();
@@ -232,22 +233,22 @@ mod test {
 
     #[test]
     pub fn attach_in_middle_with_overlap() {
-    	let mem1 = FixedMemory::new(10);
-    	let mem2 = FixedMemory::new(10);
-    	let mem3 = FixedMemory::new(10);
-    	let mut vm = VirtualMemory::new();
+    	let mem1 = mem::FixedMemory::new(10);
+    	let mem2 = mem::FixedMemory::new(10);
+    	let mem3 = mem::FixedMemory::new(10);
+    	let mut vm = mem::VirtualMemory::new();
     	vm.attach(1000, Box::new(mem1)).unwrap();
     	vm.attach(1010, Box::new(mem2)).unwrap();
     	assert_eq!(
     		vm.attach(1005, Box::new(mem3)),
-    		Err(Error::MemoryOverlap));
+    		Err(mem::virt::Error::MemoryOverlap));
     }
 
     #[test]
     pub fn get_from_single_memory() {
-    	let mut mem1 = FixedMemory::new(10);
-    	let mut mem2 = FixedMemory::new(10);
-    	let mut vm = VirtualMemory::new();
+    	let mut mem1 = mem::FixedMemory::new(10);
+    	let mut mem2 = mem::FixedMemory::new(10);
+    	let mut vm = mem::VirtualMemory::new();
 
     	mem1.set(0, &[1, 2, 3, 4, 5, 6, 7, 8, 9, 10]).unwrap();
     	mem2.set(0, &[11, 12, 13, 14, 15, 16, 17, 18, 19, 20]).unwrap();
@@ -262,9 +263,9 @@ mod test {
 
     #[test]
     pub fn get_spanning_memories() {
-    	let mut mem1 = FixedMemory::new(10);
-    	let mut mem2 = FixedMemory::new(10);
-    	let mut vm = VirtualMemory::new();
+    	let mut mem1 = mem::FixedMemory::new(10);
+    	let mut mem2 = mem::FixedMemory::new(10);
+    	let mut vm = mem::VirtualMemory::new();
 
     	mem1.set(0, &[1, 2, 3, 4, 5, 6, 7, 8, 9, 10]).unwrap();
     	mem2.set(0, &[11, 12, 13, 14, 15, 16, 17, 18, 19, 20]).unwrap();
@@ -279,9 +280,9 @@ mod test {
 
     #[test]
     pub fn set_to_single_memory() {
-    	let mut mem1 = FixedMemory::new(10);
-    	let mut mem2 = FixedMemory::new(10);
-    	let mut vm = VirtualMemory::new();
+    	let mut mem1 = mem::FixedMemory::new(10);
+    	let mut mem2 = mem::FixedMemory::new(10);
+    	let mut vm = mem::VirtualMemory::new();
 
     	mem1.set(0, &[1, 2, 3, 4, 5, 6, 7, 8, 9, 10]).unwrap();
     	mem2.set(0, &[11, 12, 13, 14, 15, 16, 17, 18, 19, 20]).unwrap();
@@ -298,9 +299,9 @@ mod test {
 
     #[test]
     pub fn set_spanning_memories() {
-    	let mut mem1 = FixedMemory::new(10);
-    	let mut mem2 = FixedMemory::new(10);
-    	let mut vm = VirtualMemory::new();
+    	let mut mem1 = mem::FixedMemory::new(10);
+    	let mut mem2 = mem::FixedMemory::new(10);
+    	let mut vm = mem::VirtualMemory::new();
 
     	mem1.set(0, &[1, 2, 3, 4, 5, 6, 7, 8, 9, 10]).unwrap();
     	mem2.set(0, &[11, 12, 13, 14, 15, 16, 17, 18, 19, 20]).unwrap();

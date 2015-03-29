@@ -42,7 +42,7 @@ pub enum Operand {
 #[derive(Clone,Debug,Eq,PartialEq)]
 pub enum Error {
     /// Indicates an error occurred reading or writing memory
-    ErrorAccessingMemory(mem::MemoryError),
+    ErrorAccessingMemory(mem::Error),
     /// Indicates that a request was made to write to a read-only operand such as
     /// `Operand::Immediate`
     ReadOnlyOperand,
@@ -51,8 +51,8 @@ pub enum Error {
     NonAddressOperand
 }
 
-impl error::FromError<mem::MemoryError> for Error {
-    fn from_error(err: mem::MemoryError) -> Error {
+impl error::FromError<mem::Error> for Error {
+    fn from_error(err: mem::Error) -> Error {
         Error::ErrorAccessingMemory(err)
     }
 }

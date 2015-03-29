@@ -22,7 +22,7 @@ impl<'a> Segment<'a> {
 
 /// Represents an error that can occur during a virtual memory management operation
 #[derive(Copy,Debug,Eq,PartialEq)]
-pub enum VirtualMemoryError {
+pub enum Error {
     /// Indicates that a memory overlaps with another memory in the virtual memory
 	MemoryOverlap
 }
@@ -48,7 +48,7 @@ impl<'a> VirtualMemory<'a> {
     /// # Arguments
     /// * `base` - The address to use as the base for the specified memory
     /// * `mem` - The memory to attach.
-    pub fn attach(&mut self, base: usize, mem: Box<mem::Memory+'a>) -> Result<(), VirtualMemoryError> {
+    pub fn attach(&mut self, base: usize, mem: Box<mem::Memory+'a>) -> Result<(), Error> {
     	// Find the appropriate place to attach the memory
     	let new_segment = Segment::new(base, mem);
     	let pos = self.segments.iter()
@@ -63,7 +63,7 @@ impl<'a> VirtualMemory<'a> {
     		// Check the memory on the left
     		let left = &self.segments[insert_point - 1];
     		if left.base + left.memory.size() - 1 >= base {
-    			return Err(VirtualMemoryError::MemoryOverlap)
+    			return Err(Error::MemoryOverlap)
     		}
     	}
 
@@ -71,7 +71,7 @@ impl<'a> VirtualMemory<'a> {
 	    	// Check the memory on the right
 	    	let right = &self.segments[insert_point];
 	    	if base + new_segment.memory.size() - 1 >= right.base {
-	    		return Err(VirtualMemoryError::MemoryOverlap)
+	    		return Err(Error::MemoryOverlap)
 	    	}
 	    }
 
@@ -93,14 +93,14 @@ impl<'a> mem::Memory for VirtualMemory<'a> {
         unimplemented!()
     }
 
-    fn get(&self, addr: usize, buf: &mut [u8]) -> mem::MemoryResult<()> {
+    fn get(&self, addr: usize, buf: &mut [u8]) -> mem::Result<()> {
     	let mut ptr = 0;
     	while ptr < buf.len() {
     		// Find the memory at the current address
     		let segment = match self.find(addr + ptr) {
     			Some(l) => l,
-    			None => return Err(mem::MemoryError::with_detail(
-    				mem::MemoryErrorKind::OutOfBounds,
+    			None => return Err(mem::Error::with_detail(
+    				mem::ErrorKind::OutOfBounds,
     				"Unable to locate a suitable memory segment",
     				format!("at address: 0x{:X}", addr + ptr)))
     		};
@@ -124,14 +124,14 @@ impl<'a> mem::Memory for VirtualMemory<'a> {
     	Ok(())
     }
 
-    fn set(&mut self, addr: usize, buf: &[u8]) -> mem::MemoryResult<()> {
+    fn set(&mut self, addr: usize, buf: &[u8]) -> mem::Result<()> {
         let mut ptr = 0;
     	while ptr < buf.len() {
     		// Find the memory at the current address
     		let segment = match self.find_mut(addr + ptr) {
     			Some(l) => l,
-    			None => return Err(mem::MemoryError::with_detail(
-    				mem::MemoryErrorKind::OutOfBounds,
+    			None => return Err(mem::Error::with_detail(
+    				mem::ErrorKind::OutOfBounds,
     				"Unable to locate a suitable memory segment",
     				format!("at address: 0x{:X}", addr + ptr)))
     		};
@@ -158,7 +158,7 @@ impl<'a> mem::Memory for VirtualMemory<'a> {
 
 #[cfg(test)]
 mod test {
-    use mem::{Memory,FixedMemory,VirtualMemory,VirtualMemoryError};
+    use mem::{Memory,FixedMemory,VirtualMemory,Error};
 
     #[test]
     pub fn attach_with_no_items() {
@@ -189,7 +189,7 @@ mod test {
     	vm.attach(1000, Box::new(mem1)).unwrap();
     	assert_eq!(
     		vm.attach(1005, Box::new(mem2)),
-    		Err(VirtualMemoryError::MemoryOverlap));
+    		Err(Error::MemoryOverlap));
     }
 
     #[test]
@@ -212,7 +212,7 @@ mod test {
     	vm.attach(0x1005, Box::new(mem1)).unwrap();
     	assert_eq!(
     		vm.attach(0x1000, Box::new(mem2)),
-    		Err(VirtualMemoryError::MemoryOverlap));
+    		Err(Error::MemoryOverlap));
     }
 
     #[test]
@@ -240,7 +240,7 @@ mod test {
     	vm.attach(1010, Box::new(mem2)).unwrap();
     	assert_eq!(
     		vm.attach(1005, Box::new(mem3)),
-    		Err(VirtualMemoryError::MemoryOverlap));
+    		Err(Error::MemoryOverlap));
     }
 
     #[test]

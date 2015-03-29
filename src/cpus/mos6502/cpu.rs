@@ -140,7 +140,7 @@ impl<M> Mos6502<M> where M: mem::Memory {
     ///
     /// # Arguments
     /// * `val` - The value to push on to the stack
-    pub fn push(&mut self, val: u8) -> mem::MemoryResult<()> {
+    pub fn push(&mut self, val: u8) -> mem::Result<()> {
         let addr = (self.registers.sp as usize) + STACK_START;
         try!(self.mem.set_u8(addr, val));
         self.registers.sp -= 1;
@@ -152,7 +152,7 @@ impl<M> Mos6502<M> where M: mem::Memory {
     /// Note: A `MemoryError::OutOfBounds` result is returned
     /// if there is no memory available in the stack range
     /// ($0100 - $01FF)
-    pub fn pull(&mut self) -> mem::MemoryResult<u8> {
+    pub fn pull(&mut self) -> mem::Result<u8> {
         self.registers.sp += 1;
         let addr = (self.registers.sp as usize) + STACK_START;
         self.mem.get_u8(addr)

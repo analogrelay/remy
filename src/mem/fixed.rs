@@ -64,12 +64,12 @@ impl mem::Memory for FixedMemory {
     ///
     /// * `addr` - The address at which to start reading
     /// * `buf` - The buffer to fill
-    fn get(&self, addr: usize, buf: &mut [u8]) -> mem::MemoryResult<()> {
+    fn get(&self, addr: usize, buf: &mut [u8]) -> mem::Result<()> {
         let end = addr + buf.len() - 1;
         if end >= self.size {
             // The read will take us out of bounds, don't start it.
-            Err(mem::MemoryError::with_detail(
-                mem::MemoryErrorKind::OutOfBounds,
+            Err(mem::Error::with_detail(
+                mem::ErrorKind::OutOfBounds,
                 "Read would reach end of memory",
                 format!("requested: 0x{:X} - 0x{:X}, but size is 0x{:x}", addr, end, self.size)))
         }
@@ -90,11 +90,11 @@ impl mem::Memory for FixedMemory {
     ///
     /// * `addr` - The address at which to start writing
     /// * `buf` - The buffer to write
-    fn set(&mut self, addr: usize, buf: &[u8]) -> mem::MemoryResult<()> {
+    fn set(&mut self, addr: usize, buf: &[u8]) -> mem::Result<()> {
         let end = addr + buf.len() - 1;
         if end >= self.size {
-            Err(mem::MemoryError::with_detail(
-                mem::MemoryErrorKind::OutOfBounds,
+            Err(mem::Error::with_detail(
+                mem::ErrorKind::OutOfBounds,
                 "Write would reach end of memory",
                 format!("requested: 0x{:X} - 0x{:X}, but size is 0x{:x}", addr, end, self.size)))
         } else {

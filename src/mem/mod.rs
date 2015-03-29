@@ -1,18 +1,18 @@
 use std::{isize,usize};
 
 pub use mem::fixed::FixedMemory;
-pub use mem::virt::{VirtualMemory,VirtualMemoryError};
+pub use mem::virt::VirtualMemory;
 
 mod fixed;
 mod virt;
 
-pub type MemoryResult<T> = Result<T, MemoryError>;
+pub type Result<T> = ::std::result::Result<T, Error>;
 
 /// Represents an error that occurs when accessing a `Memory`
 #[derive(Clone,Debug,Eq,PartialEq)]
-pub struct MemoryError {
+pub struct Error {
     /// The kind of the error
-    pub kind: MemoryErrorKind,
+    pub kind: ErrorKind,
     /// A simple static description of the error
     pub desc: &'static str,
     /// An optional detailed description of the error, containing data specific to the input that
@@ -20,28 +20,28 @@ pub struct MemoryError {
     pub detail: Option<String>
 }
 
-impl MemoryError {
-    /// Creates a new `MemoryError` with no detail string
+impl Error {
+    /// Creates a new `Error` with no detail string
     /// 
     /// # Arguments
     ///
     /// * `desc` - A brief static description of the error
-    pub fn new(kind: MemoryErrorKind, desc: &'static str) -> MemoryError {
-        MemoryError {
+    pub fn new(kind: ErrorKind, desc: &'static str) -> Error {
+        Error {
             kind: kind,
             desc: desc,
             detail: None
         }
     }
 
-    /// Creates a new `MemoryError` with the specified detail string
+    /// Creates a new `Error` with the specified detail string
     /// 
     /// # Arguments
     ///
     /// * `desc` - A brief static description of the error
     /// * `detail` - A more detailed description of the error
-    pub fn with_detail(kind: MemoryErrorKind, desc: &'static str, detail: String) -> MemoryError {
-        MemoryError {
+    pub fn with_detail(kind: ErrorKind, desc: &'static str, detail: String) -> Error {
+        Error {
             kind: kind,
             desc: desc,
             detail: Some(detail)
@@ -50,8 +50,8 @@ impl MemoryError {
 }
 
 #[derive(Clone,Copy,Debug,Eq,PartialEq)]
-/// Defines the kind of a `MemoryError`
-pub enum MemoryErrorKind {
+/// Defines the kind of a `Error`
+pub enum ErrorKind {
     /// The provided address was outside the bounds of the memory
     OutOfBounds,
 
@@ -80,7 +80,7 @@ pub trait Memory {
     /// # Arguments
     /// * `addr` - The address at which to begin reading the data
     /// * `buf` - The data to copy out of the memory
-    fn get(&self, addr: usize, buf: &mut [u8]) -> MemoryResult<()>;
+    fn get(&self, addr: usize, buf: &mut [u8]) -> Result<()>;
 
     /// Copies the specified buffer in to the memory starting at the specified address
     ///
@@ -90,14 +90,14 @@ pub trait Memory {
     /// # Arguments
     /// * `addr` - The address at which to begin writing the data
     /// * `buf` - The data to copy in to the memory
-    fn set(&mut self, addr: usize, buf: &[u8]) -> MemoryResult<()>;
+    fn set(&mut self, addr: usize, buf: &[u8]) -> Result<()>;
 
     /// Gets a single byte from the specified address
     ///
     /// # Arguments
     ///
     /// * `addr` - The address to read from
-    fn get_u8(&self, addr: usize) -> MemoryResult<u8> {
+    fn get_u8(&self, addr: usize) -> Result<u8> {
         let mut buf = [0];
         try!(self.get(addr, &mut buf));
         Ok(buf[0])
@@ -108,7 +108,7 @@ pub trait Memory {
     /// # Arguments
     ///
     /// * `addr` - The address to write to
-    fn set_u8(&mut self, addr: usize, val: u8) -> MemoryResult<()> {
+    fn set_u8(&mut self, addr: usize, val: u8) -> Result<()> {
         let buf = [val];
         try!(self.set(addr, &buf));
         Ok(())
@@ -120,7 +120,7 @@ pub trait Memory {
     ///
     /// * `addr` - The address to read from
     /// * `nbytes` - The number of bytes to read (must be between 1 and 8, inclusive)
-    fn get_le_uint_n(&self, addr: usize, nbytes: u32) -> MemoryResult<u64> {
+    fn get_le_uint_n(&self, addr: usize, nbytes: u32) -> Result<u64> {
         // Borrowed from http://doc.rust-lang.org/src/std/old_io/mod.rs.html#691-701
         assert!(nbytes > 0 && nbytes <= 8);
 
@@ -141,7 +141,7 @@ pub trait Memory {
     ///
     /// * `addr` - The address to read from
     /// * `nbytes` - The number of bytes to read (must be between 1 and 8, inclusive)
-    fn get_le_int_n(&self, addr: usize, nbytes: u32) -> MemoryResult<i64> {
+    fn get_le_int_n(&self, addr: usize, nbytes: u32) -> Result<i64> {
         self.get_le_uint_n(addr, nbytes).map(|i| extend_sign(i, nbytes))
     }
 
@@ -151,7 +151,7 @@ pub trait Memory {
     ///
     /// * `addr` - The address to read from
     /// * `nbytes` - The number of bytes to read (must be between 1 and 8, inclusive)
-    fn get_be_uint_n(&self, addr: usize, nbytes: u32) -> MemoryResult<u64> {
+    fn get_be_uint_n(&self, addr: usize, nbytes: u32) -> Result<u64> {
         // Borrowed from http://doc.rust-lang.org/src/std/old_io/mod.rs.html#691-701
 
         assert!(nbytes > 0 && nbytes <= 8);
@@ -171,7 +171,7 @@ pub trait Memory {
     ///
     /// * `addr` - The address to read from
     /// * `nbytes` - The number of bytes to read (must be between 1 and 8, inclusive)
-    fn get_be_int_n(&self, addr: usize, nbytes: u32) -> MemoryResult<i64> {
+    fn get_be_int_n(&self, addr: usize, nbytes: u32) -> Result<i64> {
         self.get_be_uint_n(addr, nbytes).map(|i| extend_sign(i, nbytes))
     }
 
@@ -180,7 +180,7 @@ pub trait Memory {
     /// # Arguments
     ///
     /// * `addr` - The address to read from
-    fn get_be_u16(&self, addr: usize) -> MemoryResult<u16> {
+    fn get_be_u16(&self, addr: usize) -> Result<u16> {
         self.get_be_uint_n(addr, 2).map(|i| i as u16)
     }
 
@@ -189,7 +189,7 @@ pub trait Memory {
     /// # Arguments
     ///
     /// * `addr` - The address to read from
-    fn get_be_u32(&self, addr: usize) -> MemoryResult<u32> {
+    fn get_be_u32(&self, addr: usize) -> Result<u32> {
         self.get_be_uint_n(addr, 4).map(|i| i as u32)
     }
 
@@ -198,7 +198,7 @@ pub trait Memory {
     /// # Arguments
     ///
     /// * `addr` - The address to read from
-    fn get_be_u64(&self, addr: usize) -> MemoryResult<u64> {
+    fn get_be_u64(&self, addr: usize) -> Result<u64> {
         self.get_be_uint_n(addr, 8)
     }
 
@@ -207,7 +207,7 @@ pub trait Memory {
     /// # Arguments
     ///
     /// * `addr` - The address to read from
-    fn get_be_usize(&self, addr: usize) -> MemoryResult<usize> {
+    fn get_be_usize(&self, addr: usize) -> Result<usize> {
         self.get_be_uint_n(addr, usize::BYTES).map(|i| i as usize)
     }
 
@@ -216,7 +216,7 @@ pub trait Memory {
     /// # Arguments
     ///
     /// * `addr` - The address to read from
-    fn get_le_u16(&self, addr: usize) -> MemoryResult<u16> {
+    fn get_le_u16(&self, addr: usize) -> Result<u16> {
         self.get_le_uint_n(addr, 2).map(|i| i as u16)
     }
 
@@ -225,7 +225,7 @@ pub trait Memory {
     /// # Arguments
     ///
     /// * `addr` - The address to read from
-    fn get_le_u32(&self, addr: usize) -> MemoryResult<u32> {
+    fn get_le_u32(&self, addr: usize) -> Result<u32> {
         self.get_le_uint_n(addr, 4).map(|i| i as u32)
     }
 
@@ -234,7 +234,7 @@ pub trait Memory {
     /// # Arguments
     ///
     /// * `addr` - The address to read from
-    fn get_le_u64(&self, addr: usize) -> MemoryResult<u64> {
+    fn get_le_u64(&self, addr: usize) -> Result<u64> {
         self.get_le_uint_n(addr, 8)
     }
 
@@ -243,7 +243,7 @@ pub trait Memory {
     /// # Arguments
     ///
     /// * `addr` - The address to read from
-    fn get_le_usize(&self, addr: usize) -> MemoryResult<usize> {
+    fn get_le_usize(&self, addr: usize) -> Result<usize> {
         self.get_le_uint_n(addr, usize::BYTES).map(|i| i as usize)
     }
 
@@ -252,7 +252,7 @@ pub trait Memory {
     /// # Arguments
     ///
     /// * `addr` - The address to read from
-    fn get_be_i16(&self, addr: usize) -> MemoryResult<i16> {
+    fn get_be_i16(&self, addr: usize) -> Result<i16> {
         self.get_be_int_n(addr, 2).map(|i| i as i16)
     }
 
@@ -261,7 +261,7 @@ pub trait Memory {
     /// # Arguments
     ///
     /// * `addr` - The address to read from
-    fn get_be_i32(&self, addr: usize) -> MemoryResult<i32> {
+    fn get_be_i32(&self, addr: usize) -> Result<i32> {
         self.get_be_int_n(addr, 4).map(|i| i as i32)
     }
 
@@ -270,7 +270,7 @@ pub trait Memory {
     /// # Arguments
     ///
     /// * `addr` - The address to read from
-    fn get_be_i64(&self, addr: usize) -> MemoryResult<i64> {
+    fn get_be_i64(&self, addr: usize) -> Result<i64> {
         self.get_be_int_n(addr, 8)
     }
 
@@ -279,7 +279,7 @@ pub trait Memory {
     /// # Arguments
     ///
     /// * `addr` - The address to read from
-    fn get_be_isize(&self, addr: usize) -> MemoryResult<isize> {
+    fn get_be_isize(&self, addr: usize) -> Result<isize> {
         self.get_be_int_n(addr, isize::BYTES).map(|i| i as isize)
     }
 
@@ -288,7 +288,7 @@ pub trait Memory {
     /// # Arguments
     ///
     /// * `addr` - The address to read from
-    fn get_le_i16(&self, addr: usize) -> MemoryResult<i16> {
+    fn get_le_i16(&self, addr: usize) -> Result<i16> {
         self.get_le_int_n(addr, 2).map(|i| i as i16)
     }
 
@@ -297,7 +297,7 @@ pub trait Memory {
     /// # Arguments
     ///
     /// * `addr` - The address to read from
-    fn get_le_i32(&self, addr: usize) -> MemoryResult<i32> {
+    fn get_le_i32(&self, addr: usize) -> Result<i32> {
         self.get_le_int_n(addr, 4).map(|i| i as i32)
     }
 
@@ -306,7 +306,7 @@ pub trait Memory {
     /// # Arguments
     ///
     /// * `addr` - The address to read from
-    fn get_le_i64(&self, addr: usize) -> MemoryResult<i64> {
+    fn get_le_i64(&self, addr: usize) -> Result<i64> {
         self.get_le_int_n(addr, 8)
     }
 
@@ -315,7 +315,7 @@ pub trait Memory {
     /// # Arguments
     ///
     /// * `addr` - The address to read from
-    fn get_le_isize(&self, addr: usize) -> MemoryResult<isize> {
+    fn get_le_isize(&self, addr: usize) -> Result<isize> {
         self.get_le_int_n(addr, isize::BYTES).map(|i| i as isize)
     }
 
@@ -325,7 +325,7 @@ pub trait Memory {
     /// * `addr` - The address to write to
     /// * `val` - The value to write
     #[inline]
-    fn set_be_u16(&mut self, addr: usize, val: u16) -> MemoryResult<()> {
+    fn set_be_u16(&mut self, addr: usize, val: u16) -> Result<()> {
         u64_to_be_bytes(val as u64, 2, |v| self.set(addr, v))
     }
 
@@ -335,7 +335,7 @@ pub trait Memory {
     /// * `addr` - The address to write to
     /// * `val` - The value to write
     #[inline]
-    fn set_be_u32(&mut self, addr: usize, val: u32) -> MemoryResult<()> {
+    fn set_be_u32(&mut self, addr: usize, val: u32) -> Result<()> {
         u64_to_be_bytes(val as u64, 4, |v| self.set(addr, v))
     }
 
@@ -345,7 +345,7 @@ pub trait Memory {
     /// * `addr` - The address to write to
     /// * `val` - The value to write
     #[inline]
-    fn set_be_u64(&mut self, addr: usize, val: u64) -> MemoryResult<()> {
+    fn set_be_u64(&mut self, addr: usize, val: u64) -> Result<()> {
         u64_to_be_bytes(val, 8, |v| self.set(addr, v))
     }
 
@@ -355,7 +355,7 @@ pub trait Memory {
     /// * `addr` - The address to write to
     /// * `val` - The value to write
     #[inline]
-    fn set_be_usize(&mut self, addr: usize, val: usize) -> MemoryResult<()> {
+    fn set_be_usize(&mut self, addr: usize, val: usize) -> Result<()> {
         u64_to_be_bytes(val as u64, usize::BYTES, |v| self.set(addr, v))
     }
 
@@ -365,7 +365,7 @@ pub trait Memory {
     /// * `addr` - The address to write to
     /// * `val` - The value to write
     #[inline]
-    fn set_be_i16(&mut self, addr: usize, val: i16) -> MemoryResult<()> {
+    fn set_be_i16(&mut self, addr: usize, val: i16) -> Result<()> {
         u64_to_be_bytes(val as u64, 2, |v| self.set(addr, v))
     }
 
@@ -375,7 +375,7 @@ pub trait Memory {
     /// * `addr` - The address to write to
     /// * `val` - The value to write
     #[inline]
-    fn set_be_i32(&mut self, addr: usize, val: i32) -> MemoryResult<()> {
+    fn set_be_i32(&mut self, addr: usize, val: i32) -> Result<()> {
         u64_to_be_bytes(val as u64, 4, |v| self.set(addr, v))
     }
 
@@ -385,7 +385,7 @@ pub trait Memory {
     /// * `addr` - The address to write to
     /// * `val` - The value to write
     #[inline]
-    fn set_be_i64(&mut self, addr: usize, val: i64) -> MemoryResult<()> {
+    fn set_be_i64(&mut self, addr: usize, val: i64) -> Result<()> {
         u64_to_be_bytes(val as u64, 8, |v| self.set(addr, v))
     }
 
@@ -395,7 +395,7 @@ pub trait Memory {
     /// * `addr` - The address to write to
     /// * `val` - The value to write
     #[inline]
-    fn set_be_isize(&mut self, addr: usize, val: isize) -> MemoryResult<()> {
+    fn set_be_isize(&mut self, addr: usize, val: isize) -> Result<()> {
         u64_to_be_bytes(val as u64, isize::BYTES, |v| self.set(addr, v))
     }
  
@@ -405,7 +405,7 @@ pub trait Memory {
     /// * `addr` - The address to write to
     /// * `val` - The value to write
     #[inline]
-    fn set_le_u16(&mut self, addr: usize, val: u16) -> MemoryResult<()> {
+    fn set_le_u16(&mut self, addr: usize, val: u16) -> Result<()> {
         u64_to_le_bytes(val as u64, 2, |v| self.set(addr, v))
     }
 
@@ -415,7 +415,7 @@ pub trait Memory {
     /// * `addr` - The address to write to
     /// * `val` - The value to write
     #[inline]
-    fn set_le_u32(&mut self, addr: usize, val: u32) -> MemoryResult<()> {
+    fn set_le_u32(&mut self, addr: usize, val: u32) -> Result<()> {
         u64_to_le_bytes(val as u64, 4, |v| self.set(addr, v))
     }
 
@@ -425,7 +425,7 @@ pub trait Memory {
     /// * `addr` - The address to write to
     /// * `val` - The value to write
     #[inline]
-    fn set_le_u64(&mut self, addr: usize, val: u64) -> MemoryResult<()> {
+    fn set_le_u64(&mut self, addr: usize, val: u64) -> Result<()> {
         u64_to_le_bytes(val, 8, |v| self.set(addr, v))
     }
 
@@ -435,7 +435,7 @@ pub trait Memory {
     /// * `addr` - The address to write to
     /// * `val` - The value to write
     #[inline]
-    fn set_le_usize(&mut self, addr: usize, val: usize) -> MemoryResult<()> {
+    fn set_le_usize(&mut self, addr: usize, val: usize) -> Result<()> {
         u64_to_le_bytes(val as u64, usize::BYTES, |v| self.set(addr, v))
     }
 
@@ -445,7 +445,7 @@ pub trait Memory {
     /// * `addr` - The address to write to
     /// * `val` - The value to write
     #[inline]
-    fn set_le_i16(&mut self, addr: usize, val: i16) -> MemoryResult<()> {
+    fn set_le_i16(&mut self, addr: usize, val: i16) -> Result<()> {
         u64_to_le_bytes(val as u64, 2, |v| self.set(addr, v))
     }
 
@@ -455,7 +455,7 @@ pub trait Memory {
     /// * `addr` - The address to write to
     /// * `val` - The value to write
     #[inline]
-    fn set_le_i32(&mut self, addr: usize, val: i32) -> MemoryResult<()> {
+    fn set_le_i32(&mut self, addr: usize, val: i32) -> Result<()> {
         u64_to_le_bytes(val as u64, 4, |v| self.set(addr, v))
     }
 
@@ -465,7 +465,7 @@ pub trait Memory {
     /// * `addr` - The address to write to
     /// * `val` - The value to write
     #[inline]
-    fn set_le_i64(&mut self, addr: usize, val: i64) -> MemoryResult<()> {
+    fn set_le_i64(&mut self, addr: usize, val: i64) -> Result<()> {
         u64_to_le_bytes(val as u64, 8, |v| self.set(addr, v))
     }
 
@@ -475,7 +475,7 @@ pub trait Memory {
     /// * `addr` - The address to write to
     /// * `val` - The value to write
     #[inline]
-    fn set_le_isize(&mut self, addr: usize, val: isize) -> MemoryResult<()> {
+    fn set_le_isize(&mut self, addr: usize, val: isize) -> Result<()> {
         u64_to_le_bytes(val as u64, isize::BYTES, |v| self.set(addr, v))
     }
 }
@@ -488,13 +488,13 @@ impl Memory for EmptyMemory {
     fn size(&self) -> usize { 0 }
 
     #[allow(unused_variables)]
-    fn get(&self, addr: usize, buf: &mut [u8]) -> MemoryResult<()> {
-        Err(MemoryError::new(MemoryErrorKind::OutOfBounds, "EmptyMemory cannot be read from"))
+    fn get(&self, addr: usize, buf: &mut [u8]) -> Result<()> {
+        Err(Error::new(ErrorKind::OutOfBounds, "EmptyMemory cannot be read from"))
     }
 
     #[allow(unused_variables)]
-    fn set(&mut self, addr: usize, buf: &[u8]) -> MemoryResult<()> {
-        Err(MemoryError::new(MemoryErrorKind::OutOfBounds, "EmptyMemory cannot be written to"))
+    fn set(&mut self, addr: usize, buf: &[u8]) -> Result<()> {
+        Err(Error::new(ErrorKind::OutOfBounds, "EmptyMemory cannot be written to"))
     }
 }
 

@@ -63,7 +63,7 @@ pub enum Error {
     /// Indicates that an error occurred retrieving an operand attached to the instruction
 	ErrorRetrievingOperand(operand::Error),
     /// Indicates that an error occurred reading or writing memory
-	ErrorReadingMemory(mem::MemoryError),
+	ErrorReadingMemory(mem::Error),
     /// Indicates that a provided operand is illegal for use with the executed instruction
     IllegalOperand,
     /// Indicates that the HLT instruction was invoked
@@ -76,8 +76,8 @@ impl error::FromError<operand::Error> for Error {
 	}
 }
 
-impl error::FromError<mem::MemoryError> for Error {
-	fn from_error(err: mem::MemoryError) -> Error {
+impl error::FromError<mem::Error> for Error {
+	fn from_error(err: mem::Error) -> Error {
 		Error::ErrorReadingMemory(err)
 	}
 }

@@ -151,19 +151,21 @@ pub fn dispatch<M>(inst: Instruction, cpu: &mut Mos6502<M>) -> Result where M: m
         Instruction::SEC => set_flag::exec(cpu, Flags::CARRY()),
         Instruction::SED => set_flag::exec(cpu, Flags::BCD()),
         Instruction::SEI => set_flag::exec(cpu, Flags::INTERRUPT()),
+        Instruction::SHY(op) => store::sh(cpu, cpu::RegisterName::X, op),
+        Instruction::SHX(op) => store::sh(cpu, cpu::RegisterName::X, op),
         Instruction::SKB(_) => Ok(()),
         Instruction::SLO(op) => { try!(asl::exec(cpu, op)); ora::exec(cpu, op) },
         Instruction::SRE(op) => { try!(lsr::exec(cpu, op)); eor::exec(cpu, op) },
         Instruction::STA(op) => store::exec(cpu, cpu::RegisterName::A, op),
         Instruction::STX(op) => store::exec(cpu, cpu::RegisterName::X, op),
         Instruction::STY(op) => store::exec(cpu, cpu::RegisterName::Y, op),
+        Instruction::TAS(op) => store::tas(cpu, op),
         Instruction::TAX => transfer::exec(cpu, cpu::RegisterName::A, cpu::RegisterName::X),
         Instruction::TAY => transfer::exec(cpu, cpu::RegisterName::A, cpu::RegisterName::Y),
         Instruction::TSX => transfer::exec(cpu, cpu::RegisterName::S, cpu::RegisterName::X),
         Instruction::TXA => transfer::exec(cpu, cpu::RegisterName::X, cpu::RegisterName::A),
         Instruction::TXS => transfer::exec(cpu, cpu::RegisterName::X, cpu::RegisterName::S),
         Instruction::TYA => transfer::exec(cpu, cpu::RegisterName::Y, cpu::RegisterName::A),
-
-        _ => unimplemented!()
+        Instruction::XAA(op) => and::xaa(cpu, op)
     }
 }

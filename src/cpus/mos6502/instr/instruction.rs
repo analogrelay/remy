@@ -235,8 +235,9 @@ impl fmt::Display for Instruction {
             &Instruction::BVC(x) |
             &Instruction::BVS(x) |
             &Instruction::BPL(x) => formatter.write_fmt(format_args!(
-                    "{} ${:X}",
+                    "{} {}${:X}",
                     self.mnemonic(),
+                    if x < 0 { "-" } else { "+" },
                     x)),
 
             // Instructions with absolute addresses

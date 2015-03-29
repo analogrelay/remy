@@ -15,6 +15,12 @@ pub fn ahx<M>(cpu: &mut Mos6502<M>, op: Operand) -> exec::Result where M: Memory
     Ok(())
 }
 
+pub fn sax<M>(cpu: &mut Mos6502<M>, op: Operand) -> exec::Result where M: Memory {
+    let val = cpu.registers.a & cpu.registers.x;
+    try!(op.set_u8(cpu, val));
+    Ok(())
+}
+
 #[cfg(test)]
 mod test {
     use mem;
@@ -45,5 +51,16 @@ mod test {
         store::ahx(&mut cpu, Operand::Absolute(0x3C01)).unwrap();
 
         assert_eq!(Ok(0x30), cpu.mem.get_u8(0x3C01));
+    }
+
+    #[test]
+    pub fn sax_sets_operand_to_a_and_x() {
+        let mut cpu = Mos6502::with_fixed_memory(10);
+
+        cpu.registers.a = 0x3F;
+        cpu.registers.x = 0xF0;
+        store::sax(&mut cpu, Operand::Absolute(5)).unwrap();
+
+        assert_eq!(Ok(0x30), cpu.mem.get_u8(5));
     }
 }

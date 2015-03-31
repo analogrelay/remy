@@ -5,15 +5,15 @@ use mem;
 pub struct Empty;
 
 impl mem::Memory for Empty {
-    fn size(&self) -> usize { 0 }
+    fn size(&self) -> u64 { 0 }
 
     #[allow(unused_variables)]
-    fn get(&self, addr: usize, buf: &mut [u8]) -> mem::Result<()> {
-        Err(mem::Error::new(mem::ErrorKind::OutOfBounds, "EmptyMemory cannot be read from"))
+    fn get(&self, addr: u64, buf: &mut [u8]) -> mem::Result<()> {
+        Err(mem::Error::new(mem::ErrorKind::MemoryNotReadable, "EmptyMemory cannot be read from"))
     }
 
     #[allow(unused_variables)]
-    fn set(&mut self, addr: usize, buf: &[u8]) -> mem::Result<()> {
-        Err(mem::Error::new(mem::ErrorKind::OutOfBounds, "EmptyMemory cannot be written to"))
+    fn set(&mut self, addr: u64, buf: &[u8]) -> mem::Result<()> {
+        Err(mem::Error::new(mem::ErrorKind::MemoryNotWritable, "EmptyMemory cannot be written to"))
     }
 }

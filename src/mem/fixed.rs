@@ -9,7 +9,7 @@ use mem;
 /// Upon initialization, a memory buffer will be allocated to hold all bytes in the memory
 pub struct Fixed {
     data: *mut u8,
-    size: usize
+    size: u64
 }
 
 impl Fixed {
@@ -18,7 +18,7 @@ impl Fixed {
     /// # Arguments
     ///
     /// * `size` - The size, in bytes, of the memory to create
-    pub fn new(size: usize) -> Fixed {
+    pub fn new(size: u64) -> Fixed {
         unsafe {
             let buf = heap::allocate(size, 0);
             ptr::write_bytes(buf, 0, size);
@@ -33,7 +33,7 @@ impl Fixed {
     ///
     /// * `buf` - A pointer to the first element in the memory buffer
     /// * `size` - The size of the buffer in bytes
-    pub unsafe fn from_raw_parts(buf: *mut u8, size: usize) -> Fixed {
+    pub unsafe fn from_raw_parts(buf: *mut u8, size: u64) -> Fixed {
         Fixed {
             data: buf,
             size: size
@@ -61,7 +61,7 @@ impl Clone for Fixed {
 
 impl mem::Memory for Fixed {
     /// Retrieves the size of the memory.
-    fn size(&self) -> usize {
+    fn size(&self) -> u64 {
         self.size
     }
 
@@ -71,7 +71,7 @@ impl mem::Memory for Fixed {
     ///
     /// * `addr` - The address at which to start reading
     /// * `buf` - The buffer to fill
-    fn get(&self, addr: usize, buf: &mut [u8]) -> mem::Result<()> {
+    fn get(&self, addr: u64, buf: &mut [u8]) -> mem::Result<()> {
         let end = addr + buf.len() - 1;
         if end >= self.size {
             // The read will take us out of bounds, don't start it.
@@ -97,7 +97,7 @@ impl mem::Memory for Fixed {
     ///
     /// * `addr` - The address at which to start writing
     /// * `buf` - The buffer to write
-    fn set(&mut self, addr: usize, buf: &[u8]) -> mem::Result<()> {
+    fn set(&mut self, addr: u64, buf: &[u8]) -> mem::Result<()> {
         let end = addr + buf.len() - 1;
         if end >= self.size {
             Err(mem::Error::with_detail(

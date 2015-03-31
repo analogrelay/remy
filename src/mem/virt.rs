@@ -3,19 +3,19 @@ use mem;
 use std::cmp;
 
 struct Segment<'a> {
-    base : usize,
+    base : u64,
     memory : Box<mem::Memory+'a>
 }
 
 impl<'a> Segment<'a> {
-    fn new(base: usize, memory: Box<mem::Memory+'a>) -> Segment<'a> {
+    fn new(base: u64, memory: Box<mem::Memory+'a>) -> Segment<'a> {
         Segment {
             base: base,
             memory: memory
         }
     }
 
-    fn has_addr(&self, addr: usize) -> bool {
+    fn has_addr(&self, addr: u64) -> bool {
         addr >= self.base && addr < (self.base + self.memory.size())
     }
 }
@@ -48,7 +48,7 @@ impl<'a> Virtual<'a> {
     /// # Arguments
     /// * `base` - The address to use as the base for the specified memory
     /// * `mem` - The memory to attach.
-    pub fn attach(&mut self, base: usize, mem: Box<mem::Memory+'a>) -> Result<(), Error> {
+    pub fn attach(&mut self, base: u64, mem: Box<mem::Memory+'a>) -> Result<(), Error> {
     	// Find the appropriate place to attach the memory
     	let new_segment = Segment::new(base, mem);
     	let pos = self.segments.iter()
@@ -79,21 +79,21 @@ impl<'a> Virtual<'a> {
     	Ok(())
     }
 
-    fn find(&self, addr: usize) -> Option<&Segment<'a>> {
+    fn find(&self, addr: u64) -> Option<&Segment<'a>> {
     	self.segments.iter().find(|l| l.has_addr(addr))
     }
 
-    fn find_mut(&mut self, addr: usize) -> Option<&mut Segment<'a>> {
+    fn find_mut(&mut self, addr: u64) -> Option<&mut Segment<'a>> {
     	self.segments.iter_mut().find(|l| l.has_addr(addr))
     }
 }
 
 impl<'a> mem::Memory for Virtual<'a> {
-    fn size(&self) -> usize {
+    fn size(&self) -> u64 {
         unimplemented!()
     }
 
-    fn get(&self, addr: usize, buf: &mut [u8]) -> mem::Result<()> {
+    fn get(&self, addr: u64, buf: &mut [u8]) -> mem::Result<()> {
     	let mut ptr = 0;
     	while ptr < buf.len() {
     		// Find the memory at the current address
@@ -124,7 +124,7 @@ impl<'a> mem::Memory for Virtual<'a> {
     	Ok(())
     }
 
-    fn set(&mut self, addr: usize, buf: &[u8]) -> mem::Result<()> {
+    fn set(&mut self, addr: u64, buf: &[u8]) -> mem::Result<()> {
         let mut ptr = 0;
     	while ptr < buf.len() {
     		// Find the memory at the current address

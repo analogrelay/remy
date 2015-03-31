@@ -11,7 +11,7 @@ pub fn exec<M>(cpu: &mut Mos6502<M>, r: cpu::RegisterName) -> Result<(), exec::E
 
 #[cfg(test)]
 mod test {
-    use mem::{FixedMemory,VirtualMemory};
+    use mem;
 	use cpus::mos6502::exec::pull;
 	use cpus::mos6502::{cpu,Mos6502,Flags};
 
@@ -57,9 +57,9 @@ mod test {
         assert!(cpu.flags.intersects(Flags::ZERO()));
     }
 
-    fn init_cpu() -> Mos6502<VirtualMemory<'static>> {
-        let stack_memory = FixedMemory::new(32);
-        let mut vm = VirtualMemory::new();
+    fn init_cpu() -> Mos6502<mem::Virtual<'static>> {
+        let stack_memory = mem::Fixed::new(32);
+        let mut vm = mem::Virtual::new();
 
         vm.attach(cpu::STACK_START, Box::new(stack_memory)).unwrap();
 

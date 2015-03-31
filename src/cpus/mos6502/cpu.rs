@@ -89,7 +89,7 @@ pub struct Mos6502<M> where M: mem::Memory {
     pub bcd_enabled: bool
 }
 
-impl Mos6502<mem::FixedMemory> {
+impl Mos6502<mem::Fixed> {
     /// Creates a `Mos6502` instance using a fixed memory
     ///
     /// The memory is attached at address `$0000`
@@ -97,7 +97,14 @@ impl Mos6502<mem::FixedMemory> {
     /// # Arguments
     /// * `size` - The size of the memory to attach.
     pub fn with_fixed_memory(size: usize) -> Self {
-        Mos6502::new(mem::FixedMemory::new(size))
+        Mos6502::new(mem::Fixed::new(size))
+    }
+}
+
+impl Mos6502<mem::Empty> {
+    /// Creates a `Mos6502` instance with no attached memory
+    pub fn without_memory() -> Self {
+        Mos6502::new(mem::Empty)
     }
 }
 
@@ -272,7 +279,8 @@ impl ::std::ops::Not for Flags {
 #[cfg(test)]
 mod test {
     mod mos6502 {
-        use mem::{Memory,FixedMemory,VirtualMemory};
+        use mem;
+        use mem::Memory;
 
         use cpus::mos6502;
 
@@ -305,9 +313,9 @@ mod test {
             assert_eq!(6, cpu.registers.sp);
         }
 
-        pub fn setup_cpu<'a>() -> mos6502::Mos6502<VirtualMemory<'a>> {
-            let mem = FixedMemory::new(10);
-            let mut vm = VirtualMemory::new();
+        pub fn setup_cpu<'a>() -> mos6502::Mos6502<mem::Virtual<'a>> {
+            let mem = mem::Fixed::new(10);
+            let mut vm = mem::Virtual::new();
             vm.attach(mos6502::cpu::STACK_START, Box::new(mem)).unwrap();
 
             let mut cpu = mos6502::Mos6502::new(vm);
@@ -424,61 +432,60 @@ mod test {
     }
 
     mod register_name {
-        use mem::VirtualMemory;
         use cpus::mos6502::{cpu,Mos6502,Flags};
 
         #[test]
         pub fn gets_a() {
-            let mut cpu = Mos6502::new(VirtualMemory::new());
+            let mut cpu = Mos6502::without_memory();
             cpu.registers.a = 42;
             assert_eq!(cpu::RegisterName::A.get(&cpu), 42);
         }
 
         #[test]
         pub fn gets_x() {
-            let mut cpu = Mos6502::new(VirtualMemory::new());
+            let mut cpu = Mos6502::without_memory();
             cpu.registers.x = 42;
             assert_eq!(cpu::RegisterName::X.get(&cpu), 42);
         }
 
         #[test]
         pub fn gets_y() {
-            let mut cpu = Mos6502::new(VirtualMemory::new());
+            let mut cpu = Mos6502::without_memory();
             cpu.registers.y = 42;
             assert_eq!(cpu::RegisterName::Y.get(&cpu), 42);
         }
 
         #[test]
         pub fn gets_p() {
-            let mut cpu = Mos6502::new(VirtualMemory::new());
+            let mut cpu = Mos6502::without_memory();
             cpu.flags.set(Flags::SIGN() | Flags::CARRY()); 
             assert_eq!(cpu::RegisterName::P.get(&cpu), cpu.flags.bits);
         }
 
         #[test]
         pub fn sets_a() {
-            let mut cpu = Mos6502::new(VirtualMemory::new());
+            let mut cpu = Mos6502::without_memory();
             cpu::RegisterName::A.set(&mut cpu, 42);
             assert_eq!(cpu.registers.a, 42);
         }
 
         #[test]
         pub fn sets_x() {
-            let mut cpu = Mos6502::new(VirtualMemory::new());
+            let mut cpu = Mos6502::without_memory();
             cpu::RegisterName::X.set(&mut cpu, 42);
             assert_eq!(cpu.registers.x, 42);
         }
 
         #[test]
         pub fn sets_y() {
-            let mut cpu = Mos6502::new(VirtualMemory::new());
+            let mut cpu = Mos6502::without_memory();
             cpu::RegisterName::Y.set(&mut cpu, 42);
             assert_eq!(cpu.registers.y, 42);
         }
 
         #[test]
         pub fn sets_p() {
-            let mut cpu = Mos6502::new(VirtualMemory::new());
+            let mut cpu = Mos6502::without_memory();
             cpu::RegisterName::P.set(&mut cpu, (Flags::SIGN() | Flags::CARRY()).bits);
             assert_eq!(Flags::SIGN() | Flags::CARRY() | Flags::RESERVED(), cpu.flags);
         }

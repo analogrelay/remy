@@ -27,7 +27,7 @@ pub fn exec<M>(cpu: &mut Mos6502<M>, op: Operand) -> Result<(), exec::Error> whe
 
 #[cfg(test)]
 mod test {
-    use mem::VirtualMemory;
+    use mem;
 	use cpus::mos6502::exec::sbc;
 	use cpus::mos6502::{Mos6502,Operand,Flags};
 
@@ -60,7 +60,7 @@ mod test {
 
     #[test]
     pub fn sbc_does_regular_subtraction_when_bcd_disabled_even_when_bcd_flag_set() {
-		let vm = VirtualMemory::new();
+		let vm = mem::Virtual::new();
 		let mut cpu = Mos6502::without_bcd(vm);
         cpu.flags.set(Flags::BCD() | Flags::CARRY());
         cpu.registers.a = 42;
@@ -87,9 +87,8 @@ mod test {
         assert!(cpu.flags.intersects(Flags::CARRY()));
     }
 
-	fn init_cpu() -> Mos6502<VirtualMemory<'static>> {
-		let vm = VirtualMemory::new();
-		let mut cpu = Mos6502::new(vm);
+	fn init_cpu() -> Mos6502<mem::Empty> {
+		let mut cpu = Mos6502::without_memory();
 		cpu.registers.a = 42;
 		cpu
 	}

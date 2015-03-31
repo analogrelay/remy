@@ -24,7 +24,7 @@ pub fn exec<M>(cpu: &mut Mos6502<M>, reg: cpu::RegisterName, op: Operand) -> Res
 
 #[cfg(test)]
 mod test {
-    use mem::VirtualMemory;
+    use mem;
 	use cpus::mos6502::exec::compare;
 	use cpus::mos6502::{Mos6502,Flags,Operand,cpu};
 
@@ -88,9 +88,8 @@ mod test {
         assert!(!cpu.flags.intersects(Flags::ZERO()));
     }
 
-    fn init_cpu() -> Mos6502<VirtualMemory<'static>> {
-        let vm = VirtualMemory::new();
-        let mut cpu = Mos6502::new(vm);
+    fn init_cpu() -> Mos6502<mem::Empty> {
+        let mut cpu = Mos6502::without_memory();
 
         cpu.pc.set(0xABCD);
         cpu.registers.a = 42;

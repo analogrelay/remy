@@ -22,7 +22,7 @@ pub fn from_sub<M>(cpu: &mut Mos6502<M>) -> Result<(), exec::Error> where M : Me
 
 #[cfg(test)]
 mod test {
-    use mem::{FixedMemory,VirtualMemory};
+    use mem;
 	use cpus::mos6502::exec::ret;
 	use cpus::mos6502::{cpu,Mos6502};
 
@@ -67,9 +67,9 @@ mod test {
         assert_eq!(cpu.pc.get(), 0xABCE);
     }
 
-    fn init_cpu() -> Mos6502<VirtualMemory<'static>> {
-        let stack_memory = FixedMemory::new(32);
-        let mut vm = VirtualMemory::new();
+    fn init_cpu() -> Mos6502<mem::Virtual<'static>> {
+        let stack_memory = mem::Fixed::new(32);
+        let mut vm = mem::Virtual::new();
 
         vm.attach(cpu::STACK_START, Box::new(stack_memory)).unwrap();
 

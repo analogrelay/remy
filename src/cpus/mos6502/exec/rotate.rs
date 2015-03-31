@@ -37,14 +37,12 @@ fn exec<M>(cpu: &mut Mos6502<M>, op: Operand, left: bool) -> Result<(), exec::Er
 
 #[cfg(test)]
 mod test {
-    use mem::VirtualMemory;
     use cpus::mos6502::exec::rotate;
     use cpus::mos6502::{Mos6502,Operand,Flags};
 
     #[test]
     pub fn rotate_can_rotate_left() {
-        let vm = VirtualMemory::new();
-        let mut cpu = Mos6502::new(vm);
+        let mut cpu = Mos6502::without_memory();
 
         cpu.flags.set(Flags::CARRY());
         cpu.registers.a = 0b01101100;
@@ -57,8 +55,7 @@ mod test {
 
     #[test]
     pub fn rotate_left_puts_leftmost_bit_in_carry_flag() {
-        let vm = VirtualMemory::new();
-        let mut cpu = Mos6502::new(vm);
+        let mut cpu = Mos6502::without_memory();
 
         cpu.registers.a = 0b10000000;
         rotate::left(&mut cpu, Operand::Accumulator).unwrap();
@@ -70,8 +67,7 @@ mod test {
 
     #[test]
     pub fn rotate_left_sets_sign_flag_if_value_now_negative() {
-        let vm = VirtualMemory::new();
-        let mut cpu = Mos6502::new(vm);
+        let mut cpu = Mos6502::without_memory();
 
         cpu.registers.a = 0b01111111;
         rotate::left(&mut cpu, Operand::Accumulator).unwrap();
@@ -80,8 +76,7 @@ mod test {
 
     #[test]
     pub fn rotate_left_sets_zero_flag_if_value_now_zero() {
-        let vm = VirtualMemory::new();
-        let mut cpu = Mos6502::new(vm);
+        let mut cpu = Mos6502::without_memory();
 
         cpu.registers.a = 0b10000000;
         rotate::left(&mut cpu, Operand::Accumulator).unwrap();
@@ -90,8 +85,7 @@ mod test {
 
     #[test]
     pub fn rotate_can_rotate_right() {
-        let vm = VirtualMemory::new();
-        let mut cpu = Mos6502::new(vm);
+        let mut cpu = Mos6502::without_memory();
 
         cpu.flags.set(Flags::CARRY());
         cpu.registers.a = 0b01101100;
@@ -104,8 +98,7 @@ mod test {
 
     #[test]
     pub fn rotate_right_puts_rightmost_bit_in_carry_flag() {
-        let vm = VirtualMemory::new();
-        let mut cpu = Mos6502::new(vm);
+        let mut cpu = Mos6502::without_memory();
 
         cpu.registers.a = 0b00000001;
         rotate::right(&mut cpu, Operand::Accumulator).unwrap();
@@ -117,8 +110,7 @@ mod test {
 
     #[test]
     pub fn rotate_right_sets_sign_flag_if_value_now_negative() {
-        let vm = VirtualMemory::new();
-        let mut cpu = Mos6502::new(vm);
+        let mut cpu = Mos6502::without_memory();
 
         cpu.flags.set(Flags::CARRY());
         cpu.registers.a = 0b00000000;
@@ -128,8 +120,7 @@ mod test {
 
     #[test]
     pub fn rotate_right_sets_zero_flag_if_value_now_zero() {
-        let vm = VirtualMemory::new();
-        let mut cpu = Mos6502::new(vm);
+        let mut cpu = Mos6502::without_memory();
 
         cpu.registers.a = 0b00000001;
         rotate::right(&mut cpu, Operand::Accumulator).unwrap();

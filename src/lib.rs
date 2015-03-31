@@ -1,8 +1,12 @@
 #![deny(deprecated,unused_imports,unused_must_use,unused_mut,unused_features)]
 
+// Features used in all builds
 #![feature(alloc)]
 #![feature(core)]
 #![feature(debug_builders)]
+
+// Features used by tests
+#![cfg_attr(test, feature(convert))]
 
 /// Contains code to emulate supported CPUs
 pub mod cpus;

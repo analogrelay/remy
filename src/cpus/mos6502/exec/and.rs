@@ -20,13 +20,12 @@ pub fn xaa<M>(cpu: &mut Mos6502<M>, op: Operand) -> exec::Result where M: Memory
 
 #[cfg(test)]
 mod test {
-    use mem::VirtualMemory;
 	use cpus::mos6502::exec::and;
 	use cpus::mos6502::{Mos6502,Operand,Flags};
 
     #[test]
     pub fn and_ands_value_with_accumulator() {
-        let mut cpu = init_cpu();
+        let mut cpu = Mos6502::without_memory();
         cpu.registers.a = 42;
         and::exec(&mut cpu, Operand::Immediate(24), false).unwrap();
         assert_eq!(cpu.registers.a, 42 & 24);
@@ -34,7 +33,7 @@ mod test {
 
     #[test]
     pub fn and_sets_zero_flag_if_result_is_zero() {
-        let mut cpu = init_cpu();
+        let mut cpu = Mos6502::without_memory();
         cpu.registers.a = 42;
         and::exec(&mut cpu, Operand::Immediate(0), false).unwrap();
         assert_eq!(cpu.registers.a, 0);
@@ -43,7 +42,7 @@ mod test {
 
     #[test]
     pub fn and_sets_sign_flag_if_result_has_bit_7_set() {
-        let mut cpu = init_cpu();
+        let mut cpu = Mos6502::without_memory();
         cpu.registers.a = 0xFF;
         and::exec(&mut cpu, Operand::Immediate(0xFF), false).unwrap();
         assert_eq!(cpu.registers.a, 0xFF);
@@ -52,7 +51,7 @@ mod test {
     
     #[test]
     pub fn and_sets_carry_flag_if_with_carry_true_and_bit_7_set() {
-        let mut cpu = init_cpu();
+        let mut cpu = Mos6502::without_memory();
         cpu.registers.a = 0xFF;
         and::exec(&mut cpu, Operand::Immediate(0xFF), true).unwrap();
         assert_eq!(cpu.registers.a, 0xFF);
@@ -61,7 +60,7 @@ mod test {
     
     #[test]
     pub fn and_does_not_set_carry_flag_if_with_carry_true_and_bit_7_not_set() {
-        let mut cpu = init_cpu();
+        let mut cpu = Mos6502::without_memory();
         cpu.registers.a = 42;
         and::exec(&mut cpu, Operand::Immediate(0), true).unwrap();
         assert_eq!(cpu.registers.a, 0);
@@ -70,7 +69,7 @@ mod test {
 
     #[test]
     pub fn xaa_ands_value_with_x_and_stores_in_a() {
-        let mut cpu = init_cpu();
+        let mut cpu = Mos6502::without_memory();
         cpu.registers.x = 42;
         and::xaa(&mut cpu, Operand::Immediate(24)).unwrap();
         assert_eq!(cpu.registers.a, 42 & 24);
@@ -78,7 +77,7 @@ mod test {
 
     #[test]
     pub fn xaa_sets_zero_flag_if_result_is_zero() {
-        let mut cpu = init_cpu();
+        let mut cpu = Mos6502::without_memory();
         cpu.registers.x = 42;
         and::xaa(&mut cpu, Operand::Immediate(0)).unwrap();
         assert_eq!(cpu.registers.a, 0);
@@ -87,17 +86,10 @@ mod test {
 
     #[test]
     pub fn xaa_sets_sign_flag_if_result_has_bit_7_set() {
-        let mut cpu = init_cpu();
+        let mut cpu = Mos6502::without_memory();
         cpu.registers.x = 0xFF;
         and::xaa(&mut cpu, Operand::Immediate(0xFF)).unwrap();
         assert_eq!(cpu.registers.a, 0xFF);
         assert_eq!(cpu.flags, Flags::SIGN() | Flags::RESERVED());
-    }
-    
-    fn init_cpu() -> Mos6502<VirtualMemory<'static>> {
-        let vm = VirtualMemory::new();
-        let cpu = Mos6502::new(vm);
-
-        cpu
     }
 }

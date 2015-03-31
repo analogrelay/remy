@@ -11,13 +11,14 @@ pub fn exec<M>(cpu: &mut Mos6502<M>, op: Operand) -> Result<(), exec::Error> whe
 
 #[cfg(test)]
 mod test {
-    use mem::{Memory,FixedMemory,VirtualMemory};
+    use mem;
+    use mem::Memory;
 	use cpus::mos6502::exec::jmp;
 	use cpus::mos6502::{Mos6502,Operand};
 
     #[test]
     pub fn jmp_sets_pc_to_address_if_absolute_argument() {
-        let mem = VirtualMemory::new();
+        let mem = mem::Virtual::new();
         let mut cpu = Mos6502::new(mem);
 
         jmp::exec(&mut cpu, Operand::Absolute(0xBEEF)).unwrap();
@@ -27,8 +28,8 @@ mod test {
 
     #[test]
     pub fn jmp_sets_pc_to_value_at_address_if_indirect_argument() {
-        let mut vm = VirtualMemory::new();
-        let mut mem = FixedMemory::new(10);
+        let mut vm = mem::Virtual::new();
+        let mut mem = mem::Fixed::new(10);
         mem.set_le_u16(5, 0xBEEF).unwrap();
         vm.attach(0, Box::new(mem)).unwrap();
         let mut cpu = Mos6502::new(vm);

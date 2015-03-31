@@ -13,13 +13,12 @@ pub fn exec<M>(cpu: &mut Mos6502<M>, op: Operand) -> exec::Result where M: Memor
 
 #[cfg(test)]
 mod test {
-    use mem::VirtualMemory;
 	use cpus::mos6502::exec::axs;
 	use cpus::mos6502::{Mos6502,Operand,Flags};
     
     #[test]
     pub fn axs_does_its_crazy_business() {
-        let mut cpu = init_cpu();
+        let mut cpu = Mos6502::without_memory();
 
         cpu.registers.a = 0x3C;
         cpu.registers.x = 0x33;
@@ -29,7 +28,7 @@ mod test {
 
     #[test]
     pub fn axs_sets_carry_and_sign_if_result_bit_7_is_set() {
-        let mut cpu = init_cpu();
+        let mut cpu = Mos6502::without_memory();
 
         cpu.registers.a = 0xFF;
         cpu.registers.x = 0xFF;
@@ -41,7 +40,7 @@ mod test {
 
     #[test]
     pub fn axs_clears_carry_and_sign_if_result_bit_7_is_clear() {
-        let mut cpu = init_cpu();
+        let mut cpu = Mos6502::without_memory();
         cpu.flags.set(Flags::CARRY() | Flags::SIGN()); 
 
         cpu.registers.a = 0x01;
@@ -54,7 +53,7 @@ mod test {
 
     #[test]
     pub fn axs_sets_zero_if_result_is_zero() {
-        let mut cpu = init_cpu();
+        let mut cpu = Mos6502::without_memory();
 
         cpu.registers.a = 0xFF;
         cpu.registers.x = 0x01;
@@ -66,7 +65,7 @@ mod test {
 
     #[test]
     pub fn axs_clears_zero_if_result_is_non_zero() {
-        let mut cpu = init_cpu();
+        let mut cpu = Mos6502::without_memory();
         cpu.flags.set(Flags::ZERO()); 
 
         cpu.registers.a = 0x01;
@@ -75,12 +74,5 @@ mod test {
 
         assert_eq!(0x01, cpu.registers.x);
         assert_eq!(Flags::RESERVED(), cpu.flags);
-    }
-
-    fn init_cpu() -> Mos6502<VirtualMemory<'static>> {
-        let vm = VirtualMemory::new();
-        let cpu = Mos6502::new(vm);
-
-        cpu
     }
 }

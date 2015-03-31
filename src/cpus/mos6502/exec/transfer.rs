@@ -10,14 +10,12 @@ pub fn exec<M>(cpu: &mut Mos6502<M>, src: cpu::RegisterName, dst: cpu::RegisterN
 
 #[cfg(test)]
 mod test {
-    use mem::VirtualMemory;
     use cpus::mos6502::exec::transfer;
     use cpus::mos6502::{cpu,Mos6502};
 
     #[test]
     pub fn transfer_sets_destination_register_to_source_register_value() {
-        let vm = VirtualMemory::new();
-        let mut cpu = Mos6502::new(vm); 
+        let mut cpu = Mos6502::without_memory(); 
 
         cpu.registers.a = 42;
         transfer::exec(&mut cpu, cpu::RegisterName::A, cpu::RegisterName::X).unwrap();

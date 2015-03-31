@@ -11,7 +11,8 @@ pub fn exec<M>(cpu: &mut Mos6502<M>, op: Operand) -> Result<(), exec::Error> whe
 
 #[cfg(test)]
 mod test {
-    use mem::{Memory,FixedMemory,VirtualMemory};
+    use mem;
+    use mem::Memory;
 	use cpus::mos6502::exec::ora;
 	use cpus::mos6502::{Mos6502,Flags,Operand};
 
@@ -42,9 +43,9 @@ mod test {
         assert_eq!(0b11111111, cpu.registers.a);
     }
 
-    fn init_cpu() -> Mos6502<VirtualMemory<'static>> {
-        let base_memory = FixedMemory::new(10);
-        let mut vm = VirtualMemory::new();
+    fn init_cpu() -> Mos6502<mem::Virtual<'static>> {
+        let base_memory = mem::Fixed::new(10);
+        let mut vm = mem::Virtual::new();
 
         vm.attach(0, Box::new(base_memory)).unwrap();
 

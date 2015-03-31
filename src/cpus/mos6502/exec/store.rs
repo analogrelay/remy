@@ -56,8 +56,8 @@ mod test {
 
     #[test]
     pub fn sh_sets_operand_to_register_value_and_high_byte_of_address() {
-        let mem = mem::FixedMemory::new(10);
-        let mut vm = mem::VirtualMemory::new();
+        let mem = mem::Fixed::new(10);
+        let mut vm = mem::Virtual::new();
         vm.attach(0x3C00, Box::new(mem)).unwrap();
 
         let mut cpu = Mos6502::new(vm);
@@ -70,8 +70,8 @@ mod test {
 
     #[test]
     pub fn tas_does_its_crazy_business() {
-        let mem = mem::FixedMemory::new(10);
-        let mut vm = mem::VirtualMemory::new();
+        let mem = mem::Fixed::new(10);
+        let mut vm = mem::Virtual::new();
         vm.attach(0x1C00, Box::new(mem)).unwrap();
 
         let mut cpu = Mos6502::new(vm);
@@ -86,8 +86,8 @@ mod test {
 
     #[test]
     pub fn ahx_sets_operand_to_a_and_x_and_high_byte_of_address() {
-        let mem = mem::FixedMemory::new(10);
-        let mut vm = mem::VirtualMemory::new();
+        let mem = mem::Fixed::new(10);
+        let mut vm = mem::Virtual::new();
         vm.attach(0x3C00, Box::new(mem)).unwrap();
 
         let mut cpu = Mos6502::new(vm);

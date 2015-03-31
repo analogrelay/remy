@@ -14,14 +14,12 @@ pub fn exec<M>(cpu: &mut Mos6502<M>, op: Operand) -> Result<(), exec::Error> whe
 
 #[cfg(test)]
 mod test {
-    use mem::VirtualMemory;
     use cpus::mos6502::exec::lsr;
     use cpus::mos6502::{Mos6502,Operand,Flags};
 
     #[test]
     pub fn lsr_clears_sign_flag() {
-        let vm = VirtualMemory::new();
-        let mut cpu = Mos6502::new(vm);
+        let mut cpu = Mos6502::without_memory();
         cpu.flags.set(Flags::SIGN() | Flags::ZERO() | Flags::CARRY()); 
 
         lsr::exec(&mut cpu, Operand::Accumulator).unwrap();
@@ -31,8 +29,7 @@ mod test {
 
     #[test]
     pub fn lsr_sets_carry_flag_if_first_bit_of_operand_is_one() {
-        let vm = VirtualMemory::new();
-        let mut cpu = Mos6502::new(vm);
+        let mut cpu = Mos6502::without_memory();
         cpu.flags.set(Flags::SIGN() | Flags::ZERO()); 
         cpu.registers.a = 0b10101011;
 
@@ -43,8 +40,7 @@ mod test {
 
     #[test]
     pub fn lsr_clears_carry_flag_if_first_bit_of_operand_is_zero() {
-        let vm = VirtualMemory::new();
-        let mut cpu = Mos6502::new(vm);
+        let mut cpu = Mos6502::without_memory();
         cpu.flags.set(Flags::SIGN() | Flags::ZERO() | Flags::CARRY()); 
         cpu.registers.a = 0b10101010;
 
@@ -55,8 +51,7 @@ mod test {
 
     #[test]
     pub fn lsr_clears_zero_flag_if_result_is_non_zero() {
-        let vm = VirtualMemory::new();
-        let mut cpu = Mos6502::new(vm);
+        let mut cpu = Mos6502::without_memory();
         cpu.flags.set(Flags::SIGN() | Flags::ZERO() | Flags::CARRY()); 
         cpu.registers.a = 0b10101010;
 
@@ -67,8 +62,7 @@ mod test {
 
     #[test]
     pub fn lsr_sets_zero_flag_if_result_is_zero() {
-        let vm = VirtualMemory::new();
-        let mut cpu = Mos6502::new(vm);
+        let mut cpu = Mos6502::without_memory();
         cpu.flags.set(Flags::SIGN() | Flags::CARRY()); 
         cpu.registers.a = 0b00000000;
 
@@ -79,8 +73,7 @@ mod test {
 
     #[test]
     pub fn lsr_performs_logical_right_shift_and_stores_result() {
-        let vm = VirtualMemory::new();
-        let mut cpu = Mos6502::new(vm);
+        let mut cpu = Mos6502::without_memory();
         cpu.registers.a = 0b10101010;
 
         lsr::exec(&mut cpu, Operand::Accumulator).unwrap();

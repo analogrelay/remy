@@ -17,7 +17,8 @@ pub fn exec<M>(cpu: &mut Mos6502<M>) -> Result<(), exec::Error> where M: Memory 
 
 #[cfg(test)]
 mod test {
-    use mem::{Memory,FixedMemory,VirtualMemory};
+    use mem;
+    use mem::Memory;
 	use cpus::mos6502::exec::brk;
 	use cpus::mos6502::{Mos6502,Flags};
     use cpus::mos6502::cpu::STACK_START;
@@ -59,11 +60,11 @@ mod test {
         assert_eq!(0xBEEF, cpu.pc.get());
     }
 
-    fn init_cpu() -> Mos6502<VirtualMemory<'static>> {
-        let base_memory = FixedMemory::new(32);
-        let stack_memory = FixedMemory::new(32);
-        let vector_memory = FixedMemory::new(6);
-        let mut vm = VirtualMemory::new();
+    fn init_cpu() -> Mos6502<mem::Virtual<'static>> {
+        let base_memory = mem::Fixed::new(32);
+        let stack_memory = mem::Fixed::new(32);
+        let vector_memory = mem::Fixed::new(6);
+        let mut vm = mem::Virtual::new();
 
         vm.attach(0, Box::new(base_memory)).unwrap();
         vm.attach(STACK_START, Box::new(stack_memory)).unwrap();

@@ -48,7 +48,7 @@ impl mem::Memory for Fixed {
         }
         else {
             let start = addr as usize;
-            bytes::copy_memory(buf, &self.data[start .. end + 1]);
+            bytes::copy_memory(&self.data[start .. end + 1], buf);
             Ok(())
         }
     }
@@ -68,7 +68,7 @@ impl mem::Memory for Fixed {
                 format!("requested: 0x{:X} - 0x{:X}, but size is 0x{:x}", addr, end, self.data.len())))
         } else {
             let start = addr as usize;
-            bytes::copy_memory(&mut self.data[start .. end + 1], buf);
+            bytes::copy_memory(buf, &mut self.data[start .. end + 1]);
             Ok(())
         }
     }

@@ -407,7 +407,6 @@ fn u64_to_be_bytes<T, F>(n: u64, size: u32, f: F) -> T where
     F: FnOnce(&[u8]) -> T,
 {
     use std::mem::transmute;
-    use std::num::Int;
 
     // LLVM fails to properly optimize this when using shifts instead of the to_be* intrinsics
     assert!(size <= 8);
@@ -433,7 +432,6 @@ fn u64_to_le_bytes<T, F>(n: u64, size: u32, f: F) -> T where
     F: FnOnce(&[u8]) -> T,
 {
     use std::mem::transmute;
-    use std::num::Int;
 
     // LLVM fails to properly optimize this when using shifts instead of the to_le* intrinsics
     assert!(size <= 8);

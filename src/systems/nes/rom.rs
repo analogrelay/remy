@@ -91,10 +91,9 @@ impl RamSize {
 }
 
 fn get_full_size(inp: u16) -> u16 {
-    use std::num::Int;
     match inp {
         0 => 0,
-        _ => 2.pow(6 + inp as u32)
+        x => (2 as u16).pow(6 + x as u32)
     }
 }
 

@@ -14,7 +14,7 @@ pub mod cpus;
 pub mod mem;
 
 /// Contains abstractions useful for implementing instruction sets
-pub mod instruction_set;
+pub mod instr;
 
 /// Contains a Program Counter object to track program counter position
 pub mod pc;

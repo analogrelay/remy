@@ -83,8 +83,8 @@ mod test {
     use mem::Memory;
 
     #[test]
-    pub fn can_work_inside_the_inner_memory_bounds() {
-        let mem = mem::Mirrored::new(mem::Fixed::new(10), 10);
+    pub fn can_read_and_write_inside_the_inner_memory_bounds() {
+        let mut mem = mem::Mirrored::new(mem::Fixed::new(10), 10);
         let exp: [u8; 2] = [42, 24];
         let mut buf = [0; 2];
 

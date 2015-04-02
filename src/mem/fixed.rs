@@ -15,8 +15,12 @@ impl Fixed {
     ///
     /// * `size` - The size, in bytes, of the memory to create
     pub fn new(size: usize) -> Fixed {
+        let mut data = Vec::with_capacity(size);
+        for _ in 0..size {
+            data.push(0);
+        }
         Fixed {
-            data: Vec::with_capacity(size)
+            data: data
         }
     }
 }
@@ -24,7 +28,7 @@ impl Fixed {
 impl mem::Memory for Fixed {
     /// Retrieves the size of the memory.
     fn size(&self) -> u64 {
-        self.data.capacity() as u64
+        self.data.len() as u64
     }
 
     /// Fills the provided buffer with data from the memory starting at the specified address

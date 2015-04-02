@@ -24,7 +24,7 @@ impl<M> mem::Memory for Mirrored<M> where M: mem::Memory {
     fn size(&self) -> u64 { self.size }
 
     fn get(&self, addr: u64, buf: &mut [u8]) -> mem::Result<()> {
-        if addr >= self.size || (addr + buf.len() as u64) >= self.size {
+        if addr >= self.size || (addr + (buf.len() - 1) as u64) >= self.size {
             return Err(mem::Error::new(mem::ErrorKind::OutOfBounds, "attempted to read beyond the end of the memory"))
         }
         // Read chunks until we've read everything we're expected to read
@@ -50,7 +50,7 @@ impl<M> mem::Memory for Mirrored<M> where M: mem::Memory {
     }
 
     fn set(&mut self, addr: u64, buf: &[u8]) -> mem::Result<()> {
-        if addr >= self.size || (addr + buf.len() as u64) >= self.size {
+        if addr >= self.size || (addr + (buf.len() - 1) as u64) >= self.size {
             return Err(mem::Error::new(mem::ErrorKind::OutOfBounds, "attempted to write beyond the end of the memory"))
         }
 
@@ -91,5 +91,63 @@ mod test {
         mem.set(1, &exp).unwrap();
         mem.get(1, &mut buf).unwrap();
         assert_eq!(exp, buf);
+    }
+
+    #[test]
+    pub fn reads_can_wrap_around() {
+        let mut mem = mem::Mirrored::new(mem::Fixed::new(6), 18);
+        let mut buf = [0; 6];
+
+        mem.set(0, &[1, 2, 3, 4, 5, 6]).unwrap();
+        mem.get(3, &mut buf).unwrap();
+        assert_eq!([4, 5, 6, 1, 2, 3], buf);
+    }
+
+    #[test]
+    pub fn writes_can_wrap_around() {
+        let mut mem = mem::Mirrored::new(mem::Fixed::new(6), 18);
+        let mut buf = [0; 6];
+
+        mem.set(3, &[1, 2, 3, 4, 5, 6]).unwrap();
+        mem.get(0, &mut buf).unwrap();
+        assert_eq!([4, 5, 6, 1, 2, 3], buf);
+    }
+
+    #[test]
+    pub fn reads_can_wrap_around_multiple_times() {
+        let mut mem = mem::Mirrored::new(mem::Fixed::new(2), 6);
+        let mut buf = [0; 6];
+
+        mem.set(0, &[1, 2]).unwrap();
+        mem.get(0, &mut buf).unwrap();
+        assert_eq!([1, 2, 1, 2, 1, 2], buf);
+    }
+
+    #[test]
+    pub fn writes_can_wrap_around_multiple_times() {
+        let mut mem = mem::Mirrored::new(mem::Fixed::new(2), 6);
+        let mut buf = [0; 6];
+
+        mem.set(0, &[1, 2, 3, 4, 5, 6]).unwrap();
+        mem.get(0, &mut buf).unwrap();
+        assert_eq!([5, 6, 5, 6, 5, 6], buf);
+    }
+
+    #[test]
+    pub fn reads_and_writes_that_start_out_of_bounds_produce_errors() {
+        let mut mem = mem::Mirrored::new(mem::Fixed::new(10), 10);
+        let mut buf = [0; 2];
+
+        assert_eq!(mem::ErrorKind::OutOfBounds, mem.set(10, &buf).unwrap_err().kind);
+        assert_eq!(mem::ErrorKind::OutOfBounds, mem.get(10, &mut buf).unwrap_err().kind);
+    }
+
+    #[test]
+    pub fn reads_and_writes_that_end_out_of_bounds_produce_errors() {
+        let mut mem = mem::Mirrored::new(mem::Fixed::new(10), 10);
+        let mut buf = [0; 2];
+
+        assert_eq!(mem::ErrorKind::OutOfBounds, mem.set(9, &buf).unwrap_err().kind);
+        assert_eq!(mem::ErrorKind::OutOfBounds, mem.get(9, &mut buf).unwrap_err().kind);
     }
 }

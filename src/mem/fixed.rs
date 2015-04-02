@@ -1,15 +1,11 @@
-use std::rt::heap;
-use std::ptr;
-use std::intrinsics::offset;
-
 use mem;
+use std::slice::bytes;
 
 /// Represents a flat fixed-size memory buffer
 ///
 /// Upon initialization, a memory buffer will be allocated to hold all bytes in the memory
 pub struct Fixed {
-    data: *mut u8,
-    size: u64
+    data: Vec<u8>
 }
 
 impl Fixed {
@@ -18,43 +14,9 @@ impl Fixed {
     /// # Arguments
     ///
     /// * `size` - The size, in bytes, of the memory to create
-    pub fn new(size: u64) -> Fixed {
-        unsafe {
-            let buf = heap::allocate(size, 0);
-            ptr::write_bytes(buf, 0, size);
-
-            Fixed::from_raw_parts(buf, size)
-        }
-    }
-
-    /// Initializes a fixed memory from the provided buffer
-    ///
-    /// # Arguments
-    ///
-    /// * `buf` - A pointer to the first element in the memory buffer
-    /// * `size` - The size of the buffer in bytes
-    pub unsafe fn from_raw_parts(buf: *mut u8, size: u64) -> Fixed {
+    pub fn new(size: usize) -> Fixed {
         Fixed {
-            data: buf,
-            size: size
-        }
-    }
-}
-
-impl Drop for Fixed {
-    fn drop(&mut self) {
-        unsafe {
-            heap::deallocate(self.data, self.size, 0);
-        }
-    }
-}
-
-impl Clone for Fixed {
-    fn clone(&self) -> Fixed {
-        unsafe {
-            let buf = heap::allocate(self.size, 0);
-            ptr::copy_nonoverlapping(buf, self.data, self.size);
-            Fixed::from_raw_parts(buf, self.size)
+            data: Vec::with_capacity(size)
         }
     }
 }
@@ -62,7 +24,7 @@ impl Clone for Fixed {
 impl mem::Memory for Fixed {
     /// Retrieves the size of the memory.
     fn size(&self) -> u64 {
-        self.size
+        self.data.capacity() as u64
     }
 
     /// Fills the provided buffer with data from the memory starting at the specified address
@@ -72,21 +34,17 @@ impl mem::Memory for Fixed {
     /// * `addr` - The address at which to start reading
     /// * `buf` - The buffer to fill
     fn get(&self, addr: u64, buf: &mut [u8]) -> mem::Result<()> {
-        let end = addr + buf.len() - 1;
-        if end >= self.size {
+        let end = (addr as usize + buf.len() - 1) as usize;
+        if end >= self.data.len() {
             // The read will take us out of bounds, don't start it.
             Err(mem::Error::with_detail(
                 mem::ErrorKind::OutOfBounds,
                 "Read would reach end of memory",
-                format!("requested: 0x{:X} - 0x{:X}, but size is 0x{:x}", addr, end, self.size)))
+                format!("requested: 0x{:X} - 0x{:X}, but size is 0x{:x}", addr, end, self.data.len())))
         }
         else {
-            unsafe {
-                for idx in 0..buf.len() {
-                    let value_ptr = offset(self.data, (addr + idx) as isize) as *const u8;
-                    buf[idx] = ptr::read(value_ptr);
-                }
-            }
+            let start = addr as usize;
+            bytes::copy_memory(buf, &self.data[start .. end + 1]);
             Ok(())
         }
     }
@@ -98,19 +56,15 @@ impl mem::Memory for Fixed {
     /// * `addr` - The address at which to start writing
     /// * `buf` - The buffer to write
     fn set(&mut self, addr: u64, buf: &[u8]) -> mem::Result<()> {
-        let end = addr + buf.len() - 1;
-        if end >= self.size {
+        let end = (addr as usize + buf.len() - 1) as usize;
+        if end >= self.data.len() {
             Err(mem::Error::with_detail(
                 mem::ErrorKind::OutOfBounds,
                 "Write would reach end of memory",
-                format!("requested: 0x{:X} - 0x{:X}, but size is 0x{:x}", addr, end, self.size)))
+                format!("requested: 0x{:X} - 0x{:X}, but size is 0x{:x}", addr, end, self.data.len())))
         } else {
-            unsafe {
-                for idx in 0..buf.len() {
-                   let value_ptr = offset(self.data, (addr + idx) as isize) as *mut u8;
-                   ptr::write(value_ptr, buf[idx])
-                }
-            }
+            let start = addr as usize;
+            bytes::copy_memory(&mut self.data[start .. end + 1], buf);
             Ok(())
         }
     }

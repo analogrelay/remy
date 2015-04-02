@@ -5,10 +5,10 @@ use mem;
 use pc;
 
 /// Indicates the start of the MOS 6502 Stack
-pub const STACK_START   : usize = 0x0100;
+pub const STACK_START   : u64 = 0x0100;
 
 /// Indicates the end of the MOS 6502 Stack
-pub const STACK_END     : usize = 0x01FF;
+pub const STACK_END     : u64 = 0x01FF;
 
 /// Denotes a particular register
 #[derive(Copy,Debug,Eq,PartialEq)]
@@ -148,7 +148,7 @@ impl<M> Mos6502<M> where M: mem::Memory {
     /// # Arguments
     /// * `val` - The value to push on to the stack
     pub fn push(&mut self, val: u8) -> mem::Result<()> {
-        let addr = (self.registers.sp as usize) + STACK_START;
+        let addr = (self.registers.sp as u64) + STACK_START;
         try!(self.mem.set_u8(addr, val));
         self.registers.sp -= 1;
         Ok(())
@@ -161,7 +161,7 @@ impl<M> Mos6502<M> where M: mem::Memory {
     /// ($0100 - $01FF)
     pub fn pull(&mut self) -> mem::Result<u8> {
         self.registers.sp += 1;
-        let addr = (self.registers.sp as usize) + STACK_START;
+        let addr = (self.registers.sp as u64) + STACK_START;
         self.mem.get_u8(addr)
     }
 }

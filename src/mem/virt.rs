@@ -97,19 +97,20 @@ impl<'a> mem::Memory for Virtual<'a> {
     	let mut ptr = 0;
     	while ptr < buf.len() {
     		// Find the memory at the current address
-    		let segment = match self.find(addr + ptr) {
+            let cur_addr = addr + ptr as u64;
+    		let segment = match self.find(cur_addr) {
     			Some(l) => l,
     			None => return Err(mem::Error::with_detail(
     				mem::ErrorKind::OutOfBounds,
     				"Unable to locate a suitable memory segment",
-    				format!("at address: 0x{:X}", addr + ptr)))
+    				format!("at address: 0x{:X}", cur_addr)))
     		};
 
     		// Calculate effective address
-    		let eaddr = (addr + ptr) - segment.base;
+    		let eaddr = cur_addr - segment.base;
 
     		// Figure out how much to read
-    		let to_read = cmp::min(segment.memory.size() - eaddr, buf.len() - ptr);
+    		let to_read = cmp::min((segment.memory.size() - eaddr) as usize, buf.len() - ptr);
 
     		// Read that much
     		let inp = &mut buf[ptr .. (ptr + to_read)];
@@ -128,19 +129,20 @@ impl<'a> mem::Memory for Virtual<'a> {
         let mut ptr = 0;
     	while ptr < buf.len() {
     		// Find the memory at the current address
-    		let segment = match self.find_mut(addr + ptr) {
+            let cur_addr = addr + ptr as u64;
+    		let segment = match self.find_mut(cur_addr) {
     			Some(l) => l,
     			None => return Err(mem::Error::with_detail(
     				mem::ErrorKind::OutOfBounds,
     				"Unable to locate a suitable memory segment",
-    				format!("at address: 0x{:X}", addr + ptr)))
+    				format!("at address: 0x{:X}", cur_addr)))
     		};
 
     		// Calculate effective address
-    		let eaddr = (addr + ptr) - segment.base;
+    		let eaddr = cur_addr - segment.base;
 
     		// Figure out how much to write
-    		let to_write = cmp::min(segment.memory.size() - eaddr, buf.len() - ptr);
+    		let to_write = cmp::min((segment.memory.size() - eaddr) as usize, buf.len() - ptr);
 
     		// Write that much
     		let outp = &buf[ptr .. (ptr + to_write)];

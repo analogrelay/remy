@@ -67,7 +67,7 @@ impl Operand {
         Ok(match self {
             &Operand::Immediate(n)      => n,
             &Operand::Accumulator       => cpu.registers.a,
-            _                           => try!(cpu.mem.get_u8(try!(self.get_addr(cpu)) as usize))
+            _                           => try!(cpu.mem.get_u8(try!(self.get_addr(cpu)) as u64))
         })
     }
 
@@ -79,10 +79,10 @@ impl Operand {
     /// * `val` - The value to set the operand to
     pub fn set_u8<M>(&self, cpu: &mut Mos6502<M>, val: u8) -> Result<(), Error> where M: mem::Memory {
         match self {
-            &Operand::Absolute(addr)     => Ok(try!(cpu.mem.set_u8(addr as usize, val))),
+            &Operand::Absolute(addr)     => Ok(try!(cpu.mem.set_u8(addr as u64, val))),
             &Operand::Indexed(addr, r)   => {
-                let rv = r.get(cpu) as usize;
-                Ok(try!(cpu.mem.set_u8(addr as usize + rv, val)))
+                let rv = r.get(cpu) as u64;
+                Ok(try!(cpu.mem.set_u8(addr as u64 + rv, val)))
             }
             &Operand::Accumulator        => { cpu.registers.a = val; Ok(()) },
             _                            => Err(Error::ReadOnlyOperand)
@@ -97,10 +97,10 @@ impl Operand {
     pub fn get_addr<M>(&self, cpu: &Mos6502<M>) -> Result<u16, Error> where M: mem::Memory {
         Ok(match self {
             &Operand::Absolute(addr)             => addr,
-            &Operand::Indirect(addr)             => try!(cpu.mem.get_le_u16(addr as usize)),
+            &Operand::Indirect(addr)             => try!(cpu.mem.get_le_u16(addr as u64)),
             &Operand::Indexed(addr, r)           => addr + r.get(cpu) as u16,
-            &Operand::PreIndexedIndirect(addr)   => try!(cpu.mem.get_le_u16(addr as usize + cpu.registers.x as usize)),
-            &Operand::PostIndexedIndirect(addr)  => try!(cpu.mem.get_le_u16(addr as usize)) + cpu.registers.y as u16,
+            &Operand::PreIndexedIndirect(addr)   => try!(cpu.mem.get_le_u16(addr as u64 + cpu.registers.x as u64)),
+            &Operand::PostIndexedIndirect(addr)  => try!(cpu.mem.get_le_u16(addr as u64)) + cpu.registers.y as u16,
             _                                   => return Err(Error::NonAddressOperand)
         })
     }

@@ -1,4 +1,13 @@
-#![deny(deprecated,unused_imports,unused_must_use,unused_mut,unused_features)]
+// Deny ALL THE THINGS!
+#![deny(
+    unused_mut,
+    deprecated,
+    unknown_lints,
+    unused_parens,
+    unused_imports,
+    unused_must_use,
+    unused_features,
+    unused_variables)]
 
 // Features used in all builds
 #![feature(core)]

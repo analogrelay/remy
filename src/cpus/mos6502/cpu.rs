@@ -11,7 +11,7 @@ pub const STACK_START   : u64 = 0x0100;
 pub const STACK_END     : u64 = 0x01FF;
 
 /// Denotes a particular register
-#[derive(Copy,Debug,Eq,PartialEq)]
+#[derive(Copy,Clone,Debug,Eq,PartialEq)]
 pub enum RegisterName {
     /// Denotes the accumulator ("A" register)
     A,
@@ -167,6 +167,7 @@ impl<M> Mos6502<M> where M: mem::Memory {
 }
 
 /// Represents the 8-bit registers available on the MOS 6502 processor
+#[derive(Copy,Clone,Debug,Eq,PartialEq)]
 pub struct Registers {
     /// Contains the value of the accumulator (`A` register)
     pub a: u8,
@@ -186,7 +187,7 @@ impl Registers {
 }
 
 /// Represents the processor status flags supported by the MOS 6502 CPU
-#[derive(Copy,Debug,Eq,PartialEq)]
+#[derive(Copy,Clone,Debug,Eq,PartialEq)]
 pub struct Flags {
     pub bits: u8
 }

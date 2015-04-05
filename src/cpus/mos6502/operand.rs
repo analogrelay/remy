@@ -7,7 +7,7 @@ use cpus::mos6502::cpu;
 use cpus::mos6502::Mos6502;
 
 /// Represents an operand that can be provided to an instruction
-#[derive(Copy,Debug,Eq,PartialEq)]
+#[derive(Copy,Clone,Debug,Eq,PartialEq)]
 pub enum Operand {
     /// Indicates an operand provided inline with the instruction
     Immediate(u8),
@@ -51,8 +51,35 @@ pub enum Error {
     NonAddressOperand
 }
 
-impl error::FromError<mem::Error> for Error {
-    fn from_error(err: mem::Error) -> Error {
+impl error::Error for Error {
+    fn description(&self) -> &str {
+        match self {
+            &Error::ErrorAccessingMemory(_) => "error accessing memory",
+            &Error::ReadOnlyOperand         => "attempted to write to a read-only operand",
+            &Error::NonAddressOperand       => "attempted to take the address of an operand with no address"
+        }
+    }
+
+    fn cause(&self) -> Option<&error::Error> {
+        match self {
+            &Error::ErrorAccessingMemory(ref err) => Some(err),
+            _                                     => None
+        }
+    }
+}
+
+impl fmt::Display for Error {
+    fn fmt(&self, fmt: &mut fmt::Formatter) -> fmt::Result {
+        if let &Error::ErrorAccessingMemory(ref err) = self {
+            write!(fmt, "error accessing memory: {}", err)
+        } else {
+            error::Error::description(self).fmt(fmt)
+        }
+    }
+}
+
+impl From<mem::Error> for Error {
+    fn from(err: mem::Error) -> Error {
         Error::ErrorAccessingMemory(err)
     }
 }

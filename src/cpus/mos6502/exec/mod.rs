@@ -1,4 +1,4 @@
-use std::error;
+use std::{error,fmt};
 
 use mem;
 
@@ -29,31 +29,7 @@ mod sbc;
 mod set_flag;
 mod store;
 mod transfer;
-
-mod utils {
-    pub fn bcd_to_int(bcd: isize) -> isize {
-        (((bcd & 0xF0) >> 4) * 10) + (bcd & 0x0F)
-    }
-
-    pub fn int_to_bcd(int: isize) -> isize {
-        let mut v = if int > 99 {
-            int - 100
-        } else {
-            int
-        };
-        if v > 99 || v < -99 {
-            panic!("bcd overflow!");
-        }
-        if v < 0 {
-            // Wrap around
-            v = v + 100;
-        }
-        let h = (v / 10) as u8;
-        let l = (v % 10) as u8;
-        
-        ((h << 4) | l) as isize
-    }
-}
+mod utils;
 
 pub type Result = ::std::result::Result<(), Error>;
 
@@ -70,16 +46,45 @@ pub enum Error {
     HaltInstruction
 }
 
-impl error::FromError<operand::Error> for Error {
-	fn from_error(err: operand::Error) -> Error {
+impl error::Error for Error {
+    fn description(&self) -> &str {
+        match self {
+            &Error::ErrorRetrievingOperand(_) => "error retrieving operand",
+            &Error::ErrorReadingMemory(_)     => "error reading from memory",
+            &Error::IllegalOperand            => "operand is illegal for use with the executed instruction",
+            &Error::HaltInstruction           => "the instruction caused the processor to halt"
+        }
+    }
+
+    fn cause(&self) -> Option<&error::Error> {
+        match self {
+            &Error::ErrorRetrievingOperand(ref err) => Some(err),
+            &Error::ErrorReadingMemory(ref err)     => Some(err),
+            _                                       => None
+        }
+    }
+}
+
+impl From<operand::Error> for Error {
+	fn from(err: operand::Error) -> Error {
 		Error::ErrorRetrievingOperand(err)
 	}
 }
 
-impl error::FromError<mem::Error> for Error {
-	fn from_error(err: mem::Error) -> Error {
+impl From<mem::Error> for Error {
+	fn from(err: mem::Error) -> Error {
 		Error::ErrorReadingMemory(err)
 	}
+}
+
+impl fmt::Display for Error {
+    fn fmt(&self, fmt: &mut fmt::Formatter) -> fmt::Result {
+        match self {
+            &Error::ErrorRetrievingOperand(ref err) => write!(fmt, "error retrieving operand: {}", err),
+            &Error::ErrorReadingMemory(ref err)     => write!(fmt, "error reading from memory: {}", err),
+            _                                       => error::Error::description(self).fmt(fmt)
+        }
+    }
 }
 
 /// Executes the instruction against the provided CPU

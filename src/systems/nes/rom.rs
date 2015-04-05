@@ -1,4 +1,4 @@
-use std::{error,io};
+use std::{error,io,fmt};
 
 use systems::nes;
 
@@ -10,7 +10,7 @@ const CHR_BANK_SIZE: usize = 8192;
 pub type Result<T> = ::std::result::Result<T, Error>;
 
 /// Represents an error that occurs while operating on a ROM file
-#[derive(Debug, PartialEq, Eq)]
+#[derive(Debug)]
 pub enum Error {
     /// Indicates that the head of the ROM file is invalid
     InvalidHeader,
@@ -25,14 +25,43 @@ pub enum Error {
     IoError(io::Error)
 }
 
-impl error::FromError<io::Error> for Error {
-    fn from_error(err: io::Error) -> Error {
+impl error::Error for Error {
+    fn description(&self) -> &str {
+        match self {
+            &Error::EndOfFileDuringBank => "unexpected end of file while reading ROM bank",
+            &Error::IoError(_)    => "i/o error",
+            &Error::InvalidSignature    => "ROM file signature is invalid",
+            &Error::InvalidHeader       => "ROM file header is invalid"
+        }
+    }
+
+    fn cause(&self) -> Option<&error::Error> {
+        match self {
+            &Error::IoError(ref err) => Some(err),
+            _                        => None
+        }
+    }
+}
+
+impl fmt::Display for Error {
+    fn fmt(&self, fmt: &mut fmt::Formatter) -> fmt::Result {
+        if let &Error::IoError(ref err) = self {
+            write!(fmt, "i/o error: {}", err)
+        }
+        else {
+            error::Error::description(self).fmt(fmt)
+        }
+    }
+}
+
+impl From<io::Error> for Error {
+    fn from(err: io::Error) -> Error {
         Error::IoError(err)
     }
 }
 
 /// Describes the television system expected by the ROM
-#[derive(Copy, Debug, PartialEq, Eq)]
+#[derive(Copy,Clone,Debug,PartialEq,Eq)]
 pub enum TvSystem {
     /// Indicates that the television system is not known 
     Unknown,
@@ -48,7 +77,7 @@ pub enum TvSystem {
 }
 
 /// Describes the version of a ROM
-#[derive(Copy, Debug, PartialEq, Eq)]
+#[derive(Copy,Clone,Debug,PartialEq,Eq)]
 pub enum Version {
     /// Indicates that the ROM is in INES format
     INES,

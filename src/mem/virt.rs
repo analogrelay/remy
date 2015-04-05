@@ -1,6 +1,6 @@
 use mem;
 
-use std::cmp;
+use std::{cmp,error,fmt};
 
 struct Segment<'a> {
     base : u64,
@@ -21,10 +21,25 @@ impl<'a> Segment<'a> {
 }
 
 /// Represents an error that can occur during a virtual memory management operation
-#[derive(Copy,Debug,Eq,PartialEq)]
+#[derive(Copy,Clone,Debug,Eq,PartialEq)]
 pub enum Error {
     /// Indicates that a memory overlaps with another memory in the virtual memory
 	MemoryOverlap
+}
+
+impl error::Error for Error {
+    fn description(&self) -> &str {
+        match self {
+            &Error::MemoryOverlap => "attempted to attach a memory in a location that would overlap with another memory"
+        }
+    }
+}
+
+impl fmt::Display for Error {
+    fn fmt(&self, fmt: &mut fmt::Formatter) -> fmt::Result {
+        use std::error::Error;
+        self.description().fmt(fmt)
+    }
 }
 
 /// Provides an implementation of `mem::Memory` over a list of memories by performing

@@ -4,7 +4,7 @@ use cpus::mos6502::{Operand,Instruction,RegisterName};
 
 pub type Result<T> = ::std::result::Result<T, Error>;
 
-#[derive(Eq,PartialEq)]
+#[derive(Debug)]
 pub enum Error {
     UnknownOpcode(u8),
     EndOfFile,
@@ -17,18 +17,35 @@ impl Error {
     }
 }
 
-impl fmt::Debug for Error {
-    fn fmt(&self, fmt: &mut fmt::Formatter) -> fmt::Result {
+impl error::Error for Error {
+    fn description(&self) -> &str {
         match self {
-            &Error::UnknownOpcode(opcode) => write!(fmt, "UnknownOpcode(0x{:02X})", opcode),
-            &Error::EndOfFile => fmt.write_str("EndOfFile"),
-            &Error::IoError(ref err) => fmt.debug_tuple("IoError").field(err).finish()
+            &Error::UnknownOpcode(_) => "unknown opcode",
+            &Error::EndOfFile        => "end of file reached",
+            &Error::IoError(_)       => "i/o error"
+        }
+    }
+
+    fn cause(&self) -> Option<&error::Error> {
+        match self {
+            &Error::IoError(ref err) => Some(err),
+            _                        => None
         }
     }
 }
 
-impl error::FromError<io::Error> for Error {
-    fn from_error(err: io::Error) -> Error {
+impl fmt::Display for Error {
+    fn fmt(&self, fmt: &mut fmt::Formatter) -> fmt::Result {
+        match self {
+            &Error::UnknownOpcode(opcode) => write!(fmt, "unknown opcode: 0x{:02X}", opcode),
+            &Error::EndOfFile             => write!(fmt, "{}", "end of file reached"),
+            &Error::IoError(ref err)      => write!(fmt, "i/o error: {}", err)
+        }
+    }
+}
+
+impl From<io::Error> for Error {
+    fn from(err: io::Error) -> Error {
         Error::from_io(err)
     }
 }

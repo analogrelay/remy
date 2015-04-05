@@ -1,3 +1,5 @@
+use std::{error,fmt};
+
 pub type Result<T> = ::std::result::Result<T, Error>;
 
 /// Represents an error that occurs when accessing a `Memory`
@@ -38,6 +40,19 @@ impl Error {
             desc: desc,
             detail: Some(detail)
         }
+    }
+}
+
+impl error::Error for Error {
+    fn description(&self) -> &str {
+        self.desc
+    }
+}
+
+impl fmt::Display for Error {
+    fn fmt(&self, fmt: &mut fmt::Formatter) -> fmt::Result {
+        use std::error::Error;
+        self.description().fmt(fmt)
     }
 }
 

@@ -1,5 +1,5 @@
 /// Represents a program counter value
-#[derive(Copy,Debug,Eq,PartialEq)]
+#[derive(Copy,Clone,Debug,Eq,PartialEq)]
 pub struct ProgramCounter {
 	pc: usize
 }

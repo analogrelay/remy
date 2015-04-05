@@ -6,7 +6,7 @@ use cpus::mos6502::{Mos6502,Operand};
 use std::fmt;
 
 /// Represents an instruction that can be executed on a `Mos6502` processor
-#[derive(Copy,Debug,Eq,PartialEq)]
+#[derive(Copy,Clone,Debug,Eq,PartialEq)]
 pub enum Instruction {
 	ADC(Operand),
     AHX(Operand),

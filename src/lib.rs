@@ -13,9 +13,6 @@
 #![feature(core)]
 #![feature(debug_builders)]
 
-// Features used by tests
-#![cfg_attr(test, feature(convert))]
-
 /// Contains code to emulate supported CPUs
 pub mod cpus;
 

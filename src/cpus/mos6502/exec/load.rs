@@ -33,7 +33,7 @@ mod test {
     #[test]
     fn load_sets_sign_flag_if_new_value_is_negative() {
         let mut cpu = Mos6502::without_memory(); 
-        load::exec(&mut cpu, cpu::RegisterName::A, Operand::Immediate(-10)).unwrap();
+        load::exec(&mut cpu, cpu::RegisterName::A, Operand::Immediate(-10i8 as u8)).unwrap();
         assert!(cpu.flags.intersects(Flags::SIGN()));
     }
 

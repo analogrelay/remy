@@ -35,7 +35,7 @@ mod test {
     fn inc_clears_sign_flag_if_new_value_is_not_negative() {
         let mut cpu = init_cpu();
         cpu.flags.set(Flags::SIGN());
-        cpu.mem.set_u8(0, -1).unwrap();
+        cpu.mem.set_u8(0, -1i8 as u8).unwrap();
         inc::mem(&mut cpu, Operand::Absolute(0)).unwrap();
         assert!(!cpu.flags.intersects(Flags::SIGN()));
     }
@@ -43,7 +43,7 @@ mod test {
     #[test]
     fn inc_sets_zero_flag_if_new_value_is_zero() {
         let mut cpu = init_cpu();
-        cpu.mem.set_u8(0, -1).unwrap();
+        cpu.mem.set_u8(0, -1i8 as u8).unwrap();
         inc::mem(&mut cpu, Operand::Absolute(0)).unwrap();
         assert!(cpu.flags.intersects(Flags::ZERO()));
     }

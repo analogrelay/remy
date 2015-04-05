@@ -61,9 +61,9 @@ mod test {
     pub fn adc_does_regular_addition_when_bcd_disabled_even_when_bcd_flag_set() {
 		let mut cpu = Mos6502::without_bcd(mem::Empty);
         cpu.flags.set(Flags::BCD());
-        cpu.registers.a = 0xAB;
-        adc::exec(&mut cpu, Operand::Immediate(0xCD)).unwrap();
-        assert_eq!(0xAB + 0xCD, cpu.registers.a);
+        cpu.registers.a = 0xA0;
+        adc::exec(&mut cpu, Operand::Immediate(0x0A)).unwrap();
+        assert_eq!(0xAA, cpu.registers.a);
     }
 
     #[test]

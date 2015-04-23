@@ -1,4 +1,5 @@
 use std::{error,fmt};
+use byteorder::ByteOrder;
 
 pub type Result<T> = ::std::result::Result<T, Error>;
 
@@ -98,7 +99,9 @@ pub trait Memory {
     /// * `addr` - The address at which to begin writing the data
     /// * `buf` - The data to copy in to the memory
     fn set(&mut self, addr: u64, buf: &[u8]) -> Result<()>;
+}
 
+pub trait MemoryExt: Memory {
     /// Gets a single byte from the specified address
     ///
     /// # Arguments
@@ -108,6 +111,48 @@ pub trait Memory {
         let mut buf = [0];
         try!(self.get(addr, &mut buf));
         Ok(buf[0])
+    }
+
+    /// Reads a u16 value in the specified byte order
+    fn get_u16<B>(&self, addr: u64) -> Result<u16> where B: ByteOrder {
+        let mut raw = [0u8; 2];
+        try!(self.get(addr, &mut raw));
+        Ok(ByteOrder::read_u16(&raw))
+    }
+
+    /// Reads an i16 value in the specified byte order
+    fn get_i16<B>(&self, addr: u64) -> Result<i16> where B: ByteOrder {
+        let mut raw = [0u8; 2];
+        try!(self.get(addr, &mut raw));
+        Ok(ByteOrder::read_i16(&raw))
+    }
+
+    /// Reads a u32 value in the specified byte order
+    fn get_u32<B>(&self, addr: u64) -> Result<u32> where B: ByteOrder {
+        let mut raw = [0u8; 4];
+        try!(self.get(addr, &mut raw));
+        Ok(ByteOrder::read_u32(&raw))
+    }
+
+    /// Reads an i32 value in the specified byte order
+    fn get_i32<B>(&self, addr: u64) -> Result<i32> where B: ByteOrder {
+        let mut raw = [0u8; 4];
+        try!(self.get(addr, &mut raw));
+        Ok(ByteOrder::read_i32(&raw))
+    }
+
+    /// Reads a u64 value in the specified byte order
+    fn get_u64<B>(&self, addr: u64) -> Result<u64> where B: ByteOrder {
+        let mut raw = [0u8; 8];
+        try!(self.get(addr, &mut raw));
+        Ok(ByteOrder::read_u64(&raw))
+    }
+
+    /// Reads an i64 value in the specified byte order
+    fn get_i64<B>(&self, addr: u64) -> Result<i64> where B: ByteOrder {
+        let mut raw = [0u8; 8];
+        try!(self.get(addr, &mut raw));
+        Ok(ByteOrder::read_i64(&raw))
     }
 
     /// Writes a single byte to the specified address
@@ -121,354 +166,16 @@ pub trait Memory {
         Ok(())
     }
 
-    /// Gets `n` little-endian unsigned integer bytes from the specified address
-    ///
-    /// # Arguments
-    ///
-    /// * `addr` - The address to read from
-    /// * `nbytes` - The number of bytes to read (must be between 1 and 8, inclusive)
-    fn get_le_uint_n(&self, addr: u64, nbytes: u32) -> Result<u64> {
-        // Borrowed from http://doc.rust-lang.org/src/std/old_io/mod.rs.html#691-701
-        assert!(nbytes > 0 && nbytes <= 8);
-
-        let mut val = 0u64;
-        let mut pos = 0;
-        let mut i = 0;
-        while i < (nbytes as u64) {
-            val += (try!(self.get_u8(addr + i)) as u64) << pos;
-            pos += 8;
-            i += 1;
-        }
-        Ok(val)
-    }
-
-    /// Gets `n` little-endian signed integer bytes from the specified address
-    ///
-    /// # Arguments
-    ///
-    /// * `addr` - The address to read from
-    /// * `nbytes` - The number of bytes to read (must be between 1 and 8, inclusive)
-    fn get_le_int_n(&self, addr: u64, nbytes: u32) -> Result<i64> {
-        self.get_le_uint_n(addr, nbytes).map(|i| extend_sign(i, nbytes))
-    }
-
-    /// Gets `n` big-endian unsigned integer bytes from the specified address
-    ///
-    /// # Arguments
-    ///
-    /// * `addr` - The address to read from
-    /// * `nbytes` - The number of bytes to read (must be between 1 and 8, inclusive)
-    fn get_be_uint_n(&self, addr: u64, nbytes: u32) -> Result<u64> {
-        // Borrowed from http://doc.rust-lang.org/src/std/old_io/mod.rs.html#691-701
-
-        assert!(nbytes > 0 && nbytes <= 8);
-
-        let mut val = 0u64;
-        let mut i = 0;
-        while i < (nbytes as u64) {
-            val += (try!(self.get_u8(addr + i)) as u64) << (nbytes as u64 - i - 1) * 8;
-            i += 1;
-        }
-        Ok(val)
-    }
-
-    /// Gets `n` big-endian signed integer bytes from the specified address
-    ///
-    /// # Arguments
-    ///
-    /// * `addr` - The address to read from
-    /// * `nbytes` - The number of bytes to read (must be between 1 and 8, inclusive)
-    fn get_be_int_n(&self, addr: u64, nbytes: u32) -> Result<i64> {
-        self.get_be_uint_n(addr, nbytes).map(|i| extend_sign(i, nbytes))
-    }
-
-    /// Gets a big-endian 16-bit unsigned integer from the specified address
-    ///
-    /// # Arguments
-    ///
-    /// * `addr` - The address to read from
-    fn get_be_u16(&self, addr: u64) -> Result<u16> {
-        self.get_be_uint_n(addr, 2).map(|i| i as u16)
-    }
-
-    /// Gets a big-endian 32-bit unsigned integer from the specified address
-    ///
-    /// # Arguments
-    ///
-    /// * `addr` - The address to read from
-    fn get_be_u32(&self, addr: u64) -> Result<u32> {
-        self.get_be_uint_n(addr, 4).map(|i| i as u32)
-    }
-
-    /// Gets a big-endian 64-bit unsigned integer from the specified address
-    ///
-    /// # Arguments
-    ///
-    /// * `addr` - The address to read from
-    fn get_be_u64(&self, addr: u64) -> Result<u64> {
-        self.get_be_uint_n(addr, 8)
-    }
-
-    /// Gets a little-endian 16-bit unsigned integer from the specified address
-    ///
-    /// # Arguments
-    ///
-    /// * `addr` - The address to read from
-    fn get_le_u16(&self, addr: u64) -> Result<u16> {
-        self.get_le_uint_n(addr, 2).map(|i| i as u16)
-    }
-
-    /// Gets a little-endian 32-bit unsigned integer from the specified address
-    ///
-    /// # Arguments
-    ///
-    /// * `addr` - The address to read from
-    fn get_le_u32(&self, addr: u64) -> Result<u32> {
-        self.get_le_uint_n(addr, 4).map(|i| i as u32)
-    }
-
-    /// Gets a little-endian 64-bit unsigned integer from the specified address
-    ///
-    /// # Arguments
-    ///
-    /// * `addr` - The address to read from
-    fn get_le_u64(&self, addr: u64) -> Result<u64> {
-        self.get_le_uint_n(addr, 8)
-    }
-
-    /// Gets a big-endian 16-bit signed integer from the specified address
-    ///
-    /// # Arguments
-    ///
-    /// * `addr` - The address to read from
-    fn get_be_i16(&self, addr: u64) -> Result<i16> {
-        self.get_be_int_n(addr, 2).map(|i| i as i16)
-    }
-
-    /// Gets a big-endian 32-bit signed integer from the specified address
-    ///
-    /// # Arguments
-    ///
-    /// * `addr` - The address to read from
-    fn get_be_i32(&self, addr: u64) -> Result<i32> {
-        self.get_be_int_n(addr, 4).map(|i| i as i32)
-    }
-
-    /// Gets a big-endian 64-bit signed integer from the specified address
-    ///
-    /// # Arguments
-    ///
-    /// * `addr` - The address to read from
-    fn get_be_i64(&self, addr: u64) -> Result<i64> {
-        self.get_be_int_n(addr, 8)
-    }
-
-    /// Gets a little-endian 16-bit signed integer from the specified address
-    ///
-    /// # Arguments
-    ///
-    /// * `addr` - The address to read from
-    fn get_le_i16(&self, addr: u64) -> Result<i16> {
-        self.get_le_int_n(addr, 2).map(|i| i as i16)
-    }
-
-    /// Gets a little-endian 32-bit signed integer from the specified address
-    ///
-    /// # Arguments
-    ///
-    /// * `addr` - The address to read from
-    fn get_le_i32(&self, addr: u64) -> Result<i32> {
-        self.get_le_int_n(addr, 4).map(|i| i as i32)
-    }
-
-    /// Gets a little-endian 64-bit signed integer from the specified address
-    ///
-    /// # Arguments
-    ///
-    /// * `addr` - The address to read from
-    fn get_le_i64(&self, addr: u64) -> Result<i64> {
-        self.get_le_int_n(addr, 8)
-    }
-
-    /// Sets a big-endian 16-bit unsigned integer to the specified address
-    ///
-    /// # Arguments
-    /// * `addr` - The address to write to
-    /// * `val` - The value to write
-    #[inline]
-    fn set_be_u16(&mut self, addr: u64, val: u16) -> Result<()> {
-        u64_to_be_bytes(val as u64, 2, |v| self.set(addr, v))
-    }
-
-    /// Sets a big-endian 32-bit unsigned integer to the specified address
-    ///
-    /// # Arguments
-    /// * `addr` - The address to write to
-    /// * `val` - The value to write
-    #[inline]
-    fn set_be_u32(&mut self, addr: u64, val: u32) -> Result<()> {
-        u64_to_be_bytes(val as u64, 4, |v| self.set(addr, v))
-    }
-
-    /// Sets a big-endian 64-bit unsigned integer to the specified address
-    ///
-    /// # Arguments
-    /// * `addr` - The address to write to
-    /// * `val` - The value to write
-    #[inline]
-    fn set_be_u64(&mut self, addr: u64, val: u64) -> Result<()> {
-        u64_to_be_bytes(val, 8, |v| self.set(addr, v))
-    }
-
-    /// Sets a big-endian 16-bit signed integer to the specified address
-    ///
-    /// # Arguments
-    /// * `addr` - The address to write to
-    /// * `val` - The value to write
-    #[inline]
-    fn set_be_i16(&mut self, addr: u64, val: i16) -> Result<()> {
-        u64_to_be_bytes(val as u64, 2, |v| self.set(addr, v))
-    }
-
-    /// Sets a big-endian 32-bit signed integer to the specified address
-    ///
-    /// # Arguments
-    /// * `addr` - The address to write to
-    /// * `val` - The value to write
-    #[inline]
-    fn set_be_i32(&mut self, addr: u64, val: i32) -> Result<()> {
-        u64_to_be_bytes(val as u64, 4, |v| self.set(addr, v))
-    }
-
-    /// Sets a big-endian 64-bit signed integer to the specified address
-    ///
-    /// # Arguments
-    /// * `addr` - The address to write to
-    /// * `val` - The value to write
-    #[inline]
-    fn set_be_i64(&mut self, addr: u64, val: i64) -> Result<()> {
-        u64_to_be_bytes(val as u64, 8, |v| self.set(addr, v))
-    }
- 
-    /// Sets a little-endian 16-bit unsigned integer to the specified address
-    ///
-    /// # Arguments
-    /// * `addr` - The address to write to
-    /// * `val` - The value to write
-    #[inline]
-    fn set_le_u16(&mut self, addr: u64, val: u16) -> Result<()> {
-        u64_to_le_bytes(val as u64, 2, |v| self.set(addr, v))
-    }
-
-    /// Sets a little-endian 32-bit unsigned integer to the specified address
-    ///
-    /// # Arguments
-    /// * `addr` - The address to write to
-    /// * `val` - The value to write
-    #[inline]
-    fn set_le_u32(&mut self, addr: u64, val: u32) -> Result<()> {
-        u64_to_le_bytes(val as u64, 4, |v| self.set(addr, v))
-    }
-
-    /// Sets a little-endian 64-bit unsigned integer to the specified address
-    ///
-    /// # Arguments
-    /// * `addr` - The address to write to
-    /// * `val` - The value to write
-    #[inline]
-    fn set_le_u64(&mut self, addr: u64, val: u64) -> Result<()> {
-        u64_to_le_bytes(val, 8, |v| self.set(addr, v))
-    }
-
-    /// Sets a little-endian 16-bit signed integer to the specified address
-    ///
-    /// # Arguments
-    /// * `addr` - The address to write to
-    /// * `val` - The value to write
-    #[inline]
-    fn set_le_i16(&mut self, addr: u64, val: i16) -> Result<()> {
-        u64_to_le_bytes(val as u64, 2, |v| self.set(addr, v))
-    }
-
-    /// Sets a little-endian 32-bit signed integer to the specified address
-    ///
-    /// # Arguments
-    /// * `addr` - The address to write to
-    /// * `val` - The value to write
-    #[inline]
-    fn set_le_i32(&mut self, addr: u64, val: i32) -> Result<()> {
-        u64_to_le_bytes(val as u64, 4, |v| self.set(addr, v))
-    }
-
-    /// Sets a little-endian 64-bit signed integer to the specified address
-    ///
-    /// # Arguments
-    /// * `addr` - The address to write to
-    /// * `val` - The value to write
-    #[inline]
-    fn set_le_i64(&mut self, addr: u64, val: i64) -> Result<()> {
-        u64_to_le_bytes(val as u64, 8, |v| self.set(addr, v))
+    /// Writes a u16 value in the specified byte order
+    fn set_u16<B>(&self, addr: u64, val: u16) -> Result<()> {
+        let mut buf = [0u8; 2];
+        ByteOrder::write_u16(&mut buf, val);
+        try!(self.set(addr, &buf));
+        Ok(())
     }
 }
 
-// From http://doc.rust-lang.org/src/std/old_io/mod.rs.html#976-979
-fn extend_sign(val: u64, nbytes: u32) -> i64 {
-    let shift = (8 - nbytes) * 8;
-    (val << shift) as i64 >> shift
-}
-
-// Borrowed straight from the rust old_io code :)
-fn u64_to_be_bytes<T, F>(n: u64, size: u32, f: F) -> T where
-    F: FnOnce(&[u8]) -> T,
-{
-    use std::mem::transmute;
-
-    // LLVM fails to properly optimize this when using shifts instead of the to_be* intrinsics
-    assert!(size <= 8);
-    match size {
-      1 => f(&[n as u8]),
-      2 => f(unsafe { & transmute::<_, [u8; 2]>((n as u16).to_be()) }),
-      4 => f(unsafe { & transmute::<_, [u8; 4]>((n as u32).to_be()) }),
-      8 => f(unsafe { & transmute::<_, [u8; 8]>(n.to_be()) }),
-      _ => {
-        let mut bytes = vec!();
-        let mut i = size;
-        while i > 0 {
-            let shift = (i - 1) * 8;
-            bytes.push((n >> shift) as u8);
-            i -= 1;
-        }
-        f(&bytes)
-      }
-    }
-}
-
-fn u64_to_le_bytes<T, F>(n: u64, size: u32, f: F) -> T where
-    F: FnOnce(&[u8]) -> T,
-{
-    use std::mem::transmute;
-
-    // LLVM fails to properly optimize this when using shifts instead of the to_le* intrinsics
-    assert!(size <= 8);
-    match size {
-      1 => f(&[n as u8]),
-      2 => f(unsafe { & transmute::<_, [u8; 2]>((n as u16).to_le()) }),
-      4 => f(unsafe { & transmute::<_, [u8; 4]>((n as u32).to_le()) }),
-      8 => f(unsafe { & transmute::<_, [u8; 8]>(n.to_le()) }),
-      _ => {
-
-        let mut bytes = vec!();
-        let mut i = size;
-        let mut n = n;
-        while i > 0 {
-            bytes.push((n & 255_u64) as u8);
-            n >>= 8;
-            i -= 1;
-        }
-        f(&bytes)
-      }
-    }
-}
+impl<M: Memory + ?Sized> MemoryExt for M {}
 
 #[cfg(test)]
 mod test {

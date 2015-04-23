@@ -13,6 +13,9 @@
 #![feature(core)]
 #![feature(debug_builders)]
 
+// Import crates
+extern crate byteorder;
+
 /// Contains code to emulate supported CPUs
 pub mod cpus;
 

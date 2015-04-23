@@ -11,7 +11,7 @@ pub fn exec<M>(cpu: &mut Mos6502<M>) -> Result<(), exec::Error> where M: Memory 
     let new_flags = cpu.flags | Flags::BREAK();
     try!(cpu.push(new_flags.bits));
 
-    cpu.pc.set(try!(cpu.mem.get_le_u16(0xFFFE)) as usize);
+    cpu.pc.set(try!(cpu.mem.get_le_u16(0xFFFE)) as u64);
     Ok(())
 }
 

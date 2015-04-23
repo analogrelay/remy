@@ -3,6 +3,7 @@ pub use mem::virt::Virtual;
 pub use mem::empty::Empty;
 pub use mem::memory::{Result,Error,ErrorKind,Memory};
 pub use mem::mirrored::Mirrored;
+pub use mem::io::{Cursor,cursor};
 
 /// Declares the core `Memory` trait shared by all memory abstractions
 pub mod memory;
@@ -16,6 +17,8 @@ pub mod virt;
 /// Provides types for working with empty memory banks
 pub mod empty;
 
+/// Provides I/O related helpers
+pub mod io;
 
 /// Provides types for working with memory banks that mirror internal contents across a larger
 /// space

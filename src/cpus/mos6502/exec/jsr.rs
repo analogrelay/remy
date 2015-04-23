@@ -6,7 +6,7 @@ pub fn exec<M>(cpu: &mut Mos6502<M>, addr: u16) -> Result<(), exec::Error> where
     let pc = cpu.pc.get() - 1;
     try!(cpu.push(((pc & 0xFF00) >> 8) as u8));
     try!(cpu.push((pc & 0x00FF) as u8));
-    cpu.pc.set(addr as usize);
+    cpu.pc.set(addr as u64);
     Ok(())
 }
 

@@ -1,6 +1,8 @@
+use std::{error,io};
+
 pub trait Instruction {
-    type CpuState;
-    type ExecutionError;
+    type DecodeError: error::Error;
+
     fn mnemonic(&self) -> &'static str;
-    fn exec(&self, cpu: &mut Self::CpuState) -> Result<(), Self::ExecutionError>;
+    fn decode<R>(reader: R) -> Result<Self, Self::DecodeError> where R: io::Read;
 }

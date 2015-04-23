@@ -5,7 +5,7 @@ use mem;
 pub struct Empty;
 
 impl mem::Memory for Empty {
-    fn size(&self) -> u64 { 0 }
+    fn len(&self) -> u64 { 0 }
 
     #[allow(unused_variables)]
     fn get(&self, addr: u64, buf: &mut [u8]) -> mem::Result<()> {

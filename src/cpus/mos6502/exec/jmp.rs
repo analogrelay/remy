@@ -5,7 +5,7 @@ use cpus::mos6502::{Mos6502,Operand};
 pub fn exec<M>(cpu: &mut Mos6502<M>, op: Operand) -> Result<(), exec::Error> where M: Memory {
     let addr = try!(op.get_addr(cpu));
 
-    cpu.pc.set(addr as usize);
+    cpu.pc.set(addr as u64);
     Ok(())
 }
 

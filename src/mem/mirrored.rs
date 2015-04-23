@@ -21,7 +21,7 @@ impl<M> Mirrored<M> where M: mem::Memory {
 }
 
 impl<M> mem::Memory for Mirrored<M> where M: mem::Memory {
-    fn size(&self) -> u64 { self.size }
+    fn len(&self) -> u64 { self.size }
 
     fn get(&self, addr: u64, buf: &mut [u8]) -> mem::Result<()> {
         if addr >= self.size || (addr + (buf.len() - 1) as u64) >= self.size {
@@ -31,10 +31,10 @@ impl<M> mem::Memory for Mirrored<M> where M: mem::Memory {
         let mut ptr = 0;
         while ptr < buf.len() {
             // Determine the current effective address
-            let eaddr = (addr + ptr as u64) % self.mem.size();
+            let eaddr = (addr + ptr as u64) % self.mem.len();
 
             // Determine how much we can read in a single burst
-            let to_read = cmp::min((self.mem.size() - eaddr) as usize, buf.len() - ptr);
+            let to_read = cmp::min((self.mem.len() - eaddr) as usize, buf.len() - ptr);
 
             // Read that much
             let inp = &mut buf[ptr .. (ptr + to_read)];
@@ -58,10 +58,10 @@ impl<M> mem::Memory for Mirrored<M> where M: mem::Memory {
         let mut ptr = 0;
         while ptr < buf.len() {
             // Determine the current effective address
-            let eaddr = (addr + ptr as u64) % self.mem.size();
+            let eaddr = (addr + ptr as u64) % self.mem.len();
 
             // Determine how much we can write in a single burst
-            let to_write = cmp::min((self.mem.size() - eaddr) as usize, buf.len() - ptr);
+            let to_write = cmp::min((self.mem.len() - eaddr) as usize, buf.len() - ptr);
 
             // Write that much
             let outp = &buf[ptr .. (ptr + to_write)];

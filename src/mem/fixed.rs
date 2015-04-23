@@ -1,4 +1,5 @@
 use mem;
+use std::convert;
 use std::slice::bytes;
 
 /// Represents a flat fixed-size memory buffer
@@ -23,11 +24,22 @@ impl Fixed {
             data: data
         }
     }
+
+    /// Initializes a new fixed memory with the specified contents
+    ///
+    /// # Arguments
+    ///
+    /// * `contents` - The contents to initialize the memory with
+    pub fn from_contents<T>(contents: T) -> Fixed where T: convert::Into<Vec<u8>> {
+        Fixed {
+            data: contents.into()
+        }
+    }
 }
 
 impl mem::Memory for Fixed {
     /// Retrieves the size of the memory.
-    fn size(&self) -> u64 {
+    fn len(&self) -> u64 {
         self.data.len() as u64
     }
 

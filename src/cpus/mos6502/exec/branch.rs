@@ -3,14 +3,14 @@ use cpus::mos6502::{exec,Mos6502,Flags};
 
 pub fn if_clear<M>(cpu: &mut Mos6502<M>, offset: i8, flags: Flags) -> Result<(), exec::Error> where M: Memory {
     if !cpu.flags.intersects(flags) {
-        cpu.pc.advance(offset as isize)
+        cpu.pc.advance(offset as i64);
     }
     Ok(())
 }
 
 pub fn if_set<M>(cpu: &mut Mos6502<M>, offset: i8, flags: Flags) -> Result<(), exec::Error> where M: Memory {
     if cpu.flags.intersects(flags) {
-        cpu.pc.advance(offset as isize)
+        cpu.pc.advance(offset as i64);
     }
     Ok(())
 }

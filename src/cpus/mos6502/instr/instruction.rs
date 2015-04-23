@@ -1,29 +1,31 @@
 use mem;
 
+use instr;
+
 use cpus::mos6502::exec;
 use cpus::mos6502::{Mos6502,Operand};
 
-use std::fmt;
+use std::{io,fmt};
 
 /// Represents an instruction that can be executed on a `Mos6502` processor
 #[derive(Copy,Clone,Debug,Eq,PartialEq)]
 pub enum Instruction {
-	ADC(Operand),
+    ADC(Operand),
     AHX(Operand),
     ALR(Operand),
-	AND(Operand),
+    AND(Operand),
     ANC(Operand),
-	ASL(Operand),
+    ASL(Operand),
     ARR(Operand),
     AXS(Operand),
     BCC(i8),
     BCS(i8),
     BEQ(i8),
-	BIT(Operand),
+    BIT(Operand),
     BMI(i8),
     BNE(i8),
     BPL(i8),
-	BRK,
+    BRK,
     BVC(i8),
     BVS(i8),
     CLC,
@@ -34,38 +36,38 @@ pub enum Instruction {
     CPX(Operand),
     CPY(Operand),
     DCP(Operand),
-	DEC(Operand),
+    DEC(Operand),
     DEX,
     DEY,
-	EOR(Operand),
+    EOR(Operand),
     HLT,
     IGN(Operand),
-	INC(Operand),
+    INC(Operand),
     INX,
     INY,
     ISC(Operand),
-	JMP(Operand),
-	JSR(u16),
+    JMP(Operand),
+    JSR(u16),
     LAS(Operand),
     LAX(Operand),
     LDA(Operand),
     LDX(Operand),
     LDY(Operand),
-	LSR(Operand),
-	NOP,
-	ORA(Operand),
+    LSR(Operand),
+    NOP,
+    ORA(Operand),
     PHA,
     PHP,
     PLA,
     PLP,
     RLA(Operand),
-	ROL(Operand),
-	ROR(Operand),
+    ROL(Operand),
+    ROR(Operand),
     RRA(Operand),
-	RTI,
-	RTS,
+    RTI,
+    RTS,
     SAX(Operand),
-	SBC(Operand),
+    SBC(Operand),
     SEC,
     SED,
     SEI,
@@ -93,28 +95,31 @@ impl Instruction {
     /// # Arguments
     ///
     /// * `cpu` - The process on which to execute the instruction
-	pub fn exec<M>(self, cpu: &mut Mos6502<M>) -> Result<(), exec::Error> where M: mem::Memory {
+    pub fn exec<M>(self, cpu: &mut Mos6502<M>) -> Result<(), exec::Error> where M: mem::Memory {
         exec::dispatch(self, cpu)
     }
+}
 
-    pub fn mnemonic(&self) -> &'static str {
-		match self {
-			&Instruction::ADC(_) => "ADC",
+impl instr::Instruction for Instruction {
+    type DecodeError = super::decoder::Error;
+    fn mnemonic(&self) -> &'static str {
+        match self {
+            &Instruction::ADC(_) => "ADC",
             &Instruction::AHX(_) => "AHX",
             &Instruction::ALR(_) => "ALR",
             &Instruction::ANC(_) => "ANC",
-			&Instruction::AND(_) => "AND",
+            &Instruction::AND(_) => "AND",
             &Instruction::ARR(_) => "ARR",
-			&Instruction::ASL(_) => "ASL",
+            &Instruction::ASL(_) => "ASL",
             &Instruction::AXS(_) => "AXS",
             &Instruction::BCC(_) => "BCC",
             &Instruction::BCS(_) => "BCS",
             &Instruction::BEQ(_) => "BEQ",
-			&Instruction::BIT(_) => "BIT",
+            &Instruction::BIT(_) => "BIT",
             &Instruction::BMI(_) => "BMI",
             &Instruction::BNE(_) => "BNE",
             &Instruction::BPL(_) => "BPL",
-			&Instruction::BRK => "BRK",
+            &Instruction::BRK => "BRK",
             &Instruction::BVC(_) => "BVC",
             &Instruction::BVS(_) => "BVS",
             &Instruction::CLC => "CLC",
@@ -176,15 +181,22 @@ impl Instruction {
             &Instruction::TXS => "TXS",
             &Instruction::TYA => "TYA",
             &Instruction::XAA(_) => "XAA"
-		}
+        }
+    }
+
+    fn decode<R>(reader: R) -> super::decoder::Result<Instruction> where R: io::Read {
+        super::decode(reader)
     }
 }
 
 impl fmt::Display for Instruction {
     fn fmt(&self, formatter: &mut fmt::Formatter) -> Result<(), fmt::Error> {
-		match self {
+        // TODO: Clean this up... I don't like having the trait and struct be the same...
+        use instr::Instruction as InstrTrait;
+
+        match self {
             // Instructions with operands
-			&Instruction::ADC(op) |
+            &Instruction::ADC(op) |
             &Instruction::AHX(op) |
             &Instruction::ALR(op) |
             &Instruction::AND(op) |

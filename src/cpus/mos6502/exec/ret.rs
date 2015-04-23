@@ -4,8 +4,8 @@ use cpus::mos6502::{Flags,Mos6502};
 
 pub fn from_interrupt<M>(cpu: &mut Mos6502<M>) -> Result<(), exec::Error> where M : Memory {
     let p = try!(cpu.pull());
-    let l = try!(cpu.pull()) as usize;
-    let h = try!(cpu.pull()) as usize;
+    let l = try!(cpu.pull()) as u64;
+    let h = try!(cpu.pull()) as u64;
 
     cpu.pc.set((h << 8) | l);
     cpu.flags.replace(Flags::new(p));
@@ -13,9 +13,9 @@ pub fn from_interrupt<M>(cpu: &mut Mos6502<M>) -> Result<(), exec::Error> where 
 }
 
 pub fn from_sub<M>(cpu: &mut Mos6502<M>) -> Result<(), exec::Error> where M : Memory {
-    let l = try!(cpu.pull()) as usize;
-    let h = try!(cpu.pull()) as usize;
-    
+    let l = try!(cpu.pull()) as u64;
+    let h = try!(cpu.pull()) as u64;
+
     cpu.pc.set(((h << 8) | l) + 1);
     Ok(())
 }
@@ -23,13 +23,13 @@ pub fn from_sub<M>(cpu: &mut Mos6502<M>) -> Result<(), exec::Error> where M : Me
 #[cfg(test)]
 mod test {
     use mem;
-	use cpus::mos6502::exec::ret;
-	use cpus::mos6502::{cpu,Mos6502};
+    use cpus::mos6502::exec::ret;
+    use cpus::mos6502::{cpu,Mos6502};
 
     #[test]
     pub fn rti_loads_flags_from_stack() {
         let mut cpu = init_cpu();
-        
+
         // Set up for the return
         cpu.push(0xAB).unwrap(); // PC High
         cpu.push(0xCD).unwrap(); // PC Low
@@ -43,7 +43,7 @@ mod test {
     #[test]
     pub fn rti_loads_pc_from_stack() {
         let mut cpu = init_cpu();
-        
+
         // Set up for the return
         cpu.push(0xAB).unwrap(); // PC High
         cpu.push(0xCD).unwrap(); // PC Low
@@ -57,7 +57,7 @@ mod test {
     #[test]
     pub fn rts_loads_pc_from_stack_and_increments_it() {
         let mut cpu = init_cpu();
-        
+
         // Set up for the return
         cpu.push(0xAB).unwrap(); // PC High
         cpu.push(0xCD).unwrap(); // PC Low

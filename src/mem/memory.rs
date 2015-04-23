@@ -77,7 +77,7 @@ pub enum ErrorKind {
 /// address length longer than the native word size on the host platform.
 pub trait Memory {
     /// Gets the size of the memory
-    fn size(&self) -> u64;
+    fn len(&self) -> u64;
 
     /// Copies from the memory into the specified buffer, starting at the specified address
     ///

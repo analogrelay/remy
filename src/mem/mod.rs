@@ -3,7 +3,7 @@ pub use mem::virt::Virtual;
 pub use mem::empty::Empty;
 pub use mem::memory::{Result,Error,ErrorKind,Memory};
 pub use mem::mirrored::Mirrored;
-pub use mem::io::{ReadCursor,read_cursor};
+pub use mem::io::{Cursor,cursor,ReadCursor,read_cursor};
 
 /// Declares the core `Memory` trait shared by all memory abstractions
 pub mod memory;

@@ -42,9 +42,9 @@ impl ProgramCounter {
 
     /// Decodes an instruction from the provided memory and updates the program counter as
     /// necessary
-    pub fn decode<M, I>(&mut self, mem: M) -> Result<I, I::DecodeError> where I: instr::Instruction, M: mem::Memory {
+    pub fn decode<M, I>(&mut self, mem: &M) -> Result<I, I::DecodeError> where I: instr::Instruction, M: mem::Memory {
         // Construct the reader
-        let mut r = mem::cursor(mem, self.pc);
+        let mut r = mem::read_cursor(mem, self.pc);
 
         // Decode the instruction
         let inst : Result<I, I::DecodeError> = instr::Instruction::decode(&mut r);
@@ -84,10 +84,29 @@ mod test {
         let mem = mem::Fixed::from_contents(vec![0x00, 0x00, 0x0C, 0xCD, 0xAB, 0x00, 0x00]);
         pc.advance(2);
 
-        let inst = pc.decode(mem).unwrap();
+        let inst = pc.decode(&mem).unwrap();
 
         assert_eq!(mos6502::Instruction::IGN(mos6502::Operand::Absolute(0xABCD)), inst);
         assert_eq!(pc.get(), 5);
+    }
+
+    #[test]
+    pub fn decode_provides_an_instruction_stream() {
+        let mut pc = ProgramCounter::new();
+        let mem = mem::Fixed::from_contents(vec![
+            0x0C, 0xCD, 0xAB,
+            0x80, 0x42,
+            0x2F, 0xCD, 0xAB
+        ]);
+
+        let i1 = pc.decode(&mem).unwrap();
+        let i2 = pc.decode(&mem).unwrap();
+        let i3 = pc.decode(&mem).unwrap();
+
+        assert_eq!(mos6502::Instruction::IGN(mos6502::Operand::Absolute(0xABCD)), i1);
+        assert_eq!(mos6502::Instruction::SKB(mos6502::Operand::Immediate(0x42)), i2);
+        assert_eq!(mos6502::Instruction::RLA(mos6502::Operand::Absolute(0xABCD)), i3);
+        assert_eq!(pc.get(), 8);
     }
 
     #[test]
@@ -96,7 +115,7 @@ mod test {
         let mem = mem::Fixed::from_contents(vec![0x00, 0x00, 0x0C]);
         pc.advance(2);
 
-        let inst: mos6502::instr::decoder::Result<mos6502::Instruction> = pc.decode(mem);
+        let inst: mos6502::instr::decoder::Result<mos6502::Instruction> = pc.decode(&mem);
 
         assert!(inst.is_err());
         assert_eq!(pc.get(), 3);

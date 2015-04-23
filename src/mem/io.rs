@@ -2,13 +2,13 @@ use mem;
 
 use std::{io,convert};
 
-/// Cursor which implements the ability to read, write and seek over memory
-pub struct Cursor<M> where M: mem::Memory {
-    inner: M,
+/// Cursor which implements the ability to read and seek over memory
+pub struct ReadCursor<'a, M> where M: mem::Memory + 'a {
+    inner: &'a M,
     pos: u64
 }
 
-impl<M> Cursor<M> where M: mem::Memory {
+impl<'a, M> ReadCursor<'a, M> where M: mem::Memory + 'a {
     /// Gets the current position of the cursor
     pub fn position(&self) -> u64 {
         self.pos
@@ -20,7 +20,7 @@ impl<M> Cursor<M> where M: mem::Memory {
     }
 }
 
-impl<M> io::Read for Cursor<M> where M: mem::Memory {
+impl<'a, M> io::Read for ReadCursor<'a, M> where M: mem::Memory + 'a {
     fn read(&mut self, buf: &mut [u8]) -> io::Result<usize> {
         try!(self.inner.get(self.pos, buf));
         self.pos += buf.len() as u64;
@@ -28,19 +28,7 @@ impl<M> io::Read for Cursor<M> where M: mem::Memory {
     }
 }
 
-impl<M> io::Write for Cursor<M> where M: mem::Memory {
-    fn write(&mut self, buf: &[u8]) -> io::Result<usize> {
-        try!(self.inner.set(self.pos, buf));
-        self.pos += buf.len() as u64;
-        Ok(buf.len())
-    }
-
-    fn flush(&mut self) -> io::Result<()> {
-        Ok(())
-    }
-}
-
-impl<M> io::Seek for Cursor<M> where M: mem::Memory {
+impl<'a, M> io::Seek for ReadCursor<'a, M> where M: mem::Memory + 'a {
     fn seek(&mut self, style: io::SeekFrom) -> io::Result<u64> {
         let pos = match style {
             io::SeekFrom::Start(n) => { self.pos = n; return Ok(n) }
@@ -64,8 +52,8 @@ impl convert::From<mem::Error> for io::Error {
     }
 }
 
-pub fn cursor<M>(memory: M, start: u64) -> Cursor<M> where M: mem::Memory {
-    Cursor {
+pub fn read_cursor<'a, M>(memory: &'a M, start: u64) -> ReadCursor<'a, M> where M: mem::Memory {
+    ReadCursor {
         inner: memory,
         pos: start
     }

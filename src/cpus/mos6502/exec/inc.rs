@@ -1,4 +1,4 @@
-use mem::Memory;
+use mem::{Memory,MemoryExt};
 use cpus::mos6502::exec;
 use cpus::mos6502::{cpu,Mos6502,Operand};
 
@@ -19,9 +19,9 @@ pub fn mem<M>(cpu: &mut Mos6502<M>, op: Operand) -> Result<(), exec::Error> wher
 #[cfg(test)]
 mod test {
     use mem;
-    use mem::Memory;
-	use cpus::mos6502::exec::inc;
-	use cpus::mos6502::{Mos6502,Flags,Operand};
+    use mem::{Memory,MemoryExt};
+    use cpus::mos6502::exec::inc;
+    use cpus::mos6502::{Mos6502,Flags,Operand};
 
     #[test]
     fn inc_sets_sign_flag_if_new_value_is_negative() {
@@ -30,7 +30,7 @@ mod test {
         inc::mem(&mut cpu, Operand::Absolute(0)).unwrap();
         assert!(cpu.flags.intersects(Flags::SIGN()));
     }
-    
+
     #[test]
     fn inc_clears_sign_flag_if_new_value_is_not_negative() {
         let mut cpu = init_cpu();
@@ -64,7 +64,7 @@ mod test {
         inc::mem(&mut cpu, Operand::Absolute(0)).unwrap();
         assert_eq!(Ok(43), cpu.mem.get_u8(0));
     }
-    
+
     fn init_cpu() -> Mos6502<mem::Virtual<'static>> {
         let base_memory = mem::Fixed::new(10);
         let mut vm = mem::Virtual::new();

@@ -1,6 +1,7 @@
 use std::fmt;
 
 use mem;
+use mem::MemoryExt;
 
 use pc;
 
@@ -281,7 +282,7 @@ impl ::std::ops::Not for Flags {
 mod test {
     mod mos6502 {
         use mem;
-        use mem::Memory;
+        use mem::MemoryExt;
 
         use cpus::mos6502;
 

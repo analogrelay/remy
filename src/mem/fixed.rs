@@ -89,7 +89,7 @@ impl mem::Memory for Fixed {
 #[cfg(test)]
 mod test {
     use mem;
-    use mem::Memory;
+    use mem::{Memory,MemoryExt};
 
     #[test]
     pub fn get_and_set_work() {

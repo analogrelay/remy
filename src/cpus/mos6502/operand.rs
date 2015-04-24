@@ -1,7 +1,8 @@
 use std::{error,fmt};
+use byteorder::LittleEndian;
 
 use mem;
-use mem::Memory;
+use mem::{Memory,MemoryExt};
 
 use cpus::mos6502::cpu;
 use cpus::mos6502::Mos6502;
@@ -124,10 +125,10 @@ impl Operand {
     pub fn get_addr<M>(&self, cpu: &Mos6502<M>) -> Result<u16, Error> where M: mem::Memory {
         Ok(match self {
             &Operand::Absolute(addr)             => addr,
-            &Operand::Indirect(addr)             => try!(cpu.mem.get_le_u16(addr as u64)),
+            &Operand::Indirect(addr)             => try!(cpu.mem.get_u16::<LittleEndian>(addr as u64)),
             &Operand::Indexed(addr, r)           => addr + r.get(cpu) as u16,
-            &Operand::PreIndexedIndirect(addr)   => try!(cpu.mem.get_le_u16(addr as u64 + cpu.registers.x as u64)),
-            &Operand::PostIndexedIndirect(addr)  => try!(cpu.mem.get_le_u16(addr as u64)) + cpu.registers.y as u16,
+            &Operand::PreIndexedIndirect(addr)   => try!(cpu.mem.get_u16::<LittleEndian>(addr as u64 + cpu.registers.x as u64)),
+            &Operand::PostIndexedIndirect(addr)  => try!(cpu.mem.get_u16::<LittleEndian>(addr as u64)) + cpu.registers.y as u16,
             _                                   => return Err(Error::NonAddressOperand)
         })
     }
@@ -151,8 +152,9 @@ impl fmt::Display for Operand {
 #[cfg(test)]
 mod test {
     mod operand {
-        use mem::Memory;
+        use mem::MemoryExt;
         use cpus::mos6502::{cpu,Mos6502,Operand};
+        use byteorder::LittleEndian;
 
         #[test]
         pub fn to_string_test() {
@@ -247,7 +249,7 @@ mod test {
         pub fn get_preindexed_indirect_works() {
             let mut cpu = Mos6502::with_fixed_memory(10);
             assert!(cpu.mem.set_u8(8, 42).is_ok()); // Value
-            assert!(cpu.mem.set_le_u16(6, 8).is_ok()); // Indirect Memory Address
+            assert!(cpu.mem.set_u16::<LittleEndian>(6, 8).is_ok()); // Indirect Memory Address
             cpu.registers.x = 2;
             let val = Operand::PreIndexedIndirect(4).get_u8(&cpu).unwrap();
             assert_eq!(val, 42);
@@ -257,7 +259,7 @@ mod test {
         pub fn get_postindexed_indirect_works() {
             let mut cpu = Mos6502::with_fixed_memory(10);
             assert!(cpu.mem.set_u8(8, 42).is_ok()); // Value
-            assert!(cpu.mem.set_le_u16(2, 6).is_ok()); // Indirect Memory Address
+            assert!(cpu.mem.set_u16::<LittleEndian>(2, 6).is_ok()); // Indirect Memory Address
             cpu.registers.y = 2;
             let val = Operand::PostIndexedIndirect(2).get_u8(&cpu).unwrap();
             assert_eq!(val, 42);

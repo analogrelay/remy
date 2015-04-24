@@ -1,4 +1,4 @@
-use mem::Memory;
+use mem::{Memory,MemoryExt};
 use cpus::mos6502::exec;
 use cpus::mos6502::{cpu,Mos6502,Operand};
 
@@ -19,9 +19,9 @@ pub fn mem<M>(cpu: &mut Mos6502<M>, op: Operand) -> Result<(), exec::Error> wher
 #[cfg(test)]
 mod test {
     use mem;
-    use mem::Memory;
-	use cpus::mos6502::exec::dec;
-	use cpus::mos6502::{Mos6502,Flags,Operand};
+    use mem::{Memory,MemoryExt};
+    use cpus::mos6502::exec::dec;
+    use cpus::mos6502::{Mos6502,Flags,Operand};
 
     #[test]
     fn dec_sets_sign_flag_if_new_value_is_negative() {

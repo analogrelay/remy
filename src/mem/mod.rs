@@ -1,7 +1,7 @@
 pub use mem::fixed::Fixed;
 pub use mem::virt::Virtual;
 pub use mem::empty::Empty;
-pub use mem::memory::{Result,Error,ErrorKind,Memory};
+pub use mem::memory::{Result,Error,ErrorKind,Memory,MemoryExt};
 pub use mem::mirrored::Mirrored;
 pub use mem::io::{Cursor,cursor,ReadCursor,read_cursor};
 

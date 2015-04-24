@@ -1,4 +1,6 @@
-use mem::Memory;
+use byteorder::LittleEndian;
+
+use mem::{Memory,MemoryExt};
 use cpus::mos6502::exec;
 use cpus::mos6502::{Mos6502,Flags};
 
@@ -11,16 +13,17 @@ pub fn exec<M>(cpu: &mut Mos6502<M>) -> Result<(), exec::Error> where M: Memory 
     let new_flags = cpu.flags | Flags::BREAK();
     try!(cpu.push(new_flags.bits));
 
-    cpu.pc.set(try!(cpu.mem.get_le_u16(0xFFFE)) as u64);
+    cpu.pc.set(try!(cpu.mem.get_u16::<LittleEndian>(0xFFFE)) as u64);
     Ok(())
 }
 
 #[cfg(test)]
 mod test {
-    use mem;
-    use mem::Memory;
-	use cpus::mos6502::exec::brk;
-	use cpus::mos6502::{Mos6502,Flags};
+    use byteorder::LittleEndian;
+
+    use mem::{self,Memory,MemoryExt};
+    use cpus::mos6502::exec::brk;
+    use cpus::mos6502::{Mos6502,Flags};
     use cpus::mos6502::cpu::STACK_START;
 
     #[test]
@@ -75,7 +78,7 @@ mod test {
         cpu.registers.a = 42;
         cpu.registers.sp = 16;
         cpu.pc.set(0xABCD);
-        cpu.mem.set_le_u16(0xFFFE, 0xBEEF).unwrap();
+        cpu.mem.set_u16::<LittleEndian>(0xFFFE, 0xBEEF).unwrap();
         cpu
     }
 }

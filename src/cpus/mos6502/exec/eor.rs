@@ -1,4 +1,4 @@
-use mem::Memory;
+use mem::{Memory,MemoryExt};
 use cpus::mos6502::exec;
 use cpus::mos6502::{Mos6502,Operand};
 
@@ -12,9 +12,9 @@ pub fn exec<M>(cpu: &mut Mos6502<M>, op: Operand) -> Result<(), exec::Error> whe
 #[cfg(test)]
 mod test {
     use mem;
-    use mem::Memory;
-	use cpus::mos6502::exec::eor;
-	use cpus::mos6502::{Mos6502,Flags,Operand};
+    use mem::MemoryExt;
+    use cpus::mos6502::exec::eor;
+    use cpus::mos6502::{Mos6502,Flags,Operand};
 
     #[test]
     fn eor_sets_sign_bit_if_result_is_negative() {

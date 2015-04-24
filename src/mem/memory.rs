@@ -17,7 +17,7 @@ pub struct Error {
 
 impl Error {
     /// Creates a new `Error` with no detail string
-    /// 
+    ///
     /// # Arguments
     ///
     /// * `desc` - A brief static description of the error
@@ -75,7 +75,8 @@ pub enum ErrorKind {
 /// Implementations of this may use various sparse storage techniques to avoid
 /// allocating the entire memory buffer, or may use ROM content from files to
 /// back the memory. In the current implementation, the memory may not have an
-/// address length longer than the native word size on the host platform.
+/// address size larger than 64-bits. Internally, all addresses are expected to
+/// be provided as 64-bit integers.
 pub trait Memory {
     /// Gets the size of the memory
     fn len(&self) -> u64;
@@ -101,75 +102,114 @@ pub trait Memory {
     fn set(&mut self, addr: u64, buf: &[u8]) -> Result<()>;
 }
 
+/// Extension trait that provides the ability to read specific values out of memory
 pub trait MemoryExt: Memory {
-    /// Gets a single byte from the specified address
-    ///
-    /// # Arguments
-    ///
-    /// * `addr` - The address to read from
+    /// Gets a single byte from the address specified by `addr`
     fn get_u8(&self, addr: u64) -> Result<u8> {
         let mut buf = [0];
         try!(self.get(addr, &mut buf));
         Ok(buf[0])
     }
 
-    /// Reads a u16 value in the specified byte order
+    /// Gets a u16 value, in the specified byte order `B`, from the address specified by `addr`
     fn get_u16<B>(&self, addr: u64) -> Result<u16> where B: ByteOrder {
         let mut raw = [0u8; 2];
         try!(self.get(addr, &mut raw));
-        Ok(ByteOrder::read_u16(&raw))
+        Ok(<B as ByteOrder>::read_u16(&raw))
     }
 
-    /// Reads an i16 value in the specified byte order
+    /// Gets a i16 value, in the specified byte order `B`, from the address specified by `addr`
     fn get_i16<B>(&self, addr: u64) -> Result<i16> where B: ByteOrder {
         let mut raw = [0u8; 2];
         try!(self.get(addr, &mut raw));
-        Ok(ByteOrder::read_i16(&raw))
+        Ok(<B as ByteOrder>::read_i16(&raw))
     }
 
-    /// Reads a u32 value in the specified byte order
+    /// Gets a u32 value, in the specified byte order `B`, from the address specified by `addr`
     fn get_u32<B>(&self, addr: u64) -> Result<u32> where B: ByteOrder {
         let mut raw = [0u8; 4];
         try!(self.get(addr, &mut raw));
-        Ok(ByteOrder::read_u32(&raw))
+        Ok(<B as ByteOrder>::read_u32(&raw))
     }
 
-    /// Reads an i32 value in the specified byte order
+    /// Gets a i32 value, in the specified byte order `B`, from the address specified by `addr`
     fn get_i32<B>(&self, addr: u64) -> Result<i32> where B: ByteOrder {
         let mut raw = [0u8; 4];
         try!(self.get(addr, &mut raw));
-        Ok(ByteOrder::read_i32(&raw))
+        Ok(<B as ByteOrder>::read_i32(&raw))
     }
 
-    /// Reads a u64 value in the specified byte order
+    /// Gets a u64 value, in the specified byte order `B`, from the address specified by `addr`
     fn get_u64<B>(&self, addr: u64) -> Result<u64> where B: ByteOrder {
         let mut raw = [0u8; 8];
         try!(self.get(addr, &mut raw));
-        Ok(ByteOrder::read_u64(&raw))
+        Ok(<B as ByteOrder>::read_u64(&raw))
     }
 
-    /// Reads an i64 value in the specified byte order
+    /// Gets a i64 value, in the specified byte order `B`, from the address specified by `addr`
     fn get_i64<B>(&self, addr: u64) -> Result<i64> where B: ByteOrder {
         let mut raw = [0u8; 8];
         try!(self.get(addr, &mut raw));
-        Ok(ByteOrder::read_i64(&raw))
+        Ok(<B as ByteOrder>::read_i64(&raw))
     }
 
-    /// Writes a single byte to the specified address
-    ///
-    /// # Arguments
-    ///
-    /// * `addr` - The address to write to
+    /// Writes the byte specified in `val` to the address specified by `addr`
     fn set_u8(&mut self, addr: u64, val: u8) -> Result<()> {
         let buf = [val];
         try!(self.set(addr, &buf));
         Ok(())
     }
 
-    /// Writes a u16 value in the specified byte order
-    fn set_u16<B>(&self, addr: u64, val: u16) -> Result<()> {
+    /// Writes the u16 value specified in `val` to the address specified by `addr`, in the
+    /// specified byte order `B`
+    fn set_u16<B>(&mut self, addr: u64, val: u16) -> Result<()> where B: ByteOrder {
         let mut buf = [0u8; 2];
-        ByteOrder::write_u16(&mut buf, val);
+        <B as ByteOrder>::write_u16(&mut buf, val);
+        try!(self.set(addr, &buf));
+        Ok(())
+    }
+
+    /// Writes the i16 value specified in `val` to the address specified by `addr`, in the
+    /// specified byte order `B`
+    fn set_i16<B>(&mut self, addr: u64, val: i16) -> Result<()> where B: ByteOrder {
+        let mut buf = [0u8; 2];
+        <B as ByteOrder>::write_i16(&mut buf, val);
+        try!(self.set(addr, &buf));
+        Ok(())
+    }
+
+    /// Writes the u32 value specified in `val` to the address specified by `addr`, in the
+    /// specified byte order `B`
+    fn set_u32<B>(&mut self, addr: u64, val: u32) -> Result<()> where B: ByteOrder {
+        let mut buf = [0u8; 4];
+        <B as ByteOrder>::write_u32(&mut buf, val);
+        try!(self.set(addr, &buf));
+        Ok(())
+    }
+
+    /// Writes the i32 value specified in `val` to the address specified by `addr`, in the
+    /// specified byte order `B`
+    fn set_i32<B>(&mut self, addr: u64, val: i32) -> Result<()> where B: ByteOrder {
+        let mut buf = [0u8; 4];
+        <B as ByteOrder>::write_i32(&mut buf, val);
+        try!(self.set(addr, &buf));
+        Ok(())
+    }
+
+    /// Writes the u64 value specified in `val` to the address specified by `addr`, in the
+    /// specified byte order `B`
+    fn set_u64<B>(&mut self, addr: u64, val: u64) -> Result<()> where B: ByteOrder {
+        let mut buf = [0u8; 8];
+        <B as ByteOrder>::write_u64(&mut buf, val);
+        try!(self.set(addr, &buf));
+        Ok(())
+    }
+
+    /// Writes the i64 value specified in `val` to the address specified by `addr`, in the
+    /// specified byte order `B`
+    fn set_i64<B>(&mut self, addr: u64, val: i64) -> Result<()> where B: ByteOrder {
+        let mut buf = [0u8; 8];
+        <B as ByteOrder>::write_i64(&mut buf, val);
         try!(self.set(addr, &buf));
         Ok(())
     }
@@ -180,7 +220,8 @@ impl<M: Memory + ?Sized> MemoryExt for M {}
 #[cfg(test)]
 mod test {
     use mem;
-    use mem::Memory;
+    use mem::{Memory,MemoryExt};
+    use byteorder::{BigEndian,LittleEndian};
 
     macro_rules! assert_eq_hex(
         ( $ left : expr , $ right : expr ) => (
@@ -210,27 +251,27 @@ mod test {
     }
 
     #[test]
-    pub fn get_be_u16_works() { assert_eq_hex!(0x2345, init_mem_get().get_be_u16(1).unwrap()); }
+    pub fn get_be_u16_works() { assert_eq_hex!(0x2345, init_mem_get().get_u16::<BigEndian>(1).unwrap()); }
 
     #[test]
-    pub fn get_le_u16_works() { assert_eq_hex!(0x4523, init_mem_get().get_le_u16(1).unwrap()); }
+    pub fn get_le_u16_works() { assert_eq_hex!(0x4523, init_mem_get().get_u16::<LittleEndian>(1).unwrap()); }
 
     #[test]
-    pub fn get_be_u32_works() { assert_eq_hex!(0x23456789, init_mem_get().get_be_u32(1).unwrap()); }
+    pub fn get_be_u32_works() { assert_eq_hex!(0x23456789, init_mem_get().get_u32::<BigEndian>(1).unwrap()); }
 
     #[test]
-    pub fn get_le_u32_works() { assert_eq_hex!(0x89674523, init_mem_get().get_le_u32(1).unwrap()); }
+    pub fn get_le_u32_works() { assert_eq_hex!(0x89674523, init_mem_get().get_u32::<LittleEndian>(1).unwrap()); }
 
     #[test]
-    pub fn get_be_u64_works() { assert_eq_hex!(0x23456789ABCDEF00, init_mem_get().get_be_u64(1).unwrap()); }
+    pub fn get_be_u64_works() { assert_eq_hex!(0x23456789ABCDEF00, init_mem_get().get_u64::<BigEndian>(1).unwrap()); }
 
     #[test]
-    pub fn get_le_u64_works() { assert_eq_hex!(0x00EFCDAB89674523, init_mem_get().get_le_u64(1).unwrap()); }
+    pub fn get_le_u64_works() { assert_eq_hex!(0x00EFCDAB89674523, init_mem_get().get_u64::<LittleEndian>(1).unwrap()); }
 
     #[test]
     pub fn set_be_u16_works() {
         let mut mem = mem::Fixed::new(10);
-        mem.set_be_u16(1, 0x2345).unwrap();
+        mem.set_u16::<BigEndian>(1, 0x2345).unwrap();
         let mut buf = [0, 0];
         mem.get(1, &mut buf).unwrap();
         assert_eq!([0x23, 0x45], buf);
@@ -239,7 +280,7 @@ mod test {
     #[test]
     pub fn set_be_u32_works() {
         let mut mem = mem::Fixed::new(10);
-        mem.set_be_u32(1, 0x23456789).unwrap();
+        mem.set_u32::<BigEndian>(1, 0x23456789).unwrap();
         let mut buf = [0, 0, 0, 0];
         mem.get(1, &mut buf).unwrap();
         assert_eq!([0x23, 0x45, 0x67, 0x89], buf);
@@ -248,7 +289,7 @@ mod test {
     #[test]
     pub fn set_be_u64_works() {
         let mut mem = mem::Fixed::new(10);
-        mem.set_be_u64(1, 0x23456789ABCDEF00).unwrap();
+        mem.set_u64::<BigEndian>(1, 0x23456789ABCDEF00).unwrap();
         let mut buf = [0, 0, 0, 0, 0, 0, 0, 0];
         mem.get(1, &mut buf).unwrap();
         assert_eq!([0x23, 0x45, 0x67, 0x89, 0xAB, 0xCD, 0xEF, 0x00], buf);
@@ -257,7 +298,7 @@ mod test {
     #[test]
     pub fn set_le_u16_works() {
         let mut mem = mem::Fixed::new(10);
-        mem.set_le_u16(1, 0x2345).unwrap();
+        mem.set_u16::<LittleEndian>(1, 0x2345).unwrap();
         let mut buf = [0, 0];
         mem.get(1, &mut buf).unwrap();
         assert_eq!([0x45, 0x23], buf);
@@ -266,7 +307,7 @@ mod test {
     #[test]
     pub fn set_le_u32_works() {
         let mut mem = mem::Fixed::new(10);
-        mem.set_le_u32(1, 0x23456789).unwrap();
+        mem.set_u32::<LittleEndian>(1, 0x23456789).unwrap();
         let mut buf = [0, 0, 0, 0];
         mem.get(1, &mut buf).unwrap();
         assert_eq!([0x89, 0x67, 0x45, 0x23], buf);
@@ -275,7 +316,7 @@ mod test {
     #[test]
     pub fn set_le_u64_works() {
         let mut mem = mem::Fixed::new(10);
-        mem.set_le_u64(1, 0x23456789ABCDEF00).unwrap();
+        mem.set_u64::<LittleEndian>(1, 0x23456789ABCDEF00).unwrap();
         let mut buf = [0, 0, 0, 0, 0, 0, 0, 0];
         mem.get(1, &mut buf).unwrap();
         assert_eq!([0x00, 0xEF, 0xCD, 0xAB, 0x89, 0x67, 0x45, 0x23], buf);

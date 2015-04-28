@@ -9,7 +9,7 @@ pub fn reg(cpu: &mut Mos6502, reg: cpu::RegisterName) -> Result<(), exec::Error>
     Ok(())
 }
 
-pub fn mem<M>(cpu: &mut Mos6502, mem: &M, op: Operand) -> Result<(), exec::Error> where M: Memory {
+pub fn mem<M>(cpu: &mut Mos6502, mem: &mut M, op: Operand) -> Result<(), exec::Error> where M: Memory {
     let new_val = (try!(op.get_u8(cpu, mem)).wrapping_add(1)) & 0xFF;
     cpu.flags.set_sign_and_zero(new_val);
     try!(op.set_u8(cpu, mem, new_val));
@@ -27,7 +27,7 @@ mod test {
     fn inc_sets_sign_flag_if_new_value_is_negative() {
         let (mut cpu, mut mem) = init_cpu();
         mem.set_u8(0, 127u8).unwrap();
-        inc::mem(&mut cpu, &mem, Operand::Absolute(0)).unwrap();
+        inc::mem(&mut cpu, &mut mem, Operand::Absolute(0)).unwrap();
         assert!(cpu.flags.intersects(Flags::SIGN()));
     }
 
@@ -36,7 +36,7 @@ mod test {
         let (mut cpu, mut mem) = init_cpu();
         cpu.flags.set(Flags::SIGN());
         mem.set_u8(0, -1i8 as u8).unwrap();
-        inc::mem(&mut cpu, &mem, Operand::Absolute(0)).unwrap();
+        inc::mem(&mut cpu, &mut mem, Operand::Absolute(0)).unwrap();
         assert!(!cpu.flags.intersects(Flags::SIGN()));
     }
 
@@ -44,7 +44,7 @@ mod test {
     fn inc_sets_zero_flag_if_new_value_is_zero() {
         let (mut cpu, mut mem) = init_cpu();
         mem.set_u8(0, -1i8 as u8).unwrap();
-        inc::mem(&mut cpu, &mem, Operand::Absolute(0)).unwrap();
+        inc::mem(&mut cpu, &mut mem, Operand::Absolute(0)).unwrap();
         assert!(cpu.flags.intersects(Flags::ZERO()));
     }
 
@@ -53,7 +53,7 @@ mod test {
         let (mut cpu, mut mem) = init_cpu();
         cpu.flags.set(Flags::ZERO());
         mem.set_u8(0, 0).unwrap();
-        inc::mem(&mut cpu, &mem, Operand::Absolute(0)).unwrap();
+        inc::mem(&mut cpu, &mut mem, Operand::Absolute(0)).unwrap();
         assert!(!cpu.flags.intersects(Flags::ZERO()));
     }
 
@@ -61,8 +61,8 @@ mod test {
     fn inc_sets_operand_to_original_value_plus_one() {
         let (mut cpu, mut mem) = init_cpu();
         mem.set_u8(0, 42).unwrap();
-        inc::mem(&mut cpu, &mem, Operand::Absolute(0)).unwrap();
-        assert_eq!(Ok(43), cpu.mem.get_u8(0));
+        inc::mem(&mut cpu, &mut mem, Operand::Absolute(0)).unwrap();
+        assert_eq!(Ok(43), mem.get_u8(0));
     }
 
     fn init_cpu() -> (Mos6502,mem::Virtual<'static>) {

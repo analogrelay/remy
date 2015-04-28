@@ -20,64 +20,64 @@ mod test {
 
     #[test]
     pub fn lsr_clears_sign_flag() {
-        let mut cpu = Mos6502::without_memory();
+        let mut cpu = Mos6502::new();
         cpu.flags.set(Flags::SIGN() | Flags::ZERO() | Flags::CARRY()); 
 
-        lsr::exec(&mut cpu, Operand::Accumulator).unwrap();
+        lsr::exec(&mut cpu, &mut mem::Empty, Operand::Accumulator).unwrap();
 
         assert!(!cpu.flags.intersects(Flags::SIGN()));
     }
 
     #[test]
     pub fn lsr_sets_carry_flag_if_first_bit_of_operand_is_one() {
-        let mut cpu = Mos6502::without_memory();
+        let mut cpu = Mos6502::new();
         cpu.flags.set(Flags::SIGN() | Flags::ZERO()); 
         cpu.registers.a = 0b10101011;
 
-        lsr::exec(&mut cpu, Operand::Accumulator).unwrap();
+        lsr::exec(&mut cpu, &mut mem::Empty, Operand::Accumulator).unwrap();
 
         assert!(cpu.flags.intersects(Flags::CARRY()));
     }
 
     #[test]
     pub fn lsr_clears_carry_flag_if_first_bit_of_operand_is_zero() {
-        let mut cpu = Mos6502::without_memory();
+        let mut cpu = Mos6502::new();
         cpu.flags.set(Flags::SIGN() | Flags::ZERO() | Flags::CARRY()); 
         cpu.registers.a = 0b10101010;
 
-        lsr::exec(&mut cpu, Operand::Accumulator).unwrap();
+        lsr::exec(&mut cpu, &mut mem::Empty, Operand::Accumulator).unwrap();
 
         assert!(!cpu.flags.intersects(Flags::CARRY()));
     }
 
     #[test]
     pub fn lsr_clears_zero_flag_if_result_is_non_zero() {
-        let mut cpu = Mos6502::without_memory();
+        let mut cpu = Mos6502::new();
         cpu.flags.set(Flags::SIGN() | Flags::ZERO() | Flags::CARRY()); 
         cpu.registers.a = 0b10101010;
 
-        lsr::exec(&mut cpu, Operand::Accumulator).unwrap();
+        lsr::exec(&mut cpu, &mut mem::Empty, Operand::Accumulator).unwrap();
 
         assert!(!cpu.flags.intersects(Flags::ZERO()));
     }
 
     #[test]
     pub fn lsr_sets_zero_flag_if_result_is_zero() {
-        let mut cpu = Mos6502::without_memory();
+        let mut cpu = Mos6502::new();
         cpu.flags.set(Flags::SIGN() | Flags::CARRY()); 
         cpu.registers.a = 0b00000000;
 
-        lsr::exec(&mut cpu, Operand::Accumulator).unwrap();
+        lsr::exec(&mut cpu, &mut mem::Empty, Operand::Accumulator).unwrap();
 
         assert!(cpu.flags.intersects(Flags::ZERO()));
     }
 
     #[test]
     pub fn lsr_performs_logical_right_shift_and_stores_result() {
-        let mut cpu = Mos6502::without_memory();
+        let mut cpu = Mos6502::new();
         cpu.registers.a = 0b10101010;
 
-        lsr::exec(&mut cpu, Operand::Accumulator).unwrap();
+        lsr::exec(&mut cpu, &mut mem::Empty, Operand::Accumulator).unwrap();
 
         assert_eq!(0b01010101, cpu.registers.a);
     }

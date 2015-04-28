@@ -35,7 +35,7 @@ mod test {
     pub fn adc_adds_regularly_when_carry_not_set() {
         let mut cpu = Mos6502::new();
         cpu.registers.a = 42;
-        adc::exec(&mut cpu, mem::Empty, Operand::Immediate(1)).unwrap();
+        adc::exec(&mut cpu, &mem::Empty, Operand::Immediate(1)).unwrap();
         assert_eq!(cpu.registers.a, 43);
     }
 
@@ -44,7 +44,7 @@ mod test {
         let mut cpu = Mos6502::new();
         cpu.registers.a = 42;
         cpu.flags.set(Flags::CARRY()); // Set CARRY()
-        adc::exec(&mut cpu, mem::Empty, Operand::Immediate(1)).unwrap();
+        adc::exec(&mut cpu, &mem::Empty, Operand::Immediate(1)).unwrap();
         assert_eq!(cpu.registers.a, 44);
     }
 
@@ -52,7 +52,7 @@ mod test {
     pub fn adc_sets_flags_when_overflow() {
         let mut cpu = Mos6502::new();
         cpu.registers.a = 42;
-        adc::exec(&mut cpu, mem::Empty, Operand::Immediate(255)).unwrap();
+        adc::exec(&mut cpu, &mem::Empty, Operand::Immediate(255)).unwrap();
         assert_eq!(cpu.registers.a, 41);
         assert_eq!(cpu.flags, Flags::CARRY() | Flags::RESERVED());
     }
@@ -62,7 +62,7 @@ mod test {
         let mut cpu = Mos6502::without_bcd();
         cpu.flags.set(Flags::BCD());
         cpu.registers.a = 0xA0;
-        adc::exec(&mut cpu, mem::Empty, Operand::Immediate(0x0A)).unwrap();
+        adc::exec(&mut cpu, &mem::Empty, Operand::Immediate(0x0A)).unwrap();
         assert_eq!(0xAA, cpu.registers.a);
     }
 
@@ -71,7 +71,7 @@ mod test {
         let mut cpu = Mos6502::new();
         cpu.flags.set(Flags::BCD());
         cpu.registers.a = 0x25;
-        adc::exec(&mut cpu, mem::Empty, Operand::Immediate(0x24)).unwrap();
+        adc::exec(&mut cpu, &mem::Empty, Operand::Immediate(0x24)).unwrap();
         assert_eq!(0x49, cpu.registers.a); // 49 in bcd
     }
 
@@ -80,7 +80,7 @@ mod test {
         let mut cpu = Mos6502::new();
         cpu.flags.set(Flags::BCD());
         cpu.registers.a = 0x90;
-        adc::exec(&mut cpu, mem::Empty, Operand::Immediate(0x12)).unwrap();
+        adc::exec(&mut cpu, &mem::Empty, Operand::Immediate(0x12)).unwrap();
         assert_eq!(0x02, cpu.registers.a);
         assert!(cpu.flags.intersects(Flags::CARRY()));
     }

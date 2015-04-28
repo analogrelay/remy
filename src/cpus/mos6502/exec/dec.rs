@@ -9,10 +9,10 @@ pub fn reg(cpu: &mut Mos6502, reg: cpu::RegisterName) -> Result<(), exec::Error>
     Ok(())
 }
 
-pub fn mem<M>(cpu: &mut Mos6502, mem: &M, op: Operand) -> Result<(), exec::Error> where M: Memory {
+pub fn mem<M>(cpu: &mut Mos6502, mem: &mut M, op: Operand) -> Result<(), exec::Error> where M: Memory {
     let new_val = (try!(op.get_u8(cpu, mem)).wrapping_sub(1)) & 0xFF;
     cpu.flags.set_sign_and_zero(new_val); 
-    try!(op.set_u8(cpu, new_val));
+    try!(op.set_u8(cpu, mem, new_val));
     Ok(())
 }
 
@@ -26,43 +26,43 @@ mod test {
     #[test]
     fn dec_sets_sign_flag_if_new_value_is_negative() {
         let (mut cpu, mut mem) = init_cpu();
-        cpu.mem.set_u8(0, 0).unwrap();
-        dec::mem(&mut cpu, Operand::Absolute(0)).unwrap();
+        mem.set_u8(0, 0).unwrap();
+        dec::mem(&mut cpu, &mut mem, Operand::Absolute(0)).unwrap();
         assert!(cpu.flags.intersects(Flags::SIGN()));
     }
 
     #[test]
     fn dec_clears_sign_flag_if_new_value_is_non_negative() {
         let (mut cpu, mut mem) = init_cpu();
-        cpu.mem.set_u8(0, 2).unwrap();
+        mem.set_u8(0, 2).unwrap();
         cpu.flags.set(Flags::SIGN());
-        dec::mem(&mut cpu, Operand::Absolute(0)).unwrap();
+        dec::mem(&mut cpu, &mut mem, Operand::Absolute(0)).unwrap();
         assert!(!cpu.flags.intersects(Flags::SIGN()));
     }
 
     #[test]
     fn dec_sets_zero_flag_if_new_value_is_zero() {
         let (mut cpu, mut mem) = init_cpu();
-        cpu.mem.set_u8(0, 1).unwrap();
-        dec::mem(&mut cpu, Operand::Absolute(0)).unwrap();
+        mem.set_u8(0, 1).unwrap();
+        dec::mem(&mut cpu, &mut mem, Operand::Absolute(0)).unwrap();
         assert!(cpu.flags.intersects(Flags::ZERO()));
     }
 
     #[test]
     fn dec_clears_zero_flag_if_new_value_is_nonzero() {
         let (mut cpu, mut mem) = init_cpu();
-        cpu.mem.set_u8(0, 2).unwrap();
+        mem.set_u8(0, 2).unwrap();
         cpu.flags.set(Flags::ZERO());
-        dec::mem(&mut cpu, Operand::Absolute(0)).unwrap();
+        dec::mem(&mut cpu, &mut mem, Operand::Absolute(0)).unwrap();
         assert!(!cpu.flags.intersects(Flags::ZERO()));
     }
 
     #[test]
     fn dec_sets_operand_to_original_value_minus_one() {
         let (mut cpu, mut mem) = init_cpu();
-        cpu.mem.set_u8(0, 42).unwrap();
-        dec::mem(&mut cpu, Operand::Absolute(0)).unwrap();
-        assert_eq!(Ok(41), cpu.mem.get_u8(0));
+        mem.set_u8(0, 42).unwrap();
+        dec::mem(&mut cpu, &mut mem, Operand::Absolute(0)).unwrap();
+        assert_eq!(Ok(41), mem.get_u8(0));
     }
 
     fn init_cpu() -> (Mos6502,mem::Virtual<'static>) {

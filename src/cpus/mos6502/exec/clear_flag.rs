@@ -1,4 +1,3 @@
-use mem::Memory;
 use cpus::mos6502::exec;
 use cpus::mos6502::{Mos6502,Flags};
 

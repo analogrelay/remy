@@ -105,7 +105,7 @@ impl Operand {
     ///
     /// * `cpu` - The cpu on which to set the operand value
     /// * `val` - The value to set the operand to
-    pub fn set_u8<M>(&self, cpu: &mut Mos6502, mem: &M, val: u8) -> Result<(), Error> where M: mem::Memory {
+    pub fn set_u8<M>(&self, cpu: &mut Mos6502, mem: &mut M, val: u8) -> Result<(), Error> where M: mem::Memory {
         match self {
             &Operand::Absolute(addr)     => Ok(try!(mem.set_u8(addr as u64, val))),
             &Operand::Indexed(addr, r)   => {
@@ -236,7 +236,7 @@ mod test {
         #[test]
         pub fn get_indexed_x_adds_x_to_address() {
             let mut mem = mem::Fixed::new(10);
-            let cpu = Mos6502::new();
+            let mut cpu = Mos6502::new();
             assert!(mem.set_u8(4, 42).is_ok());
             cpu.registers.x = 2;
             let val = Operand::Indexed(2, cpu::RegisterName::X).get_u8(&cpu, &mem).unwrap();

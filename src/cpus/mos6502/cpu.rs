@@ -71,7 +71,7 @@ impl RegisterName {
     ///
     /// # Arguments
     /// * `cpu` - The cpu to retrieve the register value from
-    pub fn get<M>(self, cpu: &Mos6502) -> u8 where M : mem::Memory {
+    pub fn get(self, cpu: &Mos6502) -> u8 {
         match self {
             RegisterName::A => cpu.registers.a,
             RegisterName::X => cpu.registers.x,
@@ -86,7 +86,7 @@ impl RegisterName {
     /// # Arguments
     /// * `cpu` - The cpu to set the register value on
     /// * `val` - The value to set the register to
-    pub fn set<M>(self, cpu: &mut Mos6502, val: u8) where M : mem::Memory {
+    pub fn set(self, cpu: &mut Mos6502, val: u8) {
         match self {
             RegisterName::A => cpu.registers.a = val,
             RegisterName::X => cpu.registers.x = val,
@@ -299,28 +299,28 @@ mod test {
 
         #[test]
         pub fn push_places_value_at_current_sp_location() {
-            let (cpu, mut mem) = setup_cpu();
+            let (mut cpu, mut mem) = setup_cpu();
             cpu.push(&mut mem, 42).unwrap();
             assert_eq!(Ok(42), mem.get_u8(mos6502::STACK_START + 5));
         }
 
         #[test]
         pub fn push_decrements_sp() {
-            let (cpu, mut mem) = setup_cpu();
+            let (mut cpu, mut mem) = setup_cpu();
             cpu.push(&mut mem, 42).unwrap();
             assert_eq!(4, cpu.registers.sp);
         }
 
         #[test]
         pub fn pull_gets_value_at_sp_plus_one() {
-            let (cpu, mut mem) = setup_cpu();
+            let (mut cpu, mut mem) = setup_cpu();
             mem.set_u8(mos6502::STACK_START + 6, 24).unwrap();
             assert_eq!(Ok(24), cpu.pull(&mem));
         }
 
         #[test]
         pub fn pull_increments_sp() {
-            let (cpu, mut mem) = setup_cpu();
+            let (mut cpu, mut mem) = setup_cpu();
             mem.set_u8(mos6502::STACK_START + 6, 24).unwrap();
             cpu.pull(&mem).unwrap();
             assert_eq!(6, cpu.registers.sp);

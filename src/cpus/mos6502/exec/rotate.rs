@@ -3,11 +3,11 @@ use cpus::mos6502::exec;
 use cpus::mos6502::{Mos6502,Operand,Flags};
 
 pub fn left<M>(cpu: &mut Mos6502, mem: &mut M, op: Operand) -> Result<(), exec::Error> where M : Memory {
-    exec(cpu, op, true)
+    exec(cpu, mem, op, true)
 }
 
 pub fn right<M>(cpu: &mut Mos6502, mem: &mut M, op: Operand) -> Result<(), exec::Error> where M : Memory {
-    exec(cpu, op, false)
+    exec(cpu, mem, op, false)
 }
 
 fn exec<M>(cpu: &mut Mos6502, mem: &mut M, op: Operand, left: bool) -> Result<(), exec::Error> where M : Memory {

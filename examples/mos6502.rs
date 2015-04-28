@@ -10,6 +10,8 @@ use remy::cpus::mos6502;
 use remy::mem::{self,Memory};
 
 fn main() {
+    println!("{}", "TODO");
+    /*
     // Locate the test rom
     let mut romfile = env::current_dir().unwrap();
     romfile.push("tests");
@@ -38,7 +40,7 @@ fn main() {
     }
 
     // Set up the CPU
-    let mut cpu = mos6502::Mos6502::without_bcd(memory);
+    let mut cpu = mos6502::Mos6502::without_bcd();
     cpu.flags.replace(mos6502::Flags::new(0x24));
     cpu.pc.set(0xC000);
 
@@ -55,4 +57,5 @@ fn main() {
             cpu.flags.bits,
             cpu.registers.sp);
     }
+    */
 }

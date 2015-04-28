@@ -19,11 +19,11 @@ mod test {
 
     #[test]
     pub fn axs_does_its_crazy_business() {
-        let mut cpu = Mos6502::without_memory();
+        let mut cpu = Mos6502::new();
 
         cpu.registers.a = 0x3C;
         cpu.registers.x = 0x33;
-        axs::exec(&mut cpu, mem::Empty, Operand::Immediate(0x01)).unwrap();
+        axs::exec(&mut cpu, &mem::Empty, Operand::Immediate(0x01)).unwrap();
         assert_eq!(0x2F, cpu.registers.x);
     }
 
@@ -33,7 +33,7 @@ mod test {
 
         cpu.registers.a = 0xFF;
         cpu.registers.x = 0xFF;
-        axs::exec(&mut cpu, mem::Empty, Operand::Immediate(0x00)).unwrap();
+        axs::exec(&mut cpu, &mem::Empty, Operand::Immediate(0x00)).unwrap();
 
         assert_eq!(0xFF, cpu.registers.x);
         assert_eq!(Flags::CARRY() | Flags::SIGN() | Flags::RESERVED(), cpu.flags);
@@ -46,7 +46,7 @@ mod test {
 
         cpu.registers.a = 0x01;
         cpu.registers.x = 0x01;
-        axs::exec(&mut cpu, mem::Empty, Operand::Immediate(0x00)).unwrap();
+        axs::exec(&mut cpu, &mem::Empty, Operand::Immediate(0x00)).unwrap();
 
         assert_eq!(0x01, cpu.registers.x);
         assert_eq!(Flags::RESERVED(), cpu.flags);
@@ -58,7 +58,7 @@ mod test {
 
         cpu.registers.a = 0xFF;
         cpu.registers.x = 0x01;
-        axs::exec(&mut cpu, mem::Empty, Operand::Immediate(0x01)).unwrap();
+        axs::exec(&mut cpu, &mem::Empty, Operand::Immediate(0x01)).unwrap();
 
         assert_eq!(0x00, cpu.registers.x);
         assert_eq!(Flags::ZERO() | Flags::RESERVED(), cpu.flags);
@@ -71,7 +71,7 @@ mod test {
 
         cpu.registers.a = 0x01;
         cpu.registers.x = 0x01;
-        axs::exec(&mut cpu, mem::Empty, Operand::Immediate(0x00)).unwrap();
+        axs::exec(&mut cpu, &mem::Empty, Operand::Immediate(0x00)).unwrap();
 
         assert_eq!(0x01, cpu.registers.x);
         assert_eq!(Flags::RESERVED(), cpu.flags);

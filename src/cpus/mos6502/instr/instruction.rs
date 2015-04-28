@@ -95,8 +95,8 @@ impl Instruction {
     /// # Arguments
     ///
     /// * `cpu` - The process on which to execute the instruction
-    pub fn exec<M>(self, cpu: &mut Mos6502) -> Result<(), exec::Error> where M: mem::Memory {
-        exec::dispatch(self, cpu)
+    pub fn exec<M>(self, cpu: &mut Mos6502, mem: &mut M) -> Result<(), exec::Error> where M: mem::Memory {
+        exec::dispatch(self, cpu, mem)
     }
 }
 

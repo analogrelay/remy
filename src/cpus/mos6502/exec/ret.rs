@@ -24,7 +24,7 @@ pub fn from_sub<M>(cpu: &mut Mos6502, mem: &M) -> Result<(), exec::Error> where 
 mod test {
     use mem;
     use cpus::mos6502::exec::ret;
-    use cpus::mos6502::{cpu,Mos6502,STACK_START};
+    use cpus::mos6502::{Mos6502,STACK_START};
 
     #[test]
     pub fn rti_loads_flags_from_stack() {

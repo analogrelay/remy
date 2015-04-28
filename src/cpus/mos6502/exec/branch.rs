@@ -1,4 +1,3 @@
-use mem::Memory;
 use cpus::mos6502::{exec,Mos6502,Flags};
 
 pub fn if_clear(cpu: &mut Mos6502, offset: i8, flags: Flags) -> Result<(), exec::Error> {

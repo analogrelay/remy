@@ -36,7 +36,7 @@ mod test {
     pub fn pull_sets_sign_flag_if_incoming_value_negative() {
         let (mut cpu, mut mem) = init_cpu();
         cpu.push(&mut mem, 0xFF).unwrap();
-        pull::exec(&mut cpu, cpu::RegisterName::A).unwrap();
+        pull::exec(&mut cpu, &mem, cpu::RegisterName::A).unwrap();
         assert!(cpu.flags.intersects(Flags::SIGN()));
     }
 

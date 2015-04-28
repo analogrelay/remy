@@ -10,8 +10,6 @@ use remy::cpus::mos6502;
 use remy::mem::{self,Memory};
 
 fn main() {
-    println!("{}", "TODO");
-    /*
     // Locate the test rom
     let mut romfile = env::current_dir().unwrap();
     romfile.push("tests");
@@ -45,17 +43,25 @@ fn main() {
     cpu.pc.set(0xC000);
 
     loop {
-        // Run an instruction
-        cpu.step().unwrap();
+        // Fetch next instruction
+        let addr = cpu.pc.get();
+        let instr: mos6502::Instruction = cpu.pc.decode(&memory).unwrap();
+
+        // Dispatch the instruction, but use a clone so we can still dump the instruction to the
+        // log
+        mos6502::dispatch(instr.clone(), &mut cpu, &mut memory).unwrap();
 
         // Log stuff
+        //  In the style of the nestest log
+        // C000  4C F5 C5  JMP $C5F5                       A:00 X:00 Y:00 P:24 SP:FD CYC:  0 SL:241
         println!(
-            "A:{:02X} X:{:02X} Y:{:02X} P:{:02X} SP:{:02X} CYC:  0 SL:  0",
+            "{:04X} ?? ?? ??  {:<31} A:{:02X} X:{:02X} Y:{:02X} P:{:02X} SP:{:02X} CYC:  0 SL:  0",
+            addr,
+            instr,
             cpu.registers.a,
             cpu.registers.x,
             cpu.registers.y,
             cpu.flags.bits,
             cpu.registers.sp);
     }
-    */
 }

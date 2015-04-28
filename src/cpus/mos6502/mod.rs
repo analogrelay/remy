@@ -1,6 +1,7 @@
 pub use cpus::mos6502::operand::Operand;
 pub use cpus::mos6502::instr::Instruction;
 pub use cpus::mos6502::cpu::{Mos6502,Flags,RegisterName};
+pub use cpus::mos6502::exec::dispatch;
 
 /// Defines the instructions that can be executed on the processor
 pub mod instr;

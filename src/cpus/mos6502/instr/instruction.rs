@@ -5,88 +5,14 @@ use instr;
 use cpus::mos6502::exec;
 use cpus::mos6502::{Mos6502,Operand};
 
-use std::{io,fmt};
+use std::{convert,fmt,io};
 
 /// Represents an instruction that can be executed on a `Mos6502` processor
 #[derive(Copy,Clone,Debug,Eq,PartialEq)]
-pub enum Instruction {
-    ADC(Operand),
-    AHX(Operand),
-    ALR(Operand),
-    AND(Operand),
-    ANC(Operand),
-    ASL(Operand),
-    ARR(Operand),
-    AXS(Operand),
-    BCC(i8),
-    BCS(i8),
-    BEQ(i8),
-    BIT(Operand),
-    BMI(i8),
-    BNE(i8),
-    BPL(i8),
-    BRK,
-    BVC(i8),
-    BVS(i8),
-    CLC,
-    CLD,
-    CLI,
-    CLV,
-    CMP(Operand),
-    CPX(Operand),
-    CPY(Operand),
-    DCP(Operand),
-    DEC(Operand),
-    DEX,
-    DEY,
-    EOR(Operand),
-    HLT,
-    IGN(Operand),
-    INC(Operand),
-    INX,
-    INY,
-    ISC(Operand),
-    JMP(Operand),
-    JSR(u16),
-    LAS(Operand),
-    LAX(Operand),
-    LDA(Operand),
-    LDX(Operand),
-    LDY(Operand),
-    LSR(Operand),
-    NOP,
-    ORA(Operand),
-    PHA,
-    PHP,
-    PLA,
-    PLP,
-    RLA(Operand),
-    ROL(Operand),
-    ROR(Operand),
-    RRA(Operand),
-    RTI,
-    RTS,
-    SAX(Operand),
-    SBC(Operand),
-    SEC,
-    SED,
-    SEI,
-    SHY(Operand),
-    SHX(Operand),
-    SKB(Operand),
-    SLO(Operand),
-    SRE(Operand),
-    STA(Operand),
-    STX(Operand),
-    STY(Operand),
-    TAS(Operand),
-    TAX,
-    TAY,
-    TSX,
-    TXA,
-    TXS,
-    TYA,
-    XAA(Operand)
+pub struct Instruction {
+    opcode: Opcode,
+    operand: Option<Operand>,
+    bytes: Vec<u8>
 }
 
 impl Instruction {
@@ -98,161 +24,12 @@ impl Instruction {
     pub fn exec<M>(self, cpu: &mut Mos6502, mem: &mut M) -> Result<(), exec::Error> where M: mem::Memory {
         exec::dispatch(self, cpu, mem)
     }
-
-    /// Formats the instruction, using the provided value as the base Program Counter value for
-    /// calculating absolute addresses from instructions that store an offset
-    pub fn render(&self, pc: u16) -> String {
-        // TODO: Clean this up... I don't like having the trait and struct be the same...
-        use instr::Instruction as InstrTrait;
-
-        match self {
-            // Instructions with operands
-            &Instruction::ADC(op) |
-            &Instruction::AHX(op) |
-            &Instruction::ALR(op) |
-            &Instruction::AND(op) |
-            &Instruction::ANC(op) |
-            &Instruction::ARR(op) |
-            &Instruction::ASL(op) |
-            &Instruction::AXS(op) |
-            &Instruction::BIT(op) |
-            &Instruction::STA(op) |
-            &Instruction::STX(op) |
-            &Instruction::STY(op) |
-            &Instruction::CMP(op) |
-            &Instruction::CPX(op) |
-            &Instruction::CPY(op) |
-            &Instruction::DCP(op) |
-            &Instruction::DEC(op) |
-            &Instruction::EOR(op) |
-            &Instruction::IGN(op) |
-            &Instruction::INC(op) |
-            &Instruction::ISC(op) |
-            &Instruction::JMP(op) |
-            &Instruction::LAS(op) |
-            &Instruction::LDA(op) |
-            &Instruction::LDX(op) |
-            &Instruction::LDY(op) |
-            &Instruction::LSR(op) |
-            &Instruction::ORA(op) |
-            &Instruction::RLA(op) |
-            &Instruction::ROL(op) |
-            &Instruction::ROR(op) |
-            &Instruction::RRA(op) |
-            &Instruction::SAX(op) |
-            &Instruction::SBC(op) |
-            &Instruction::SHY(op) |
-            &Instruction::SHX(op) |
-            &Instruction::SKB(op) |
-            &Instruction::SLO(op) |
-            &Instruction::SRE(op) |
-            &Instruction::TAS(op) |
-            &Instruction::XAA(op) => format!("{} {}", self.mnemonic(), op),
-
-            // Instructions with signed offsets
-            &Instruction::BCC(x) |
-            &Instruction::BCS(x) |
-            &Instruction::BEQ(x) |
-            &Instruction::BMI(x) |
-            &Instruction::BNE(x) |
-            &Instruction::BVC(x) |
-            &Instruction::BVS(x) |
-            &Instruction::BPL(x) => format!(
-                    "{} ${:04X}",
-                    self.mnemonic(),
-                    ((pc as isize) + (x as isize)) as u16),
-
-            // Instructions with absolute addresses
-            &Instruction::JSR(x) => format!("{} ${:X}", self.mnemonic(), x),
-
-            // Instructions with no operands (others)
-            _ => self.mnemonic().to_string()
-        }
-    }
 }
 
 impl instr::Instruction for Instruction {
     type DecodeError = super::decoder::Error;
     fn mnemonic(&self) -> &'static str {
-        match self {
-            &Instruction::ADC(_) => "ADC",
-            &Instruction::AHX(_) => "AHX",
-            &Instruction::ALR(_) => "ALR",
-            &Instruction::ANC(_) => "ANC",
-            &Instruction::AND(_) => "AND",
-            &Instruction::ARR(_) => "ARR",
-            &Instruction::ASL(_) => "ASL",
-            &Instruction::AXS(_) => "AXS",
-            &Instruction::BCC(_) => "BCC",
-            &Instruction::BCS(_) => "BCS",
-            &Instruction::BEQ(_) => "BEQ",
-            &Instruction::BIT(_) => "BIT",
-            &Instruction::BMI(_) => "BMI",
-            &Instruction::BNE(_) => "BNE",
-            &Instruction::BPL(_) => "BPL",
-            &Instruction::BRK => "BRK",
-            &Instruction::BVC(_) => "BVC",
-            &Instruction::BVS(_) => "BVS",
-            &Instruction::CLC => "CLC",
-            &Instruction::CLD => "CLD",
-            &Instruction::CLI => "CLI",
-            &Instruction::CLV => "CLV",
-            &Instruction::CMP(_) => "CMP",
-            &Instruction::CPX(_) => "CPX",
-            &Instruction::CPY(_) => "CPY",
-            &Instruction::DCP(_) => "DCP",
-            &Instruction::DEC(_) => "DEC",
-            &Instruction::DEX => "DEX",
-            &Instruction::DEY => "DEY",
-            &Instruction::EOR(_) => "EOR",
-            &Instruction::HLT => "HLT",
-            &Instruction::IGN(_) => "IGN",
-            &Instruction::INC(_) => "INC",
-            &Instruction::INX => "INX",
-            &Instruction::INY => "INY",
-            &Instruction::ISC(_) => "ISC",
-            &Instruction::JMP(_) => "JMP",
-            &Instruction::JSR(_) => "JSR",
-            &Instruction::LAS(_) => "LAS",
-            &Instruction::LAX(_) => "LAX",
-            &Instruction::LDA(_) => "LDA",
-            &Instruction::LDX(_) => "LDX",
-            &Instruction::LDY(_) => "LDY",
-            &Instruction::LSR(_) => "LSR",
-            &Instruction::NOP => "NOP",
-            &Instruction::ORA(_) => "ORA",
-            &Instruction::PHA => "PHA",
-            &Instruction::PHP => "PHP",
-            &Instruction::PLA => "PLA",
-            &Instruction::PLP => "PLP",
-            &Instruction::RLA(_) => "RLA",
-            &Instruction::ROL(_) => "ROL",
-            &Instruction::ROR(_) => "ROR",
-            &Instruction::RRA(_) => "RRA",
-            &Instruction::RTI => "RTI",
-            &Instruction::RTS => "RTS",
-            &Instruction::SAX(_) => "SAX",
-            &Instruction::SBC(_) => "SBC",
-            &Instruction::SEC => "SEC",
-            &Instruction::SED => "SED",
-            &Instruction::SEI => "SEI",
-            &Instruction::SHY(_) => "SHY",
-            &Instruction::SHX(_) => "SHX",
-            &Instruction::SKB(_) => "SKB",
-            &Instruction::SLO(_) => "SLO",
-            &Instruction::SRE(_) => "SRE",
-            &Instruction::STA(_) => "STA",
-            &Instruction::STX(_) => "STX",
-            &Instruction::STY(_) => "STY",
-            &Instruction::TAS(_) => "TAS",
-            &Instruction::TAX => "TAX",
-            &Instruction::TAY => "TAY",
-            &Instruction::TSX => "TSX",
-            &Instruction::TXA => "TXA",
-            &Instruction::TXS => "TXS",
-            &Instruction::TYA => "TYA",
-            &Instruction::XAA(_) => "XAA"
-        }
+        self.opcode.into()
     }
 
     fn decode<R>(reader: R) -> super::decoder::Result<Instruction> where R: io::Read {
@@ -262,6 +39,263 @@ impl instr::Instruction for Instruction {
 
 impl fmt::Display for Instruction {
     fn fmt(&self, formatter: &mut fmt::Formatter) -> Result<(), fmt::Error> {
-        write!(formatter, "{}", self.render(0))
+        // TODO: Clean this up... I don't like having the trait and struct be the same...
+        use instr::Instruction as InstrTrait;
+
+        match self.operand {
+            Some(ref op) => format!("{} {}", self.mnemonic(), self.operand.unwrap()),
+            None => self.mnemonic().to_string()
+        }
+    }
+}
+
+/// Represents an operation that can be performed on a `Mos6502` processor
+#[derive(Copy,Clone,Debug,Eq,PartialEq)]
+pub enum Opcode {
+    ADC,
+    AHX,
+    ALR,
+    AND,
+    ANC,
+    ASL,
+    ARR,
+    AXS,
+    BCC,
+    BCS,
+    BEQ,
+    BIT,
+    BMI,
+    BNE,
+    BPL,
+    BRK,
+    BVC,
+    BVS,
+    CLC,
+    CLD,
+    CLI,
+    CLV,
+    CMP,
+    CPX,
+    CPY,
+    DCP,
+    DEC,
+    DEX,
+    DEY,
+    EOR,
+    HLT,
+    IGN,
+    INC,
+    INX,
+    INY,
+    ISC,
+    JMP,
+    JSR,
+    LAS,
+    LAX,
+    LDA,
+    LDX,
+    LDY,
+    LSR,
+    NOP,
+    ORA,
+    PHA,
+    PHP,
+    PLA,
+    PLP,
+    RLA,
+    ROL,
+    ROR,
+    RRA,
+    RTI,
+    RTS,
+    SAX,
+    SBC,
+    SEC,
+    SED,
+    SEI,
+    SHY,
+    SHX,
+    SKB,
+    SLO,
+    SRE,
+    STA,
+    STX,
+    STY,
+    TAS,
+    TAX,
+    TAY,
+    TSX,
+    TXA,
+    TXS,
+    TYA,
+    XAA
+}
+
+impl convert::From<&'static str> for Option<Opcode> {
+    fn from(mnemonic: &'static str) -> Option<Opcode> {
+        Some(match mnemonic {
+            "ADC" => Opcode::ADC,
+            "AHX" => Opcode::AHX,
+            "ALR" => Opcode::ALR,
+            "ANC" => Opcode::ANC,
+            "AND" => Opcode::AND,
+            "ARR" => Opcode::ARR,
+            "ASL" => Opcode::ASL,
+            "AXS" => Opcode::AXS,
+            "BCC" => Opcode::BCC,
+            "BCS" => Opcode::BCS,
+            "BEQ" => Opcode::BEQ,
+            "BIT" => Opcode::BIT,
+            "BMI" => Opcode::BMI,
+            "BNE" => Opcode::BNE,
+            "BPL" => Opcode::BPL,
+            "BRK" => Opcode::BRK,
+            "BVC" => Opcode::BVC,
+            "BVS" => Opcode::BVS,
+            "CLC" => Opcode::CLC,
+            "CLD" => Opcode::CLD,
+            "CLI" => Opcode::CLI,
+            "CLV" => Opcode::CLV,
+            "CMP" => Opcode::CMP,
+            "CPX" => Opcode::CPX,
+            "CPY" => Opcode::CPY,
+            "DCP" => Opcode::DCP,
+            "DEC" => Opcode::DEC,
+            "DEX" => Opcode::DEX,
+            "DEY" => Opcode::DEY,
+            "EOR" => Opcode::EOR,
+            "HLT" => Opcode::HLT,
+            "IGN" => Opcode::IGN,
+            "INC" => Opcode::INC,
+            "INX" => Opcode::INX,
+            "INY" => Opcode::INY,
+            "ISC" => Opcode::ISC,
+            "JMP" => Opcode::JMP,
+            "JSR" => Opcode::JSR,
+            "LAS" => Opcode::LAS,
+            "LAX" => Opcode::LAX,
+            "LDA" => Opcode::LDA,
+            "LDX" => Opcode::LDX,
+            "LDY" => Opcode::LDY,
+            "LSR" => Opcode::LSR,
+            "NOP" => Opcode::NOP,
+            "ORA" => Opcode::ORA,
+            "PHA" => Opcode::PHA,
+            "PHP" => Opcode::PHP,
+            "PLA" => Opcode::PLA,
+            "PLP" => Opcode::PLP,
+            "RLA" => Opcode::RLA,
+            "ROL" => Opcode::ROL,
+            "ROR" => Opcode::ROR,
+            "RRA" => Opcode::RRA,
+            "RTI" => Opcode::RTI,
+            "RTS" => Opcode::RTS,
+            "SAX" => Opcode::SAX,
+            "SBC" => Opcode::SBC,
+            "SEC" => Opcode::SEC,
+            "SED" => Opcode::SED,
+            "SEI" => Opcode::SEI,
+            "SHY" => Opcode::SHY,
+            "SHX" => Opcode::SHX,
+            "SKB" => Opcode::SKB,
+            "SLO" => Opcode::SLO,
+            "SRE" => Opcode::SRE,
+            "STA" => Opcode::STA,
+            "STX" => Opcode::STX,
+            "STY" => Opcode::STY,
+            "TAS" => Opcode::TAS,
+            "TAX" => Opcode::TAX,
+            "TAY" => Opcode::TAY,
+            "TSX" => Opcode::TSX,
+            "TXA" => Opcode::TXA,
+            "TXS" => Opcode::TXS,
+            "TYA" => Opcode::TYA,
+            "XAA" => Opcode::XAA,
+            _     => return None
+        })
+    }
+}
+
+impl convert::Into<&'static str> for Opcode {
+    fn into(self) -> &'static str {
+        match self {
+            Opcode::ADC => "ADC",
+            Opcode::AHX => "AHX",
+            Opcode::ALR => "ALR",
+            Opcode::ANC => "ANC",
+            Opcode::AND => "AND",
+            Opcode::ARR => "ARR",
+            Opcode::ASL => "ASL",
+            Opcode::AXS => "AXS",
+            Opcode::BCC => "BCC",
+            Opcode::BCS => "BCS",
+            Opcode::BEQ => "BEQ",
+            Opcode::BIT => "BIT",
+            Opcode::BMI => "BMI",
+            Opcode::BNE => "BNE",
+            Opcode::BPL => "BPL",
+            Opcode::BRK => "BRK",
+            Opcode::BVC => "BVC",
+            Opcode::BVS => "BVS",
+            Opcode::CLC => "CLC",
+            Opcode::CLD => "CLD",
+            Opcode::CLI => "CLI",
+            Opcode::CLV => "CLV",
+            Opcode::CMP => "CMP",
+            Opcode::CPX => "CPX",
+            Opcode::CPY => "CPY",
+            Opcode::DCP => "DCP",
+            Opcode::DEC => "DEC",
+            Opcode::DEX => "DEX",
+            Opcode::DEY => "DEY",
+            Opcode::EOR => "EOR",
+            Opcode::HLT => "HLT",
+            Opcode::IGN => "IGN",
+            Opcode::INC => "INC",
+            Opcode::INX => "INX",
+            Opcode::INY => "INY",
+            Opcode::ISC => "ISC",
+            Opcode::JMP => "JMP",
+            Opcode::JSR => "JSR",
+            Opcode::LAS => "LAS",
+            Opcode::LAX => "LAX",
+            Opcode::LDA => "LDA",
+            Opcode::LDX => "LDX",
+            Opcode::LDY => "LDY",
+            Opcode::LSR => "LSR",
+            Opcode::NOP => "NOP",
+            Opcode::ORA => "ORA",
+            Opcode::PHA => "PHA",
+            Opcode::PHP => "PHP",
+            Opcode::PLA => "PLA",
+            Opcode::PLP => "PLP",
+            Opcode::RLA => "RLA",
+            Opcode::ROL => "ROL",
+            Opcode::ROR => "ROR",
+            Opcode::RRA => "RRA",
+            Opcode::RTI => "RTI",
+            Opcode::RTS => "RTS",
+            Opcode::SAX => "SAX",
+            Opcode::SBC => "SBC",
+            Opcode::SEC => "SEC",
+            Opcode::SED => "SED",
+            Opcode::SEI => "SEI",
+            Opcode::SHY => "SHY",
+            Opcode::SHX => "SHX",
+            Opcode::SKB => "SKB",
+            Opcode::SLO => "SLO",
+            Opcode::SRE => "SRE",
+            Opcode::STA => "STA",
+            Opcode::STX => "STX",
+            Opcode::STY => "STY",
+            Opcode::TAS => "TAS",
+            Opcode::TAX => "TAX",
+            Opcode::TAY => "TAY",
+            Opcode::TSX => "TSX",
+            Opcode::TXA => "TXA",
+            Opcode::TXS => "TXS",
+            Opcode::TYA => "TYA",
+            Opcode::XAA => "XAA"
+        }
     }
 }

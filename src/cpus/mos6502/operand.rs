@@ -10,7 +10,7 @@ use cpus::mos6502::Mos6502;
 /// Represents an operand that can be provided to an instruction
 #[derive(Copy,Clone,Debug,Eq,PartialEq)]
 pub enum Operand {
-    /// Indicates an operand provided inline with the instruction
+    /// Indicates an operand provided as an inline 8-bit unsigned integer
     Immediate(u8),
     /// Indicates an operand stored in the Accumulator (A register) 
     Accumulator,
@@ -36,53 +36,15 @@ pub enum Operand {
     /// Indicates an operand stored at an address (indexed by the `Y` register) stored in the provided address
     ///
     /// If the provided address is `x`, this operand is defined as `*(*m+y)`
-    PostIndexedIndirect(u8)
-}
+    PostIndexedIndirect(u8),
 
-/// Represents an error that occurred which accessing an `Operand`
-#[derive(Clone,Debug,Eq,PartialEq)]
-pub enum Error {
-    /// Indicates an error occurred reading or writing memory
-    ErrorAccessingMemory(mem::Error),
-    /// Indicates that a request was made to write to a read-only operand such as
-    /// `Operand::Immediate`
-    ReadOnlyOperand,
-    /// Indicates that a request was made to take the address of a non-addressable operand
-    /// such as `Operand::Immediate`
-    NonAddressOperand
-}
+    // Only used in very specific instructions, always unwrapped directly rather than using the
+    // member functions defined below
 
-impl error::Error for Error {
-    fn description(&self) -> &str {
-        match self {
-            &Error::ErrorAccessingMemory(_) => "error accessing memory",
-            &Error::ReadOnlyOperand         => "attempted to write to a read-only operand",
-            &Error::NonAddressOperand       => "attempted to take the address of an operand with no address"
-        }
-    }
-
-    fn cause(&self) -> Option<&error::Error> {
-        match self {
-            &Error::ErrorAccessingMemory(ref err) => Some(err),
-            _                                     => None
-        }
-    }
-}
-
-impl fmt::Display for Error {
-    fn fmt(&self, fmt: &mut fmt::Formatter) -> fmt::Result {
-        if let &Error::ErrorAccessingMemory(ref err) = self {
-            write!(fmt, "error accessing memory: {}", err)
-        } else {
-            error::Error::description(self).fmt(fmt)
-        }
-    }
-}
-
-impl From<mem::Error> for Error {
-    fn from(err: mem::Error) -> Error {
-        Error::ErrorAccessingMemory(err)
-    }
+    /// Indicates an operand provided as an inline 8-bit signed offset to apply to the program counter
+    Offset(i8),
+    /// Indicates an operand provided as an inline 16-bit unsigned integer
+    TwoByteImmediate(u16)
 }
 
 impl Operand {
@@ -158,6 +120,53 @@ impl fmt::Display for Operand {
         }
     }
 }
+
+/// Represents an error that occurred which accessing an `Operand`
+#[derive(Clone,Debug,Eq,PartialEq)]
+pub enum Error {
+    /// Indicates an error occurred reading or writing memory
+    ErrorAccessingMemory(mem::Error),
+    /// Indicates that a request was made to write to a read-only operand such as
+    /// `Operand::Immediate`
+    ReadOnlyOperand,
+    /// Indicates that a request was made to take the address of a non-addressable operand
+    /// such as `Operand::Immediate`
+    NonAddressOperand
+}
+
+impl error::Error for Error {
+    fn description(&self) -> &str {
+        match self {
+            &Error::ErrorAccessingMemory(_) => "error accessing memory",
+            &Error::ReadOnlyOperand         => "attempted to write to a read-only operand",
+            &Error::NonAddressOperand       => "attempted to take the address of an operand with no address"
+        }
+    }
+
+    fn cause(&self) -> Option<&error::Error> {
+        match self {
+            &Error::ErrorAccessingMemory(ref err) => Some(err),
+            _                                     => None
+        }
+    }
+}
+
+impl fmt::Display for Error {
+    fn fmt(&self, fmt: &mut fmt::Formatter) -> fmt::Result {
+        if let &Error::ErrorAccessingMemory(ref err) = self {
+            write!(fmt, "error accessing memory: {}", err)
+        } else {
+            error::Error::description(self).fmt(fmt)
+        }
+    }
+}
+
+impl From<mem::Error> for Error {
+    fn from(err: mem::Error) -> Error {
+        Error::ErrorAccessingMemory(err)
+    }
+}
+
 
 #[cfg(test)]
 mod test {

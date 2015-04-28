@@ -1,4 +1,4 @@
-pub use self::instruction::Instruction;
+pub use self::instruction::{Opcode,Instruction};
 pub use self::decoder::decode;
 
 /// Code to decode Mos6502 instructions

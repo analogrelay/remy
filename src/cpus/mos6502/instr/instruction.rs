@@ -98,6 +98,77 @@ impl Instruction {
     pub fn exec<M>(self, cpu: &mut Mos6502, mem: &mut M) -> Result<(), exec::Error> where M: mem::Memory {
         exec::dispatch(self, cpu, mem)
     }
+
+    /// Formats the instruction, using the provided value as the base Program Counter value for
+    /// calculating absolute addresses from instructions that store an offset
+    pub fn render(&self, pc: u16) -> String {
+        // TODO: Clean this up... I don't like having the trait and struct be the same...
+        use instr::Instruction as InstrTrait;
+
+        match self {
+            // Instructions with operands
+            &Instruction::ADC(op) |
+            &Instruction::AHX(op) |
+            &Instruction::ALR(op) |
+            &Instruction::AND(op) |
+            &Instruction::ANC(op) |
+            &Instruction::ARR(op) |
+            &Instruction::ASL(op) |
+            &Instruction::AXS(op) |
+            &Instruction::BIT(op) |
+            &Instruction::STA(op) |
+            &Instruction::STX(op) |
+            &Instruction::STY(op) |
+            &Instruction::CMP(op) |
+            &Instruction::CPX(op) |
+            &Instruction::CPY(op) |
+            &Instruction::DCP(op) |
+            &Instruction::DEC(op) |
+            &Instruction::EOR(op) |
+            &Instruction::IGN(op) |
+            &Instruction::INC(op) |
+            &Instruction::ISC(op) |
+            &Instruction::JMP(op) |
+            &Instruction::LAS(op) |
+            &Instruction::LDA(op) |
+            &Instruction::LDX(op) |
+            &Instruction::LDY(op) |
+            &Instruction::LSR(op) |
+            &Instruction::ORA(op) |
+            &Instruction::RLA(op) |
+            &Instruction::ROL(op) |
+            &Instruction::ROR(op) |
+            &Instruction::RRA(op) |
+            &Instruction::SAX(op) |
+            &Instruction::SBC(op) |
+            &Instruction::SHY(op) |
+            &Instruction::SHX(op) |
+            &Instruction::SKB(op) |
+            &Instruction::SLO(op) |
+            &Instruction::SRE(op) |
+            &Instruction::TAS(op) |
+            &Instruction::XAA(op) => format!("{} {}", self.mnemonic(), op),
+
+            // Instructions with signed offsets
+            &Instruction::BCC(x) |
+            &Instruction::BCS(x) |
+            &Instruction::BEQ(x) |
+            &Instruction::BMI(x) |
+            &Instruction::BNE(x) |
+            &Instruction::BVC(x) |
+            &Instruction::BVS(x) |
+            &Instruction::BPL(x) => format!(
+                    "{} ${:04X}",
+                    self.mnemonic(),
+                    ((pc as isize) + (x as isize)) as u16),
+
+            // Instructions with absolute addresses
+            &Instruction::JSR(x) => format!("{} ${:X}", self.mnemonic(), x),
+
+            // Instructions with no operands (others)
+            _ => self.mnemonic().to_string()
+        }
+    }
 }
 
 impl instr::Instruction for Instruction {
@@ -191,72 +262,6 @@ impl instr::Instruction for Instruction {
 
 impl fmt::Display for Instruction {
     fn fmt(&self, formatter: &mut fmt::Formatter) -> Result<(), fmt::Error> {
-        // TODO: Clean this up... I don't like having the trait and struct be the same...
-        use instr::Instruction as InstrTrait;
-
-        match self {
-            // Instructions with operands
-            &Instruction::ADC(op) |
-            &Instruction::AHX(op) |
-            &Instruction::ALR(op) |
-            &Instruction::AND(op) |
-            &Instruction::ANC(op) |
-            &Instruction::ARR(op) |
-            &Instruction::ASL(op) |
-            &Instruction::AXS(op) |
-            &Instruction::BIT(op) |
-            &Instruction::STA(op) |
-            &Instruction::STX(op) |
-            &Instruction::STY(op) |
-            &Instruction::CMP(op) |
-            &Instruction::CPX(op) |
-            &Instruction::CPY(op) |
-            &Instruction::DCP(op) |
-            &Instruction::DEC(op) |
-            &Instruction::EOR(op) |
-            &Instruction::IGN(op) |
-            &Instruction::INC(op) |
-            &Instruction::ISC(op) |
-            &Instruction::JMP(op) |
-            &Instruction::LAS(op) |
-            &Instruction::LDA(op) |
-            &Instruction::LDX(op) |
-            &Instruction::LDY(op) |
-            &Instruction::LSR(op) |
-            &Instruction::ORA(op) |
-            &Instruction::RLA(op) |
-            &Instruction::ROL(op) |
-            &Instruction::ROR(op) |
-            &Instruction::RRA(op) |
-            &Instruction::SAX(op) |
-            &Instruction::SBC(op) |
-            &Instruction::SHY(op) |
-            &Instruction::SHX(op) |
-            &Instruction::SKB(op) |
-            &Instruction::SLO(op) |
-            &Instruction::SRE(op) |
-            &Instruction::TAS(op) |
-            &Instruction::XAA(op) => formatter.write_fmt(format_args!("{} {}", self.mnemonic(), op)), 
-
-            // Instructions with signed offsets
-            &Instruction::BCC(x) |
-            &Instruction::BCS(x) |
-            &Instruction::BEQ(x) |
-            &Instruction::BMI(x) |
-            &Instruction::BNE(x) |
-            &Instruction::BVC(x) |
-            &Instruction::BVS(x) |
-            &Instruction::BPL(x) => formatter.write_fmt(format_args!(
-                    "{} {}${:X}",
-                    self.mnemonic(),
-                    if x < 0 { "-" } else { "+" },
-                    x)),
-
-            // Instructions with absolute addresses
-            &Instruction::JSR(x) => formatter.write_fmt(format_args!("{} ${:X}", self.mnemonic(), x)), 
-
-            // Instructions with no operands (others)
-            _ => formatter.write_str(self.mnemonic())
-        }
+        write!(formatter, "{}", self.render(0))
     }
 }

@@ -138,13 +138,23 @@ impl fmt::Display for Operand {
     /// Returns a string representing the instruction
     fn fmt(&self, formatter: &mut fmt::Formatter) -> Result<(), fmt::Error> {
         match self {
-            &Operand::Immediate(val)             => formatter.write_fmt(format_args!("#${:X}", val)),
+            &Operand::Immediate(val)             => write!(formatter, "#${:02X}", val),
             &Operand::Accumulator                => formatter.write_str("A"),
-            &Operand::Absolute(val)              => formatter.write_fmt(format_args!("${:X}", val)),
-            &Operand::Indexed(val, reg)          => formatter.write_fmt(format_args!("${:X},{}", val, reg)),
-            &Operand::Indirect(val)              => formatter.write_fmt(format_args!("${:X}", val)),
-            &Operand::PreIndexedIndirect(val)    => formatter.write_fmt(format_args!("(${:X},X)", val)),
-            &Operand::PostIndexedIndirect(val)   => formatter.write_fmt(format_args!("(${:X}),Y", val))
+            &Operand::Absolute(val)              =>
+                if val <= 0x00FF {
+                    write!(formatter, "${:02X}", val)
+                } else {
+                    write!(formatter, "${:04X}", val)
+                },
+            &Operand::Indexed(val, reg)          =>
+                if val <= 0x00FF {
+                    write!(formatter, "${:02X},{}", val, reg)
+                } else {
+                    write!(formatter, "${:04X},{}", val, reg)
+                },
+            &Operand::Indirect(val)              => write!(formatter, "${:04X}", val),
+            &Operand::PreIndexedIndirect(val)    => write!(formatter, "(${:02X},X)", val),
+            &Operand::PostIndexedIndirect(val)   => write!(formatter, "(${:02X}),Y", val)
         }
     }
 }
@@ -162,9 +172,12 @@ mod test {
             assert_eq!("#$AB", Operand::Immediate(0xAB).to_string());
             assert_eq!("A", Operand::Accumulator.to_string());
             assert_eq!("$ABCD", Operand::Absolute(0xABCD).to_string());
+            assert_eq!("$0BCD", Operand::Absolute(0x0BCD).to_string());
             assert_eq!("$AB", Operand::Absolute(0x00AB).to_string());
             assert_eq!("$ABCD,X", Operand::Indexed(0xABCD, cpu::RegisterName::X).to_string());
             assert_eq!("$ABCD,Y", Operand::Indexed(0xABCD, cpu::RegisterName::Y).to_string());
+            assert_eq!("$0BCD,X", Operand::Indexed(0xBCD, cpu::RegisterName::X).to_string());
+            assert_eq!("$0BCD,Y", Operand::Indexed(0xBCD, cpu::RegisterName::Y).to_string());
             assert_eq!("$AB,X", Operand::Indexed(0x00AB, cpu::RegisterName::X).to_string());
             assert_eq!("$AB,Y", Operand::Indexed(0x00AB, cpu::RegisterName::Y).to_string());
             assert_eq!("$ABCD", Operand::Indirect(0xABCD).to_string());

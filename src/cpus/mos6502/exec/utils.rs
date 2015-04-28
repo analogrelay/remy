@@ -17,6 +17,6 @@ pub fn int_to_bcd(int: isize) -> isize {
     }
     let h = (v / 10) as u8;
     let l = (v % 10) as u8;
-    
+
     ((h << 4) | l) as isize
 }

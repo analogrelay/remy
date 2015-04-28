@@ -4,6 +4,7 @@ pub use mem::empty::Empty;
 pub use mem::memory::{Result,Error,ErrorKind,Memory,MemoryExt};
 pub use mem::mirrored::Mirrored;
 pub use mem::io::{Cursor,cursor,ReadCursor,read_cursor};
+pub use mem::restricted::{ReadOnlyMemory,WriteOnlyMemory,read_only,write_only};
 
 /// Declares the core `Memory` trait shared by all memory abstractions
 pub mod memory;
@@ -23,3 +24,6 @@ pub mod io;
 /// Provides types for working with memory banks that mirror internal contents across a larger
 /// space
 pub mod mirrored;
+
+/// Provides wrappers that restrict the readability and writability of their containing memory
+pub mod restricted;

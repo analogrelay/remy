@@ -2,38 +2,38 @@ use mem::{Memory,MemoryExt};
 use cpus::mos6502::{exec, cpu};
 use cpus::mos6502::{Mos6502,Operand};
 
-pub fn exec<M>(cpu: &mut Mos6502<M>, reg: cpu::RegisterName, op: Operand) -> exec::Result where M: Memory {
+pub fn exec<M>(cpu: &mut Mos6502, mem: &mut M, reg: cpu::RegisterName, op: Operand) -> exec::Result where M: Memory {
     let val = reg.get(cpu);
-    try!(op.set_u8(cpu, val));
+    try!(op.set_u8(cpu, mem, val));
     Ok(())
 }
 
-pub fn ahx<M>(cpu: &mut Mos6502<M>, op: Operand) -> exec::Result where M: Memory {
-    let h = ((try!(op.get_addr(cpu)) & 0xFF00) >> 8) as u8;
+pub fn ahx<M>(cpu: &mut Mos6502, mem: &mut M, op: Operand) -> exec::Result where M: Memory {
+    let h = ((try!(op.get_addr(cpu, mem)) & 0xFF00) >> 8) as u8;
     let val = cpu.registers.a & cpu.registers.x & h;
-    try!(op.set_u8(cpu, val));
+    try!(op.set_u8(cpu, mem, val));
     Ok(())
 }
 
-pub fn sax<M>(cpu: &mut Mos6502<M>, op: Operand) -> exec::Result where M: Memory {
+pub fn sax<M>(cpu: &mut Mos6502, mem: &mut M, op: Operand) -> exec::Result where M: Memory {
     let val = cpu.registers.a & cpu.registers.x;
-    try!(op.set_u8(cpu, val));
+    try!(op.set_u8(cpu, mem, val));
     Ok(())
 }
 
-pub fn sh<M>(cpu: &mut Mos6502<M>, reg: cpu::RegisterName, op: Operand) -> exec::Result where M: Memory {
-    let h = ((try!(op.get_addr(cpu)) & 0xFF00) >> 8) as u8;
+pub fn sh<M>(cpu: &mut Mos6502, mem: &mut M, reg: cpu::RegisterName, op: Operand) -> exec::Result where M: Memory {
+    let h = ((try!(op.get_addr(cpu, mem)) & 0xFF00) >> 8) as u8;
     let val = reg.get(cpu) & h;
-    try!(op.set_u8(cpu, val));
+    try!(op.set_u8(cpu, mem, val));
     Ok(())
 }
 
-pub fn tas<M>(cpu: &mut Mos6502<M>, op: Operand) -> exec::Result where M: Memory {
+pub fn tas<M>(cpu: &mut Mos6502, mem: &mut M, op: Operand) -> exec::Result where M: Memory {
     let val = cpu.registers.a & cpu.registers.x;
     cpu.registers.sp = val;
-    let h = ((try!(op.get_addr(cpu)) & 0xFF00) >> 8) as u8;
+    let h = ((try!(op.get_addr(cpu, mem)) & 0xFF00) >> 8) as u8;
     let mem_val = val & h;
-    try!(op.set_u8(cpu, mem_val));
+    try!(op.set_u8(cpu, mem, mem_val));
     Ok(())
 }
 
@@ -46,12 +46,13 @@ mod test {
 
     #[test]
     pub fn store_sets_operand_to_register_value() {
-        let mut cpu = Mos6502::with_fixed_memory(10); 
+        let mut mem = mem::Fixed::new(10);
+        let mut cpu = Mos6502::new(); 
 
         cpu.registers.a = 42;
-        store::exec(&mut cpu, cpu::RegisterName::A, Operand::Absolute(5)).unwrap();
+        store::exec(&mut cpu, &mut mem, cpu::RegisterName::A, Operand::Absolute(5)).unwrap();
 
-        assert_eq!(Ok(42), cpu.mem.get_u8(5));
+        assert_eq!(Ok(42), mem.get_u8(5));
     }
 
     #[test]
@@ -60,12 +61,12 @@ mod test {
         let mut vm = mem::Virtual::new();
         vm.attach(0x3C00, Box::new(mem)).unwrap();
 
-        let mut cpu = Mos6502::new(vm);
+        let mut cpu = Mos6502::new();
 
         cpu.registers.x = 0xF0;
-        store::sh(&mut cpu, cpu::RegisterName::X, Operand::Absolute(0x3C01)).unwrap();
+        store::sh(&mut cpu, &mut vm, cpu::RegisterName::X, Operand::Absolute(0x3C01)).unwrap();
 
-        assert_eq!(Ok(0x30), cpu.mem.get_u8(0x3C01));
+        assert_eq!(Ok(0x30), vm.get_u8(0x3C01));
     }
 
     #[test]
@@ -74,14 +75,14 @@ mod test {
         let mut vm = mem::Virtual::new();
         vm.attach(0x1C00, Box::new(mem)).unwrap();
 
-        let mut cpu = Mos6502::new(vm);
+        let mut cpu = Mos6502::new();
 
         cpu.registers.a = 0x3F;
         cpu.registers.x = 0xF0;
-        store::tas(&mut cpu, Operand::Absolute(0x1C01)).unwrap();
+        store::tas(&mut cpu, &mut vm, Operand::Absolute(0x1C01)).unwrap();
 
         assert_eq!(0x30, cpu.registers.sp);
-        assert_eq!(Ok(0x10), cpu.mem.get_u8(0x1C01));
+        assert_eq!(Ok(0x10), vm.get_u8(0x1C01));
     }
 
     #[test]
@@ -90,23 +91,24 @@ mod test {
         let mut vm = mem::Virtual::new();
         vm.attach(0x3C00, Box::new(mem)).unwrap();
 
-        let mut cpu = Mos6502::new(vm);
+        let mut cpu = Mos6502::new();
 
         cpu.registers.a = 0x3F;
         cpu.registers.x = 0xF0;
-        store::ahx(&mut cpu, Operand::Absolute(0x3C01)).unwrap();
+        store::ahx(&mut cpu, &mut vm, Operand::Absolute(0x3C01)).unwrap();
 
-        assert_eq!(Ok(0x30), cpu.mem.get_u8(0x3C01));
+        assert_eq!(Ok(0x30), vm.get_u8(0x3C01));
     }
 
     #[test]
     pub fn sax_sets_operand_to_a_and_x() {
-        let mut cpu = Mos6502::with_fixed_memory(10);
+        let mut mem = mem::Fixed::new(10);
+        let mut cpu = Mos6502::new();
 
         cpu.registers.a = 0x3F;
         cpu.registers.x = 0xF0;
-        store::sax(&mut cpu, Operand::Absolute(5)).unwrap();
+        store::sax(&mut cpu, &mut mem, Operand::Absolute(5)).unwrap();
 
-        assert_eq!(Ok(0x30), cpu.mem.get_u8(5));
+        assert_eq!(Ok(0x30), mem.get_u8(5));
     }
 }

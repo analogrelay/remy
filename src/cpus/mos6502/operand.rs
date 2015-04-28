@@ -91,11 +91,11 @@ impl Operand {
     /// # Arguments
     ///
     /// * `cpu` - The cpu from which to get the operand value
-    pub fn get_u8<M>(&self, cpu: &Mos6502<M>) -> Result<u8, Error> where M: mem::Memory {
+    pub fn get_u8<M>(&self, cpu: &Mos6502, mem: &M) -> Result<u8, Error> where M: mem::Memory {
         Ok(match self {
             &Operand::Immediate(n)      => n,
             &Operand::Accumulator       => cpu.registers.a,
-            _                           => try!(cpu.mem.get_u8(try!(self.get_addr(cpu)) as u64))
+            _                           => try!(mem.get_u8(try!(self.get_addr(cpu, mem)) as u64))
         })
     }
 
@@ -105,12 +105,12 @@ impl Operand {
     ///
     /// * `cpu` - The cpu on which to set the operand value
     /// * `val` - The value to set the operand to
-    pub fn set_u8<M>(&self, cpu: &mut Mos6502<M>, val: u8) -> Result<(), Error> where M: mem::Memory {
+    pub fn set_u8<M>(&self, cpu: &mut Mos6502, mem: &M, val: u8) -> Result<(), Error> where M: mem::Memory {
         match self {
-            &Operand::Absolute(addr)     => Ok(try!(cpu.mem.set_u8(addr as u64, val))),
+            &Operand::Absolute(addr)     => Ok(try!(mem.set_u8(addr as u64, val))),
             &Operand::Indexed(addr, r)   => {
                 let rv = r.get(cpu) as u64;
-                Ok(try!(cpu.mem.set_u8(addr as u64 + rv, val)))
+                Ok(try!(mem.set_u8(addr as u64 + rv, val)))
             }
             &Operand::Accumulator        => { cpu.registers.a = val; Ok(()) },
             _                            => Err(Error::ReadOnlyOperand)
@@ -122,13 +122,13 @@ impl Operand {
     /// # Arguments
     ///
     /// * `cpu` - The cpu on which to get the operand value
-    pub fn get_addr<M>(&self, cpu: &Mos6502<M>) -> Result<u16, Error> where M: mem::Memory {
+    pub fn get_addr<M>(&self, cpu: &Mos6502, mem: &M) -> Result<u16, Error> where M: mem::Memory {
         Ok(match self {
             &Operand::Absolute(addr)             => addr,
-            &Operand::Indirect(addr)             => try!(cpu.mem.get_u16::<LittleEndian>(addr as u64)),
+            &Operand::Indirect(addr)             => try!(mem.get_u16::<LittleEndian>(addr as u64)),
             &Operand::Indexed(addr, r)           => addr + r.get(cpu) as u16,
-            &Operand::PreIndexedIndirect(addr)   => try!(cpu.mem.get_u16::<LittleEndian>(addr as u64 + cpu.registers.x as u64)),
-            &Operand::PostIndexedIndirect(addr)  => try!(cpu.mem.get_u16::<LittleEndian>(addr as u64)) + cpu.registers.y as u16,
+            &Operand::PreIndexedIndirect(addr)   => try!(mem.get_u16::<LittleEndian>(addr as u64 + cpu.registers.x as u64)),
+            &Operand::PostIndexedIndirect(addr)  => try!(mem.get_u16::<LittleEndian>(addr as u64)) + cpu.registers.y as u16,
             _                                   => return Err(Error::NonAddressOperand)
         })
     }
@@ -152,6 +152,7 @@ impl fmt::Display for Operand {
 #[cfg(test)]
 mod test {
     mod operand {
+        use mem;
         use mem::MemoryExt;
         use cpus::mos6502::{cpu,Mos6502,Operand};
         use byteorder::LittleEndian;
@@ -173,95 +174,104 @@ mod test {
 
         #[test]
         pub fn set_absolute_puts_value_in_memory_location() {
-            let mut cpu = Mos6502::with_fixed_memory(10);
-            assert!(Operand::Absolute(2).set_u8(&mut cpu, 24).is_ok());
-            let val : u8 = cpu.mem.get_u8(2).unwrap();
+            let mut mem = mem::Fixed::new(10);
+            let mut cpu = Mos6502::new();
+            assert!(Operand::Absolute(2).set_u8(&mut cpu, &mut mem, 24).is_ok());
+            let val = mem.get_u8(2).unwrap();
             assert_eq!(val, 24);
         }
 
         #[test]
         pub fn set_indexed_x_puts_value_in_memory_location() {
-            let mut cpu = Mos6502::with_fixed_memory(10);
+            let mut mem = mem::Fixed::new(10);
+            let mut cpu = Mos6502::new();
             cpu.registers.x = 1;
-            assert!(Operand::Indexed(2, cpu::RegisterName::X).set_u8(&mut cpu, 24).is_ok());
-            let val : u8 = cpu.mem.get_u8(3).unwrap();
+            assert!(Operand::Indexed(2, cpu::RegisterName::X).set_u8(&mut cpu, &mut mem, 24).is_ok());
+            let val = mem.get_u8(3).unwrap();
             assert_eq!(val, 24);
         }
 
         #[test]
         pub fn set_indexed_y_puts_value_in_memory_location() {
-            let mut cpu = Mos6502::with_fixed_memory(10);
+            let mut mem = mem::Fixed::new(10);
+            let mut cpu = Mos6502::new();
             cpu.registers.y = 1;
-            assert!(Operand::Indexed(2, cpu::RegisterName::Y).set_u8(&mut cpu, 24).is_ok());
-            let val : u8 = cpu.mem.get_u8(3).unwrap();
+            assert!(Operand::Indexed(2, cpu::RegisterName::Y).set_u8(&mut cpu, &mut mem, 24).is_ok());
+            let val = mem.get_u8(3).unwrap();
             assert_eq!(val, 24);
         }
 
         #[test]
         pub fn set_accumulator_puts_value_in_accumulator() {
-            let mut cpu = Mos6502::with_fixed_memory(10);
+            let mut mem = mem::Fixed::new(10);
+            let mut cpu = Mos6502::new();
             cpu.registers.a = 24;
-            Operand::Accumulator.set_u8(&mut cpu, 42).unwrap();
+            Operand::Accumulator.set_u8(&mut cpu, &mut mem, 42).unwrap();
             assert_eq!(cpu.registers.a, 42);
         }
 
         #[test]
         pub fn get_accumulator_returns_value_from_accumulator() {
-            let mut cpu = Mos6502::with_fixed_memory(10);
+            let mut cpu = Mos6502::new();
             cpu.registers.a = 42;
-            assert_eq!(Ok(42), Operand::Accumulator.get_u8(&mut cpu));
+            assert_eq!(Ok(42), Operand::Accumulator.get_u8(&mut cpu, &mem::Empty));
         }
 
         #[test]
         pub fn get_immediate_returns_immediate_value() {
-            let cpu = Mos6502::with_fixed_memory(10);
-            let val = Operand::Immediate(42).get_u8(&cpu).unwrap();
+            let cpu = Mos6502::new();
+            let val = Operand::Immediate(42).get_u8(&cpu, &mem::Empty).unwrap();
             assert_eq!(val, 42);
         }
 
         #[test]
         pub fn get_absolute_returns_value_from_memory_address() {
-            let mut cpu = Mos6502::with_fixed_memory(10);
-            assert!(cpu.mem.set_u8(4, 42).is_ok());
-            let val = Operand::Absolute(4).get_u8(&cpu).unwrap();
+            let mut mem = mem::Fixed::new(10);
+            let cpu = Mos6502::new();
+            assert!(mem.set_u8(4, 42).is_ok());
+            let val = Operand::Absolute(4).get_u8(&cpu, &mem).unwrap();
             assert_eq!(val, 42);
         }
 
         #[test]
         pub fn get_indexed_x_adds_x_to_address() {
-            let mut cpu = Mos6502::with_fixed_memory(10);
-            assert!(cpu.mem.set_u8(4, 42).is_ok());
+            let mut mem = mem::Fixed::new(10);
+            let cpu = Mos6502::new();
+            assert!(mem.set_u8(4, 42).is_ok());
             cpu.registers.x = 2;
-            let val = Operand::Indexed(2, cpu::RegisterName::X).get_u8(&cpu).unwrap();
+            let val = Operand::Indexed(2, cpu::RegisterName::X).get_u8(&cpu, &mem).unwrap();
             assert_eq!(val, 42);
         }
 
         #[test]
         pub fn get_indexed_y_adds_y_to_address() {
-            let mut cpu = Mos6502::with_fixed_memory(10);
-            assert!(cpu.mem.set_u8(4, 42).is_ok());
+            let mut mem = mem::Fixed::new(10);
+            let mut cpu = Mos6502::new();
+            assert!(mem.set_u8(4, 42).is_ok());
             cpu.registers.y = 2;
-            let val = Operand::Indexed(2, cpu::RegisterName::Y).get_u8(&cpu).unwrap();
+            let val = Operand::Indexed(2, cpu::RegisterName::Y).get_u8(&cpu, &mem).unwrap();
             assert_eq!(val, 42);
         }
 
         #[test]
         pub fn get_preindexed_indirect_works() {
-            let mut cpu = Mos6502::with_fixed_memory(10);
-            assert!(cpu.mem.set_u8(8, 42).is_ok()); // Value
-            assert!(cpu.mem.set_u16::<LittleEndian>(6, 8).is_ok()); // Indirect Memory Address
+            let mut mem = mem::Fixed::new(10);
+            let mut cpu = Mos6502::new();
+            assert!(mem.set_u8(8, 42).is_ok()); // Value
+            assert!(mem.set_u16::<LittleEndian>(6, 8).is_ok()); // Indirect Memory Address
             cpu.registers.x = 2;
-            let val = Operand::PreIndexedIndirect(4).get_u8(&cpu).unwrap();
+            let val = Operand::PreIndexedIndirect(4).get_u8(&cpu, &mem).unwrap();
             assert_eq!(val, 42);
         }
 
         #[test]
         pub fn get_postindexed_indirect_works() {
-            let mut cpu = Mos6502::with_fixed_memory(10);
-            assert!(cpu.mem.set_u8(8, 42).is_ok()); // Value
-            assert!(cpu.mem.set_u16::<LittleEndian>(2, 6).is_ok()); // Indirect Memory Address
+            let mut mem = mem::Fixed::new(10);
+            let mut cpu = Mos6502::new();
+            assert!(mem.set_u8(8, 42).is_ok()); // Value
+            assert!(mem.set_u16::<LittleEndian>(2, 6).is_ok()); // Indirect Memory Address
             cpu.registers.y = 2;
-            let val = Operand::PostIndexedIndirect(2).get_u8(&cpu).unwrap();
+            let val = Operand::PostIndexedIndirect(2).get_u8(&cpu, &mem).unwrap();
             assert_eq!(val, 42);
         }
     }

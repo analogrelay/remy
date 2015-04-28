@@ -2,18 +2,19 @@ use mem::Memory;
 use cpus::mos6502::exec;
 use cpus::mos6502::{Mos6502,Operand,Flags};
 
-pub fn exec<M>(cpu: &mut Mos6502<M>, op: Operand) -> Result<(), exec::Error> where M : Memory {
-    let n = try!(op.get_u8(cpu));
+pub fn exec<M>(cpu: &mut Mos6502, mem: &mut M, op: Operand) -> Result<(), exec::Error> where M : Memory {
+    let n = try!(op.get_u8(cpu, mem));
     cpu.flags.clear(Flags::SIGN());
     cpu.flags.set_if(Flags::CARRY(), (n & 0x01) != 0);
     let m = (n >> 1) & 0x7F;
     cpu.flags.set_if(Flags::ZERO(), m == 0);
-    try!(op.set_u8(cpu, m));
+    try!(op.set_u8(cpu, mem, m));
     Ok(())
 }
 
 #[cfg(test)]
 mod test {
+    use mem;
     use cpus::mos6502::exec::lsr;
     use cpus::mos6502::{Mos6502,Operand,Flags};
 

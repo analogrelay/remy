@@ -13,3 +13,7 @@ pub mod cpu;
 
 /// Defines operands that can be provided to instructions
 pub mod operand;
+
+/// Indicates the start of the MOS 6502 Stack
+const STACK_START   : u64 = 0x0100;
+

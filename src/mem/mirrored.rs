@@ -12,6 +12,11 @@ pub struct Mirrored<M> where M: mem::Memory {
 }
 
 impl<M> Mirrored<M> where M: mem::Memory {
+    /// Creates a new `Mirrored` memory wrapping the provided memory and mirroring it through
+    /// the `size` bytes.
+    ///
+    /// Addresses `0` through `size - 1` are valid and are translated to the effective address
+    /// `eaddr` using the following expression: `eaddr = (addr % mem.len())`
     pub fn new(mem: M, size: u64) -> Mirrored<M> {
         Mirrored {
             mem: mem,

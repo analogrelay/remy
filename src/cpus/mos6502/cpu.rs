@@ -1,15 +1,51 @@
-use std::fmt;
+use std::{convert,error,fmt};
 
-use mem;
-use mem::MemoryExt;
-
+use mem::{self,Memory,MemoryExt};
 use pc;
+use super::{instr,exec};
 
-/// Indicates the start of the MOS 6502 Stack
-pub const STACK_START   : u64 = 0x0100;
+#[derive(Debug)]
+pub enum Error {
+    InstructionDecodeError(instr::decoder::Error),
+    ExecutionError(exec::Error)
+}
 
-/// Indicates the end of the MOS 6502 Stack
-pub const STACK_END     : u64 = 0x01FF;
+impl convert::From<instr::decoder::Error> for Error {
+    fn from(other: instr::decoder::Error) -> Error {
+        Error::InstructionDecodeError(other)
+    }
+}
+
+impl convert::From<exec::Error> for Error {
+    fn from(other: exec::Error) -> Error {
+        Error::ExecutionError(other)
+    }
+}
+
+impl fmt::Display for Error {
+    fn fmt(&self, f: &mut fmt::Formatter) -> Result<(), fmt::Error> {
+        match self {
+            &Error::InstructionDecodeError(ref e) => write!(f, "error decoding instruction: {}", e),
+            &Error::ExecutionError(ref e) => write!(f, "error decoding instruction: {}", e)
+        }
+    }
+}
+
+impl error::Error for Error {
+    fn description(&self) -> &'static str {
+        match self {
+            &Error::InstructionDecodeError(_) => "error decoding instruction",
+            &Error::ExecutionError(_) => "error executing instruction"
+        }
+    }
+
+    fn cause(&self) -> Option<&error::Error> {
+        match self {
+            &Error::InstructionDecodeError(ref e) => Some(e),
+            &Error::ExecutionError(ref e) => Some(e)
+        }
+    }
+}
 
 /// Denotes a particular register
 #[derive(Copy,Clone,Debug,Eq,PartialEq)]
@@ -35,7 +71,7 @@ impl RegisterName {
     ///
     /// # Arguments
     /// * `cpu` - The cpu to retrieve the register value from
-    pub fn get<M>(self, cpu: &Mos6502<M>) -> u8 where M : mem::Memory {
+    pub fn get<M>(self, cpu: &Mos6502) -> u8 where M : mem::Memory {
         match self {
             RegisterName::A => cpu.registers.a,
             RegisterName::X => cpu.registers.x,
@@ -50,7 +86,7 @@ impl RegisterName {
     /// # Arguments
     /// * `cpu` - The cpu to set the register value on
     /// * `val` - The value to set the register to
-    pub fn set<M>(self, cpu: &mut Mos6502<M>, val: u8) where M : mem::Memory {
+    pub fn set<M>(self, cpu: &mut Mos6502, val: u8) where M : mem::Memory {
         match self {
             RegisterName::A => cpu.registers.a = val,
             RegisterName::X => cpu.registers.x = val,
@@ -77,63 +113,38 @@ impl fmt::Display for RegisterName {
 ///
 /// Includes support for Binary Coded Decimal arithmetic, does
 /// NOT include an Audio Processing Unit.
-pub struct Mos6502<M> where M: mem::Memory {
+pub struct Mos6502 {
     /// The registers contained in the cpu
     pub registers: Registers,
     /// The processor status flags
     pub flags: Flags,
-    /// The memory attached to the cpu, including external device registers and ROM
-    pub mem: M,
     /// The program counter for the cpu
     pub pc: pc::ProgramCounter,
     /// Indicates if BCD arithmetic is enabled on this instance
     pub bcd_enabled: bool
 }
 
-impl Mos6502<mem::Fixed> {
-    /// Creates a `Mos6502` instance using a fixed memory
-    ///
-    /// The memory is attached at address `$0000`
-    ///
-    /// # Arguments
-    /// * `size` - The size of the memory to attach.
-    pub fn with_fixed_memory(size: usize) -> Self {
-        Mos6502::new(mem::Fixed::new(size))
-    }
-}
-
-impl Mos6502<mem::Empty> {
-    /// Creates a `Mos6502` instance with no attached memory
-    pub fn without_memory() -> Self {
-        Mos6502::new(mem::Empty)
-    }
-}
-
-impl<M> Mos6502<M> where M: mem::Memory {
-    /// Creates a `Mos6502` instance using a provided memory,
-    /// with BCD arithmetic enabled
+impl Mos6502 {
+    /// Creates a `Mos6502` instance, with BCD arithmetic enabled
     ///
     /// Use of BCD arithmetic still requires that the
     /// BCD flag be set.
-    pub fn new(mem: M) -> Self {
+    pub fn new() -> Mos6502 {
         Mos6502 {
             registers: Registers::new(),
-            mem: mem,
             flags: Flags::RESERVED(),
             pc: pc::ProgramCounter::new(),
             bcd_enabled: true
         }
     }
 
-    /// Creates a `Mos6502` instance using a provided memory,
-    /// with BCD arithmetic disabled
+    /// Creates a `Mos6502` instance, with BCD arithmetic disabled
     ///
     /// BCD arithmetic will not be available, regardless of the
     /// value of the BCD flag.
-    pub fn without_bcd(mem: M) -> Self {
+    pub fn without_bcd() -> Mos6502 {
         Mos6502 {
             registers: Registers::new(),
-            mem: mem,
             flags: Flags::RESERVED(),
             pc: pc::ProgramCounter::new(),
             bcd_enabled: false
@@ -148,9 +159,9 @@ impl<M> Mos6502<M> where M: mem::Memory {
     ///
     /// # Arguments
     /// * `val` - The value to push on to the stack
-    pub fn push(&mut self, val: u8) -> mem::Result<()> {
-        let addr = (self.registers.sp as u64) + STACK_START;
-        try!(self.mem.set_u8(addr, val));
+    pub fn push<M>(&mut self, mem: &mut M, val: u8) -> mem::Result<()> where M: mem::Memory {
+        let addr = (self.registers.sp as u64) + super::STACK_START;
+        try!(mem.set_u8(addr, val));
         self.registers.sp -= 1;
         Ok(())
     }
@@ -160,10 +171,10 @@ impl<M> Mos6502<M> where M: mem::Memory {
     /// Note: A `MemoryError::OutOfBounds` result is returned
     /// if there is no memory available in the stack range
     /// ($0100 - $01FF)
-    pub fn pull(&mut self) -> mem::Result<u8> {
+    pub fn pull<M>(&mut self, mem: &M) -> mem::Result<u8> where M: mem::Memory {
         self.registers.sp += 1;
-        let addr = (self.registers.sp as u64) + STACK_START;
-        self.mem.get_u8(addr)
+        let addr = (self.registers.sp as u64) + super::STACK_START;
+        mem.get_u8(addr)
     }
 }
 
@@ -183,7 +194,7 @@ pub struct Registers {
 impl Registers {
     /// Allocates an empty set of registers
     pub fn new() -> Registers {
-        Registers { a: 0, x: 0, y: 0, sp: 0 }
+        Registers { a: 0, x: 0, y: 0, sp: 0xFD }
     }
 }
 
@@ -288,41 +299,41 @@ mod test {
 
         #[test]
         pub fn push_places_value_at_current_sp_location() {
-            let mut cpu = setup_cpu();
-            cpu.push(42).unwrap();
-            assert_eq!(Ok(42), cpu.mem.get_u8(mos6502::cpu::STACK_START + 5));
+            let (cpu, mut mem) = setup_cpu();
+            cpu.push(&mut mem, 42).unwrap();
+            assert_eq!(Ok(42), mem.get_u8(mos6502::STACK_START + 5));
         }
 
         #[test]
         pub fn push_decrements_sp() {
-            let mut cpu = setup_cpu();
-            cpu.push(42).unwrap();
+            let (cpu, mut mem) = setup_cpu();
+            cpu.push(&mut mem, 42).unwrap();
             assert_eq!(4, cpu.registers.sp);
         }
 
         #[test]
         pub fn pull_gets_value_at_sp_plus_one() {
-            let mut cpu = setup_cpu();
-            cpu.mem.set_u8(mos6502::cpu::STACK_START + 6, 24).unwrap();
-            assert_eq!(Ok(24), cpu.pull());
+            let (cpu, mut mem) = setup_cpu();
+            mem.set_u8(mos6502::STACK_START + 6, 24).unwrap();
+            assert_eq!(Ok(24), cpu.pull(&mem));
         }
 
         #[test]
         pub fn pull_increments_sp() {
-            let mut cpu = setup_cpu();
-            cpu.mem.set_u8(mos6502::cpu::STACK_START + 6, 24).unwrap();
-            cpu.pull().unwrap();
+            let (cpu, mut mem) = setup_cpu();
+            mem.set_u8(mos6502::STACK_START + 6, 24).unwrap();
+            cpu.pull(&mem).unwrap();
             assert_eq!(6, cpu.registers.sp);
         }
 
-        pub fn setup_cpu<'a>() -> mos6502::Mos6502<mem::Virtual<'a>> {
+        pub fn setup_cpu<'a>() -> (mos6502::Mos6502,mem::Virtual<'a>) {
             let mem = mem::Fixed::new(10);
             let mut vm = mem::Virtual::new();
-            vm.attach(mos6502::cpu::STACK_START, Box::new(mem)).unwrap();
+            vm.attach(mos6502::STACK_START, Box::new(mem)).unwrap();
 
-            let mut cpu = mos6502::Mos6502::new(vm);
+            let mut cpu = mos6502::Mos6502::new();
             cpu.registers.sp = 5;
-            cpu
+            (cpu,vm)
         }
     }
 
@@ -438,56 +449,56 @@ mod test {
 
         #[test]
         pub fn gets_a() {
-            let mut cpu = Mos6502::without_memory();
+            let mut cpu = Mos6502::new();
             cpu.registers.a = 42;
             assert_eq!(cpu::RegisterName::A.get(&cpu), 42);
         }
 
         #[test]
         pub fn gets_x() {
-            let mut cpu = Mos6502::without_memory();
+            let mut cpu = Mos6502::new();
             cpu.registers.x = 42;
             assert_eq!(cpu::RegisterName::X.get(&cpu), 42);
         }
 
         #[test]
         pub fn gets_y() {
-            let mut cpu = Mos6502::without_memory();
+            let mut cpu = Mos6502::new();
             cpu.registers.y = 42;
             assert_eq!(cpu::RegisterName::Y.get(&cpu), 42);
         }
 
         #[test]
         pub fn gets_p() {
-            let mut cpu = Mos6502::without_memory();
+            let mut cpu = Mos6502::new();
             cpu.flags.set(Flags::SIGN() | Flags::CARRY()); 
             assert_eq!(cpu::RegisterName::P.get(&cpu), cpu.flags.bits);
         }
 
         #[test]
         pub fn sets_a() {
-            let mut cpu = Mos6502::without_memory();
+            let mut cpu = Mos6502::new();
             cpu::RegisterName::A.set(&mut cpu, 42);
             assert_eq!(cpu.registers.a, 42);
         }
 
         #[test]
         pub fn sets_x() {
-            let mut cpu = Mos6502::without_memory();
+            let mut cpu = Mos6502::new();
             cpu::RegisterName::X.set(&mut cpu, 42);
             assert_eq!(cpu.registers.x, 42);
         }
 
         #[test]
         pub fn sets_y() {
-            let mut cpu = Mos6502::without_memory();
+            let mut cpu = Mos6502::new();
             cpu::RegisterName::Y.set(&mut cpu, 42);
             assert_eq!(cpu.registers.y, 42);
         }
 
         #[test]
         pub fn sets_p() {
-            let mut cpu = Mos6502::without_memory();
+            let mut cpu = Mos6502::new();
             cpu::RegisterName::P.set(&mut cpu, (Flags::SIGN() | Flags::CARRY()).bits);
             assert_eq!(Flags::SIGN() | Flags::CARRY() | Flags::RESERVED(), cpu.flags);
         }

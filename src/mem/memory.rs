@@ -67,7 +67,10 @@ pub enum ErrorKind {
     MemoryNotReadable,
 
     /// The provided address referred to memory that is not writable
-    MemoryNotWritable
+    MemoryNotWritable,
+
+    /// An unknown error occurred
+    Other
 }
 
 /// Represents any memory accessible to a CPU

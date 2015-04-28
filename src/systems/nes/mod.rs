@@ -5,4 +5,3 @@ pub mod rom;
 
 /// Contains code to emulate cartridge hardware (Mappers, etc.)
 pub mod cart;
-

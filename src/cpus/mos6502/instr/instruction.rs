@@ -18,59 +18,39 @@ pub enum Instruction {
     ASL(Operand),
     ARR(Operand),
     AXS(Operand),
-    BCC(i8),
-    BCS(i8),
-    BEQ(i8),
+    BCC(Operand),
+    BCS(Operand),
+    BEQ(Operand),
     BIT(Operand),
-    BMI(i8),
-    BNE(i8),
-    BPL(i8),
-    BRK,
-    BVC(i8),
-    BVS(i8),
-    CLC,
-    CLD,
-    CLI,
-    CLV,
+    BMI(Operand),
+    BNE(Operand),
+    BPL(Operand),
+    BVC(Operand),
+    BVS(Operand),
     CMP(Operand),
     CPX(Operand),
     CPY(Operand),
     DCP(Operand),
     DEC(Operand),
-    DEX,
-    DEY,
     EOR(Operand),
-    HLT,
     IGN(Operand),
     INC(Operand),
-    INX,
-    INY,
     ISC(Operand),
     JMP(Operand),
-    JSR(u16),
+    JSR(Operand),
     LAS(Operand),
     LAX(Operand),
     LDA(Operand),
     LDX(Operand),
     LDY(Operand),
     LSR(Operand),
-    NOP,
     ORA(Operand),
-    PHA,
-    PHP,
-    PLA,
-    PLP,
     RLA(Operand),
     ROL(Operand),
     ROR(Operand),
     RRA(Operand),
-    RTI,
-    RTS,
     SAX(Operand),
     SBC(Operand),
-    SEC,
-    SED,
-    SEI,
     SHY(Operand),
     SHX(Operand),
     SKB(Operand),
@@ -80,13 +60,33 @@ pub enum Instruction {
     STX(Operand),
     STY(Operand),
     TAS(Operand),
+    XAA(Operand),
+    BRK,
+    CLC,
+    CLD,
+    CLI,
+    CLV,
+    DEX,
+    DEY,
+    HLT,
+    INX,
+    INY,
+    NOP,
+    PHA,
+    PHP,
+    PLA,
+    PLP,
+    RTI,
+    RTS,
+    SEC,
+    SED,
+    SEI,
     TAX,
     TAY,
     TSX,
     TXA,
     TXS,
     TYA,
-    XAA(Operand)
 }
 
 impl Instruction {
@@ -99,74 +99,88 @@ impl Instruction {
         exec::dispatch(self, cpu, mem)
     }
 
-    /// Formats the instruction, using the provided value as the base Program Counter value for
-    /// calculating absolute addresses from instructions that store an offset
-    pub fn render(&self, pc: u16) -> String {
-        // TODO: Clean this up... I don't like having the trait and struct be the same...
-        use instr::Instruction as InstrTrait;
-
+    pub fn operand(self) -> Option<Operand> {
         match self {
             // Instructions with operands
-            &Instruction::ADC(op) |
-            &Instruction::AHX(op) |
-            &Instruction::ALR(op) |
-            &Instruction::AND(op) |
-            &Instruction::ANC(op) |
-            &Instruction::ARR(op) |
-            &Instruction::ASL(op) |
-            &Instruction::AXS(op) |
-            &Instruction::BIT(op) |
-            &Instruction::STA(op) |
-            &Instruction::STX(op) |
-            &Instruction::STY(op) |
-            &Instruction::CMP(op) |
-            &Instruction::CPX(op) |
-            &Instruction::CPY(op) |
-            &Instruction::DCP(op) |
-            &Instruction::DEC(op) |
-            &Instruction::EOR(op) |
-            &Instruction::IGN(op) |
-            &Instruction::INC(op) |
-            &Instruction::ISC(op) |
-            &Instruction::JMP(op) |
-            &Instruction::LAS(op) |
-            &Instruction::LDA(op) |
-            &Instruction::LDX(op) |
-            &Instruction::LDY(op) |
-            &Instruction::LSR(op) |
-            &Instruction::ORA(op) |
-            &Instruction::RLA(op) |
-            &Instruction::ROL(op) |
-            &Instruction::ROR(op) |
-            &Instruction::RRA(op) |
-            &Instruction::SAX(op) |
-            &Instruction::SBC(op) |
-            &Instruction::SHY(op) |
-            &Instruction::SHX(op) |
-            &Instruction::SKB(op) |
-            &Instruction::SLO(op) |
-            &Instruction::SRE(op) |
-            &Instruction::TAS(op) |
-            &Instruction::XAA(op) => format!("{} {}", self.mnemonic(), op),
+            Instruction::ADC(op) |
+            Instruction::AHX(op) |
+            Instruction::ALR(op) |
+            Instruction::AND(op) |
+            Instruction::ANC(op) |
+            Instruction::ASL(op) |
+            Instruction::ARR(op) |
+            Instruction::AXS(op) |
+            Instruction::BCC(op) |
+            Instruction::BCS(op) |
+            Instruction::BEQ(op) |
+            Instruction::BIT(op) |
+            Instruction::BMI(op) |
+            Instruction::BNE(op) |
+            Instruction::BPL(op) |
+            Instruction::BVC(op) |
+            Instruction::BVS(op) |
+            Instruction::CMP(op) |
+            Instruction::CPX(op) |
+            Instruction::CPY(op) |
+            Instruction::DCP(op) |
+            Instruction::DEC(op) |
+            Instruction::EOR(op) |
+            Instruction::IGN(op) |
+            Instruction::INC(op) |
+            Instruction::ISC(op) |
+            Instruction::JMP(op) |
+            Instruction::JSR(op) |
+            Instruction::LAS(op) |
+            Instruction::LAX(op) |
+            Instruction::LDA(op) |
+            Instruction::LDX(op) |
+            Instruction::LDY(op) |
+            Instruction::LSR(op) |
+            Instruction::ORA(op) |
+            Instruction::RLA(op) |
+            Instruction::ROL(op) |
+            Instruction::ROR(op) |
+            Instruction::RRA(op) |
+            Instruction::SAX(op) |
+            Instruction::SBC(op) |
+            Instruction::SHY(op) |
+            Instruction::SHX(op) |
+            Instruction::SKB(op) |
+            Instruction::SLO(op) |
+            Instruction::SRE(op) |
+            Instruction::STA(op) |
+            Instruction::STX(op) |
+            Instruction::STY(op) |
+            Instruction::TAS(op) |
+            Instruction::XAA(op) => Some(op),
 
-            // Instructions with signed offsets
-            &Instruction::BCC(x) |
-            &Instruction::BCS(x) |
-            &Instruction::BEQ(x) |
-            &Instruction::BMI(x) |
-            &Instruction::BNE(x) |
-            &Instruction::BVC(x) |
-            &Instruction::BVS(x) |
-            &Instruction::BPL(x) => format!(
-                    "{} ${:04X}",
-                    self.mnemonic(),
-                    ((pc as isize) + (x as isize)) as u16),
-
-            // Instructions with absolute addresses
-            &Instruction::JSR(x) => format!("{} ${:X}", self.mnemonic(), x),
-
-            // Instructions with no operands (others)
-            _ => self.mnemonic().to_string()
+            // Why not use _ here? Because I want to be absolutely sure I'm being exhaustive.
+            Instruction::BRK |
+            Instruction::CLC |
+            Instruction::CLD |
+            Instruction::CLI |
+            Instruction::CLV |
+            Instruction::DEX |
+            Instruction::DEY |
+            Instruction::HLT |
+            Instruction::INX |
+            Instruction::INY |
+            Instruction::NOP |
+            Instruction::PHA |
+            Instruction::PHP |
+            Instruction::PLA |
+            Instruction::PLP |
+            Instruction::RTI |
+            Instruction::RTS |
+            Instruction::SEC |
+            Instruction::SED |
+            Instruction::SEI |
+            Instruction::TAX |
+            Instruction::TAY |
+            Instruction::TSX |
+            Instruction::TXA |
+            Instruction::TXS |
+            Instruction::TYA => None,
         }
     }
 }
@@ -262,6 +276,11 @@ impl instr::Instruction for Instruction {
 
 impl fmt::Display for Instruction {
     fn fmt(&self, formatter: &mut fmt::Formatter) -> Result<(), fmt::Error> {
-        write!(formatter, "{}", self.render(0))
+        use instr::Instruction;
+
+        match self.operand() {
+            Some(op) => write!(formatter, "{} {}", self.mnemonic(), op),
+            None => formatter.write_str(self.mnemonic())
+        }
     }
 }

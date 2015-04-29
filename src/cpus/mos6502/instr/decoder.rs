@@ -73,7 +73,7 @@ pub fn decode<R>(mut reader: R) -> Result<Instruction> where R: io::Read {
         0x0E => Instruction::ASL(try!(read_abs(&mut reader))),
         0x0F => Instruction::SLO(try!(read_abs(&mut reader))),
 
-        0x10 => Instruction::BPL(try!(read_byte(&mut reader)) as i8),
+        0x10 => Instruction::BPL(try!(read_offset(&mut reader))),
         0x11 => Instruction::ORA(try!(read_ind_y(&mut reader))),
         0x12 => Instruction::HLT,
         0x13 => Instruction::SLO(try!(read_ind_y(&mut reader))),
@@ -90,7 +90,7 @@ pub fn decode<R>(mut reader: R) -> Result<Instruction> where R: io::Read {
         0x1E => Instruction::ASL(try!(read_abs_x(&mut reader))),
         0x1F => Instruction::SLO(try!(read_abs_x(&mut reader))),
 
-        0x20 => Instruction::JSR(try!(read_u16(&mut reader))),
+        0x20 => Instruction::JSR(try!(read_imm_word(&mut reader))),
         0x21 => Instruction::AND(try!(read_ind_x(&mut reader))),
         0x22 => Instruction::HLT,
         0x23 => Instruction::RLA(try!(read_ind_x(&mut reader))),
@@ -107,7 +107,7 @@ pub fn decode<R>(mut reader: R) -> Result<Instruction> where R: io::Read {
         0x2E => Instruction::ROL(try!(read_abs(&mut reader))),
         0x2F => Instruction::RLA(try!(read_abs(&mut reader))),
 
-        0x30 => Instruction::BMI(try!(read_byte(&mut reader)) as i8),
+        0x30 => Instruction::BMI(try!(read_offset(&mut reader))),
         0x31 => Instruction::AND(try!(read_ind_y(&mut reader))),
         0x32 => Instruction::HLT,
         0x33 => Instruction::RLA(try!(read_ind_y(&mut reader))),
@@ -141,7 +141,7 @@ pub fn decode<R>(mut reader: R) -> Result<Instruction> where R: io::Read {
         0x4E => Instruction::LSR(try!(read_abs(&mut reader))),
         0x4F => Instruction::SRE(try!(read_abs(&mut reader))),
 
-        0x50 => Instruction::BVC(try!(read_byte(&mut reader)) as i8),
+        0x50 => Instruction::BVC(try!(read_offset(&mut reader))),
         0x51 => Instruction::EOR(try!(read_ind_y(&mut reader))),
         0x52 => Instruction::HLT,
         0x53 => Instruction::SRE(try!(read_ind_y(&mut reader))),
@@ -175,7 +175,7 @@ pub fn decode<R>(mut reader: R) -> Result<Instruction> where R: io::Read {
         0x6E => Instruction::ROR(try!(read_abs(&mut reader))),
         0x6F => Instruction::RRA(try!(read_abs(&mut reader))),
 
-        0x70 => Instruction::BVS(try!(read_byte(&mut reader)) as i8),
+        0x70 => Instruction::BVS(try!(read_offset(&mut reader))),
         0x71 => Instruction::ADC(try!(read_ind_y(&mut reader))),
         0x72 => Instruction::HLT,
         0x73 => Instruction::RRA(try!(read_ind_y(&mut reader))),
@@ -209,7 +209,7 @@ pub fn decode<R>(mut reader: R) -> Result<Instruction> where R: io::Read {
         0x8E => Instruction::STX(try!(read_abs(&mut reader))),
         0x8F => Instruction::SAX(try!(read_abs(&mut reader))),
 
-        0x90 => Instruction::BCC(try!(read_byte(&mut reader)) as i8),
+        0x90 => Instruction::BCC(try!(read_offset(&mut reader))),
         0x91 => Instruction::STA(try!(read_ind_y(&mut reader))),
         0x92 => Instruction::HLT,
         0x93 => Instruction::AHX(try!(read_ind_y(&mut reader))),
@@ -243,7 +243,7 @@ pub fn decode<R>(mut reader: R) -> Result<Instruction> where R: io::Read {
         0xAE => Instruction::LDX(try!(read_abs(&mut reader))),
         0xAF => Instruction::LAX(try!(read_abs(&mut reader))),
 
-        0xB0 => Instruction::BCS(try!(read_byte(&mut reader)) as i8),
+        0xB0 => Instruction::BCS(try!(read_offset(&mut reader))),
         0xB1 => Instruction::LDA(try!(read_ind_y(&mut reader))),
         0xB2 => Instruction::HLT,
         0xB3 => Instruction::LAX(try!(read_ind_y(&mut reader))),
@@ -277,7 +277,7 @@ pub fn decode<R>(mut reader: R) -> Result<Instruction> where R: io::Read {
         0xCE => Instruction::DEC(try!(read_abs(&mut reader))),
         0xCF => Instruction::DCP(try!(read_abs(&mut reader))),
 
-        0xD0 => Instruction::BNE(try!(read_byte(&mut reader)) as i8),
+        0xD0 => Instruction::BNE(try!(read_offset(&mut reader))),
         0xD1 => Instruction::CMP(try!(read_ind_y(&mut reader))),
         0xD2 => Instruction::HLT,
         0xD3 => Instruction::DCP(try!(read_ind_y(&mut reader))),
@@ -311,7 +311,7 @@ pub fn decode<R>(mut reader: R) -> Result<Instruction> where R: io::Read {
         0xEE => Instruction::INC(try!(read_abs(&mut reader))),
         0xEF => Instruction::ISC(try!(read_abs(&mut reader))),
 
-        0xF0 => Instruction::BEQ(try!(read_byte(&mut reader)) as i8),
+        0xF0 => Instruction::BEQ(try!(read_offset(&mut reader))),
         0xF1 => Instruction::SBC(try!(read_ind_y(&mut reader))),
         0xF2 => Instruction::HLT,
         0xF3 => Instruction::ISC(try!(read_ind_y(&mut reader))),
@@ -356,6 +356,14 @@ fn read_imm<R>(reader: &mut R) -> Result<Operand> where R: io::Read {
     Ok(Operand::Immediate(try!(read_byte(reader))))
 }
 
+fn read_imm_word<R>(reader: &mut R) -> Result<Operand> where R: io::Read {
+    Ok(Operand::TwoByteImmediate(try!(read_u16(reader))))
+}
+
+fn read_offset<R>(reader: &mut R) -> Result<Operand> where R: io::Read {
+    Ok(Operand::Offset(try!(read_byte(reader)) as i8))
+}
+
 fn read_zp<R>(reader: &mut R) -> Result<Operand> where R: io::Read {
     let zp = try!(read_byte(reader));
     Ok(Operand::Absolute(zp as u16))
@@ -381,7 +389,7 @@ fn read_ind_y<R>(reader: &mut R) -> Result<Operand> where R: io::Read {
 
 fn read_byte<R>(reader: &mut R) -> Result<u8> where R: io::Read {
     let mut buf : [u8; 1] = [0; 1];
-    
+
     match reader.read(&mut buf) {
         Ok(0) => Err(Error::EndOfFile),
         Ok(_) => Ok(buf[0]),
@@ -431,14 +439,14 @@ mod test {
 
     #[test]
     pub fn can_decode_branches() {
-        decoder_test(vec![0x90, 0x82], Instruction::BCC(-126));
-        decoder_test(vec![0xB0, 0x82], Instruction::BCS(-126));
-        decoder_test(vec![0xF0, 0x82], Instruction::BEQ(-126));
-        decoder_test(vec![0x30, 0x82], Instruction::BMI(-126));
-        decoder_test(vec![0xD0, 0x82], Instruction::BNE(-126));
-        decoder_test(vec![0x10, 0x82], Instruction::BPL(-126));
-        decoder_test(vec![0x50, 0x82], Instruction::BVC(-126));
-        decoder_test(vec![0x70, 0x82], Instruction::BVS(-126));
+        decoder_test(vec![0x90, 0x82], Instruction::BCC(Operand::Offset(-126)));
+        decoder_test(vec![0xB0, 0x82], Instruction::BCS(Operand::Offset(-126)));
+        decoder_test(vec![0xF0, 0x82], Instruction::BEQ(Operand::Offset(-126)));
+        decoder_test(vec![0x30, 0x82], Instruction::BMI(Operand::Offset(-126)));
+        decoder_test(vec![0xD0, 0x82], Instruction::BNE(Operand::Offset(-126)));
+        decoder_test(vec![0x10, 0x82], Instruction::BPL(Operand::Offset(-126)));
+        decoder_test(vec![0x50, 0x82], Instruction::BVC(Operand::Offset(-126)));
+        decoder_test(vec![0x70, 0x82], Instruction::BVS(Operand::Offset(-126)));
     }
 
     #[test]
@@ -542,7 +550,7 @@ mod test {
 
     #[test]
     pub fn can_decode_jsr() {
-        decoder_test(vec![0x20, 0xCD, 0xAB], Instruction::JSR(0xABCD));
+        decoder_test(vec![0x20, 0xCD, 0xAB], Instruction::JSR(Operand::TwoByteImmediate(0xABCD)));
     }
 
     #[test]

@@ -1,28 +1,30 @@
 use mem::Memory;
-use cpus::mos6502::exec;
-use cpus::mos6502::Mos6502;
+use cpus::mos6502::{exec,Mos6502,Operand};
 
-pub fn exec<M>(cpu: &mut Mos6502, mem: &mut M, addr: u16) -> Result<(), exec::Error> where M: Memory {
-    let pc = cpu.pc.get() - 1;
-    try!(cpu.push(mem, ((pc & 0xFF00) >> 8) as u8));
-    try!(cpu.push(mem, (pc & 0x00FF) as u8));
-    cpu.pc.set(addr as u64);
-    Ok(())
+pub fn exec<M>(cpu: &mut Mos6502, mem: &mut M, op: Operand) -> Result<(), exec::Error> where M: Memory {
+    if let Operand::TwoByteImmediate(addr) = op {
+        let pc = cpu.pc.get() - 1;
+        try!(cpu.push(mem, ((pc & 0xFF00) >> 8) as u8));
+        try!(cpu.push(mem, (pc & 0x00FF) as u8));
+        cpu.pc.set(addr as u64);
+        Ok(())
+    } else {
+        Err(exec::Error::IllegalOperand)
+    }
 }
 
 #[cfg(test)]
 mod test {
     use mem;
     use mem::Memory;
-    use cpus::mos6502::Mos6502;
-    use cpus::mos6502::STACK_START;
+    use cpus::mos6502::{Mos6502,Operand,STACK_START};
     use cpus::mos6502::exec::jsr;
 
     #[test]
     pub fn jsr_sets_pc_to_address() {
         let (mut cpu, mut mem) = init_cpu();
 
-        jsr::exec(&mut cpu, &mut mem, 0xBEEF).unwrap();
+        jsr::exec(&mut cpu, &mut mem, Operand::TwoByteImmediate(0xBEEF)).unwrap();
 
         assert_eq!(0xBEEF, cpu.pc.get());
     }
@@ -31,7 +33,7 @@ mod test {
     pub fn jsr_pushes_old_pc_minus_one_to_stack() {
         let (mut cpu, mut mem) = init_cpu();
 
-        jsr::exec(&mut cpu, &mut mem, 0xBEEF).unwrap();
+        jsr::exec(&mut cpu, &mut mem, Operand::TwoByteImmediate(0xBEEF)).unwrap();
 
         assert_eq!(Ok(0xCC), cpu.pull(&mem));
         assert_eq!(Ok(0xAB), cpu.pull(&mem));

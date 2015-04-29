@@ -36,7 +36,18 @@ pub enum Operand {
     /// Indicates an operand stored at an address (indexed by the `Y` register) stored in the provided address
     ///
     /// If the provided address is `x`, this operand is defined as `*(*m+y)`
-    PostIndexedIndirect(u8)
+    PostIndexedIndirect(u8),
+
+    /// Indicates an operand stored as an offset to the program counter
+    ///
+    /// This variant is never used as a general-purpose operand, it is
+    /// always tested for explicitly and unwrapped
+    Offset(i8),
+    /// Indicates an operand stored as a 16-bit immediate value
+    ///
+    /// This variant is never used as a general-purpose operand, it is
+    /// always tested for explicitly and unwrapped
+    TwoByteImmediate(u16)
 }
 
 /// Represents an error that occurred which accessing an `Operand`
@@ -154,7 +165,9 @@ impl fmt::Display for Operand {
                 },
             &Operand::Indirect(val)              => write!(formatter, "${:04X}", val),
             &Operand::PreIndexedIndirect(val)    => write!(formatter, "(${:02X},X)", val),
-            &Operand::PostIndexedIndirect(val)   => write!(formatter, "(${:02X}),Y", val)
+            &Operand::PostIndexedIndirect(val)   => write!(formatter, "(${:02X}),Y", val),
+            &Operand::Offset(val)                => write!(formatter, "{}${:02X}", if val < 0 { "-" } else { "" }, val),
+            &Operand::TwoByteImmediate(val)      => write!(formatter, "${:04X}", val),
         }
     }
 }

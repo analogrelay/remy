@@ -7,7 +7,9 @@ pub fn exec<M>(cpu: &mut Mos6502, mem: &M, op: Operand, with_carry: bool) -> exe
     let res = cpu.registers.a & opv;
     cpu.registers.a = res;
     cpu.flags.set_sign_and_zero(res);
-    cpu.flags.set_if(Flags::CARRY(), with_carry && (res & 0x80 != 0));
+    if with_carry {
+        cpu.flags.set_if(Flags::CARRY(), res & 0x80 != 0);
+    }
     Ok(())
 }
 

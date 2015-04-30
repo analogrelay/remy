@@ -199,7 +199,7 @@ impl Registers {
 }
 
 /// Represents the processor status flags supported by the MOS 6502 CPU
-#[derive(Copy,Clone,Debug,Eq,PartialEq)]
+#[derive(Copy,Clone,Eq,PartialEq)]
 pub struct Flags {
     pub bits: u8
 }
@@ -259,6 +259,41 @@ impl Flags {
     pub fn set_sign_and_zero(&mut self, val: u8) {
         self.set_if(Flags::ZERO(), val == 0);
         self.set_if(Flags::SIGN(), val & 0x80 != 0);
+    }
+}
+
+impl fmt::Debug for Flags {
+    fn fmt(&self, fmt: &mut fmt::Formatter) -> fmt::Result {
+        let mut val = String::new();
+        if self.intersects(Flags::SIGN()) {
+            val.push_str("SIGN,");
+        }
+        if self.intersects(Flags::OVERFLOW()) {
+            val.push_str("OVERFLOW,");
+        }
+        if self.intersects(Flags::RESERVED()) {
+            val.push_str("RESERVED,");
+        }
+        if self.intersects(Flags::BREAK()) {
+            val.push_str("BREAK,");
+        }
+        if self.intersects(Flags::BCD()) {
+            val.push_str("DECIMAL,");
+        }
+        if self.intersects(Flags::INTERRUPT()) {
+            val.push_str("INTERRUPT,");
+        }
+        if self.intersects(Flags::ZERO()) {
+            val.push_str("ZERO,");
+        }
+        if self.intersects(Flags::CARRY()) {
+            val.push_str("CARRY,");
+        }
+        if val.len() > 0 {
+            let new_len = val.len() - 1;
+            val.truncate(new_len);
+        }
+        fmt.write_str(val.as_str())
     }
 }
 

@@ -11,6 +11,7 @@
 
 // Features used in all builds
 #![feature(core)]
+#![feature(convert)]
 #![feature(debug_builders)]
 
 // Import crates

@@ -4,8 +4,12 @@ use cpus::mos6502::Mos6502;
 
 pub fn exec<M>(cpu: &mut Mos6502, mem: &M, r: cpu::RegisterName) -> Result<(), exec::Error> where M : Memory {
     let val = try!(cpu.pull(mem));
-    cpu.flags.set_sign_and_zero(val);
     r.set(cpu, val);
+    if r != cpu::RegisterName::P {
+        cpu.flags.set_sign_and_zero(val);
+    } else {
+        cpu.flags.clear(cpu::Flags::BREAK());
+    }
     Ok(())
 }
 
@@ -55,6 +59,14 @@ mod test {
         cpu.push(&mut mem, 0).unwrap();
         pull::exec(&mut cpu, &mem, cpu::RegisterName::A).unwrap();
         assert!(cpu.flags.intersects(Flags::ZERO()));
+    }
+
+    #[test]
+    pub fn pull_clears_brk_flag_when_pulling_flags() {
+        let (mut cpu, mut mem) = init_cpu();
+        cpu.push(&mut mem, (cpu::Flags::SIGN() | cpu::Flags::BREAK()).bits).unwrap();
+        pull::exec(&mut cpu, &mem, cpu::RegisterName::P).unwrap();
+        assert_eq!(cpu::Flags::SIGN() | cpu::Flags::RESERVED(), cpu.flags);
     }
 
     fn init_cpu() -> (Mos6502,mem::Virtual<'static>) {

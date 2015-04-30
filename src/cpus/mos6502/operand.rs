@@ -110,6 +110,16 @@ impl Operand {
         })
     }
 
+    /// Returns true if the operand has an address (aka, it is an 'lvalue')
+    pub fn has_addr(&self) -> bool {
+        match self {
+            &Operand::Immediate(_) |
+                &Operand::Accumulator |
+                &Operand::TwoByteImmediate(_) => false,
+            _ => true
+        }
+    }
+
     /// Sets the value of the operand on the specified cpu
     ///
     /// # Arguments

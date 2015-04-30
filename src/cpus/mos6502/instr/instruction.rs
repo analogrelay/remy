@@ -279,8 +279,8 @@ impl fmt::Display for Instruction {
         use instr::Instruction;
 
         match self.operand() {
-            Some(op) => write!(formatter, "{} {}", self.mnemonic(), op),
-            None => formatter.write_str(self.mnemonic())
+            Some(op) => formatter.write_fmt(format_args!("{} {}", self.mnemonic(), op)),
+            None => formatter.pad(self.mnemonic())
         }
     }
 }

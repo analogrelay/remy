@@ -74,7 +74,7 @@ fn main() {
                 .take(instr_size)
                 .map(|&x| format!("{:02X} ", x))
                 .fold(String::with_capacity(instr_size), |s,v| s + v.as_str()),
-            instr,
+            format!("{}", instr),
             a,
             x,
             y,

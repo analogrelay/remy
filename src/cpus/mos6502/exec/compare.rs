@@ -4,21 +4,10 @@ use cpus::mos6502::{cpu,Mos6502,Flags,Operand};
 
 pub fn exec<M>(cpu: &mut Mos6502, mem: &M, reg: cpu::RegisterName, op: Operand) -> Result<(), exec::Error> where M: Memory {
     let val = try!(op.get_u8(cpu, mem));
-    let t = (reg.get(cpu) as isize) - (val as isize);
+    let t = reg.get(cpu) as i16 - val as i16;
 
-    cpu.flags.clear(
-        Flags::SIGN() |
-        Flags::CARRY() |
-        Flags::ZERO());
-
-    if t < 0 {
-        cpu.flags.set(Flags::SIGN());
-    } else if t >= 0 {
-        cpu.flags.set(Flags::CARRY());
-        if t == 0 {
-            cpu.flags.set(Flags::ZERO());
-        }
-    }
+    cpu.flags.set_if(Flags::CARRY(), t >= 0);
+    cpu.flags.set_sign_and_zero(t as u8);
     Ok(())
 }
 

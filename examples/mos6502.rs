@@ -61,21 +61,7 @@ fn main() {
         let sp = cpu.registers.sp;
 
         // Format the instruction log entry
-        let instr_str: String = convert::Into::into(instr.mnemonic());
-        let operand_str = match instr.operand() {
-            Some(mos6502::Operand::Offset(offset)) => format!("${:04X}", ((end_addr as i32) + (offset as i32)) as u16),
-            Some(op) if op.has_addr() => match instr {
-                mos6502::Instruction::JMP(_) | mos6502::Instruction::JSR(_) => format!("{}", op),
-                _ => {
-                    let addr = op.get_addr(&cpu, &memory).unwrap();
-                    let value = memory.get_u8(addr as u64).unwrap();
-                    format!("{} = {:02X}", op, value)
-                }
-            },
-            Some(op)                               => format!("{}", op),
-            None                                   => convert::Into::into("")
-        };
-
+        let instr_str = instr.get_log_string(&cpu, &memory);
 
         // Dispatch the instruction, but use a clone so we can still dump the instruction to the
         // log
@@ -85,14 +71,13 @@ fn main() {
         //  In the style of the nestest log
         // C000  4C F5 C5  JMP $C5F5                       A:00 X:00 Y:00 P:24 SP:FD CYC:  0 SL:241
         println!(
-            "{:04X}  {:<9} {} {:<27} A:{:02X} X:{:02X} Y:{:02X} P:{:02X} SP:{:02X} CYC:  0 SL:  0",
+            "{:04X}  {:<9} {:<31} A:{:02X} X:{:02X} Y:{:02X} P:{:02X} SP:{:02X} CYC:  0 SL:  0",
             addr,
             buf.iter()
                 .take(instr_size)
                 .map(|&x| format!("{:02X} ", x))
                 .fold(String::with_capacity(instr_size), |s,v| s + v.as_str()),
             instr_str,
-            operand_str,
             a,
             x,
             y,

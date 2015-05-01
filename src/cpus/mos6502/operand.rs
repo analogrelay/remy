@@ -153,6 +153,23 @@ impl Operand {
             _                                   => return Err(Error::NonAddressOperand)
         })
     }
+
+    /// Get a string in the form of the nestest "golden log" output
+    pub fn get_log_string<M>(&self, cpu: &Mos6502, mem: &M) -> String where M: mem::Memory {
+        match self {
+            &Operand::Offset(offset) => format!("${:04X}", ((cpu.pc.get() as i32) + (offset as i32)) as u16),
+            &Operand::PreIndexedIndirect(addr) => {
+                let eaddr = addr + cpu.registers.x;
+                format!("{} @ {:02X} = {:04X} = {:02X}", self, eaddr, self.get_addr(cpu, mem).unwrap(), self.get_u8(cpu, mem).unwrap())
+            },
+            &op if op.has_addr() => {
+                let addr = op.get_addr(cpu, mem).unwrap();
+                let value = mem.get_u8(addr as u64).unwrap();
+                format!("{} = {:02X}", op, value)
+            },
+            &op => format!("{}", op),
+        }
+    }
 }
 
 impl fmt::Display for Operand {

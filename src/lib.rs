@@ -7,7 +7,8 @@
     unused_imports,
     unused_must_use,
     unused_features,
-    unused_variables)]
+    unused_variables,
+    unused_comparisons)]
 
 // Features used in all builds
 #![feature(core)]

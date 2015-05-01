@@ -5,7 +5,7 @@ use instr;
 use cpus::mos6502::exec;
 use cpus::mos6502::{Mos6502,Operand};
 
-use std::{io,fmt};
+use std::{convert,fmt,io};
 
 /// Represents an instruction that can be executed on a `Mos6502` processor
 #[derive(Copy,Clone,Debug,Eq,PartialEq)]
@@ -182,6 +182,22 @@ impl Instruction {
             Instruction::TXS |
             Instruction::TYA => None,
         }
+    }
+
+    /// Get a string in the form of the nestest "golden log" output
+    pub fn get_log_string<M>(&self, cpu: &Mos6502, mem: &M) -> String where M: mem::Memory {
+        use instr::Instruction as InstrTrait;
+
+        format!(
+            "{}{}",
+            self.mnemonic(),
+            match self {
+                &Instruction::JMP(op) | &Instruction::JSR(op) => format!(" {}", op),
+                _ => match self.operand() {
+                    Some(op) => format!(" {}", op.get_log_string(cpu, mem)),
+                    None => convert::Into::into("")
+                }
+            })
     }
 }
 

@@ -29,7 +29,6 @@ mod sbc;
 mod set_flag;
 mod store;
 mod transfer;
-mod utils;
 
 pub type Result = ::std::result::Result<(), Error>;
 

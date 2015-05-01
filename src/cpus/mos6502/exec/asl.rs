@@ -4,17 +4,11 @@ use cpus::mos6502::{Operand,Mos6502,Flags};
 
 pub fn exec<M>(cpu: &mut Mos6502, mem: &mut M, op: Operand) -> Result<(), exec::Error> where M: Memory {
     let b = try!(op.get_u8(cpu, mem));
-    if b & 0x80 != 0 {
-        cpu.flags.set(Flags::CARRY());
-    }
     let r = (b << 1) & 0xFE;
     try!(op.set_u8(cpu, mem, r));
-    if r & 0x80 != 0 {
-        cpu.flags.set(Flags::SIGN());
-    }
-    if r == 0 {
-        cpu.flags.set(Flags::ZERO());
-    }
+
+    cpu.flags.set_if(Flags::CARRY(), b & 0x80 != 0);
+    cpu.flags.set_sign_and_zero(r);
     Ok(())
 }
 
@@ -57,5 +51,14 @@ mod test {
         asl::exec(&mut cpu, &mut mem::Empty, Operand::Accumulator).unwrap();
         assert_eq!(cpu.registers.a, 0x00);
         assert_eq!(cpu.flags, Flags::ZERO() | Flags::RESERVED());
+    }
+
+    #[test]
+    pub fn asl_sets_zero_and_carry_correctly() {
+        let mut cpu = Mos6502::new();
+        cpu.registers.a = 0x80;
+        asl::exec(&mut cpu, &mut mem::Empty, Operand::Accumulator).unwrap();
+        assert_eq!(cpu.registers.a, 0x00);
+        assert_eq!(cpu.flags, Flags::CARRY() | Flags::ZERO() | Flags::RESERVED());
     }
 }

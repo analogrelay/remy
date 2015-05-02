@@ -3,11 +3,11 @@
 
 extern crate remy;
 
-use std::{convert,env,fs};
+use std::{env,fs};
 
 use remy::systems::nes;
 use remy::cpus::mos6502;
-use remy::mem::{self,Memory,MemoryExt};
+use remy::mem::{self,Memory};
 use remy::instr::Instruction;
 
 fn main() {

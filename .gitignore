@@ -12,3 +12,5 @@ target/
 
 # VI sadness :(
 *.swp
+*.swn
+*.swo

@@ -26,9 +26,13 @@ fn main() {
     // Load the ROM into memory
     let prg_rom = Box::new(mem::read_only(mem::Mirrored::new(mem::Fixed::from_contents(rom.prg_banks.remove(0)), 0x8000)));
 
+    // Create a black hole for APU/IO registers
+    let apu_io = Box::new(mem::Fixed::new(0x4000));
+
     // Set up the virtual memory
     let mut memory = mem::Virtual::new();
     memory.attach(0x0000, ram).unwrap();
+    memory.attach(0x4000, apu_io).unwrap();
     memory.attach(0x8000, prg_rom).unwrap();
 
     // If there is PRG RAM, set it up
@@ -45,13 +49,21 @@ fn main() {
     loop {
         // Fetch next instruction
         let addr = cpu.pc.get();
-        let instr: mos6502::Instruction = cpu.pc.decode(&memory).unwrap();
+        if addr == 0x0000 {
+            return;
+        }
+        let instr: mos6502::Instruction = match cpu.pc.decode(&memory) {
+            Ok(i) => i,
+            Err(e) => panic!("Error decoding instruction at ${:04X}: {}", addr, e)
+        };
         let end_addr = cpu.pc.get();
 
         // Load the actual value of the memory of the address
         let mut buf = [0u8; 3];
         let instr_size: usize = (end_addr - addr) as usize;
-        memory.get(addr, &mut buf[0..instr_size]).unwrap();
+        if let Err(e) = memory.get(addr, &mut buf[0..instr_size]) {
+            panic!("Error retrieving opcodes for instruction at ${:04X}: {}", addr, e)
+        }
 
         // Capture register values for logging
         let a = cpu.registers.a;
@@ -61,17 +73,22 @@ fn main() {
         let sp = cpu.registers.sp;
 
         // Format the instruction log entry
-        let instr_str = instr.get_log_string(&cpu, &memory);
+        let instr_str = match instr.get_log_string(&cpu, &memory) {
+            Ok(s) => s,
+            Err(e) => panic!("Error getting log string for ${:04X} {}: {}", addr, instr, e)
+        };
 
         // Dispatch the instruction, but use a clone so we can still dump the instruction to the
         // log
-        mos6502::dispatch(instr.clone(), &mut cpu, &mut memory).unwrap();
+        if let Err(e) = mos6502::dispatch(instr.clone(), &mut cpu, &mut memory) {
+            panic!("Error at ${:04X} {}: {}", addr, instr, e)
+        }
 
         // Log stuff
         //  In the style of the nestest log
         // C000  4C F5 C5  JMP $C5F5                       A:00 X:00 Y:00 P:24 SP:FD CYC:  0 SL:241
         println!(
-            "{:04X}  {:<9} {:<31} A:{:02X} X:{:02X} Y:{:02X} P:{:02X} SP:{:02X} CYC:  0 SL:  0",
+            "{:04X}  {:<9}{:<32} A:{:02X} X:{:02X} Y:{:02X} P:{:02X} SP:{:02X} CYC:  0 SL:  0",
             addr,
             buf.iter()
                 .take(instr_size)

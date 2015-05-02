@@ -83,7 +83,7 @@ pub fn decode<R>(mut reader: R) -> Result<Instruction> where R: io::Read {
         0x17 => Instruction::SLO(try!(read_zp_x(&mut reader))),
         0x18 => Instruction::CLC,
         0x19 => Instruction::ORA(try!(read_abs_y(&mut reader))),
-        0x1A => Instruction::NOP,
+        0x1A => Instruction::NOPX,
         0x1B => Instruction::SLO(try!(read_abs_y(&mut reader))),
         0x1C => Instruction::IGN(try!(read_abs_x(&mut reader))),
         0x1D => Instruction::ORA(try!(read_abs_x(&mut reader))),
@@ -117,7 +117,7 @@ pub fn decode<R>(mut reader: R) -> Result<Instruction> where R: io::Read {
         0x37 => Instruction::RLA(try!(read_zp_x(&mut reader))),
         0x38 => Instruction::SEC,
         0x39 => Instruction::AND(try!(read_abs_y(&mut reader))),
-        0x3A => Instruction::NOP,
+        0x3A => Instruction::NOPX,
         0x3B => Instruction::RLA(try!(read_abs_y(&mut reader))),
         0x3C => Instruction::IGN(try!(read_abs_x(&mut reader))),
         0x3D => Instruction::AND(try!(read_abs_x(&mut reader))),
@@ -151,7 +151,7 @@ pub fn decode<R>(mut reader: R) -> Result<Instruction> where R: io::Read {
         0x57 => Instruction::SRE(try!(read_zp_x(&mut reader))),
         0x58 => Instruction::CLI,
         0x59 => Instruction::EOR(try!(read_abs_y(&mut reader))),
-        0x5A => Instruction::NOP,
+        0x5A => Instruction::NOPX,
         0x5B => Instruction::SRE(try!(read_abs_y(&mut reader))),
         0x5C => Instruction::IGN(try!(read_abs_x(&mut reader))),
         0x5D => Instruction::EOR(try!(read_abs_x(&mut reader))),
@@ -185,7 +185,7 @@ pub fn decode<R>(mut reader: R) -> Result<Instruction> where R: io::Read {
         0x77 => Instruction::RRA(try!(read_zp_x(&mut reader))),
         0x78 => Instruction::SEI,
         0x79 => Instruction::ADC(try!(read_abs_y(&mut reader))),
-        0x7A => Instruction::NOP,
+        0x7A => Instruction::NOPX,
         0x7B => Instruction::RRA(try!(read_abs_y(&mut reader))),
         0x7C => Instruction::IGN(try!(read_abs_x(&mut reader))),
         0x7D => Instruction::ADC(try!(read_abs_x(&mut reader))),
@@ -287,7 +287,7 @@ pub fn decode<R>(mut reader: R) -> Result<Instruction> where R: io::Read {
         0xD7 => Instruction::DCP(try!(read_zp_x(&mut reader))),
         0xD8 => Instruction::CLD,
         0xD9 => Instruction::CMP(try!(read_abs_y(&mut reader))),
-        0xDA => Instruction::NOP,
+        0xDA => Instruction::NOPX,
         0xDB => Instruction::DCP(try!(read_abs_y(&mut reader))),
         0xDC => Instruction::IGN(try!(read_abs_x(&mut reader))),
         0xDD => Instruction::CMP(try!(read_abs_x(&mut reader))),
@@ -297,36 +297,36 @@ pub fn decode<R>(mut reader: R) -> Result<Instruction> where R: io::Read {
         0xE0 => Instruction::CPX(try!(read_imm(&mut reader))),
         0xE1 => Instruction::SBC(try!(read_ind_x(&mut reader))),
         0xE2 => Instruction::SKB(try!(read_imm(&mut reader))),
-        0xE3 => Instruction::ISC(try!(read_ind_x(&mut reader))),
+        0xE3 => Instruction::ISB(try!(read_ind_x(&mut reader))),
         0xE4 => Instruction::CPX(try!(read_zp(&mut reader))),
         0xE5 => Instruction::SBC(try!(read_zp(&mut reader))),
         0xE6 => Instruction::INC(try!(read_zp(&mut reader))),
-        0xE7 => Instruction::ISC(try!(read_zp(&mut reader))),
+        0xE7 => Instruction::ISB(try!(read_zp(&mut reader))),
         0xE8 => Instruction::INX,
         0xE9 => Instruction::SBC(try!(read_imm(&mut reader))),
         0xEA => Instruction::NOP,
-        0xEB => Instruction::SBC(try!(read_imm(&mut reader))),
+        0xEB => Instruction::SBCX(try!(read_imm(&mut reader))),
         0xEC => Instruction::CPX(try!(read_abs(&mut reader))),
         0xED => Instruction::SBC(try!(read_abs(&mut reader))),
         0xEE => Instruction::INC(try!(read_abs(&mut reader))),
-        0xEF => Instruction::ISC(try!(read_abs(&mut reader))),
+        0xEF => Instruction::ISB(try!(read_abs(&mut reader))),
 
         0xF0 => Instruction::BEQ(try!(read_offset(&mut reader))),
         0xF1 => Instruction::SBC(try!(read_ind_y(&mut reader))),
         0xF2 => Instruction::HLT,
-        0xF3 => Instruction::ISC(try!(read_ind_y(&mut reader))),
+        0xF3 => Instruction::ISB(try!(read_ind_y(&mut reader))),
         0xF4 => Instruction::IGN(try!(read_zp_x(&mut reader))),
         0xF5 => Instruction::SBC(try!(read_zp_x(&mut reader))),
         0xF6 => Instruction::INC(try!(read_zp_x(&mut reader))),
-        0xF7 => Instruction::ISC(try!(read_zp_x(&mut reader))),
+        0xF7 => Instruction::ISB(try!(read_zp_x(&mut reader))),
         0xF8 => Instruction::SED,
         0xF9 => Instruction::SBC(try!(read_abs_y(&mut reader))),
-        0xFA => Instruction::NOP,
-        0xFB => Instruction::ISC(try!(read_abs_y(&mut reader))),
+        0xFA => Instruction::NOPX,
+        0xFB => Instruction::ISB(try!(read_abs_y(&mut reader))),
         0xFC => Instruction::IGN(try!(read_abs_x(&mut reader))),
         0xFD => Instruction::SBC(try!(read_abs_x(&mut reader))),
         0xFE => Instruction::INC(try!(read_abs_x(&mut reader))),
-        0xFF => Instruction::ISC(try!(read_abs_x(&mut reader))),
+        0xFF => Instruction::ISB(try!(read_abs_x(&mut reader))),
 
         _ => return Err(Error::UnknownOpcode(opcode))
     };
@@ -597,12 +597,12 @@ mod test {
         decoder_test(vec![0xEA], Instruction::NOP);
 
         // Unofficial NOPs
-        decoder_test(vec![0x1A], Instruction::NOP);
-        decoder_test(vec![0x3A], Instruction::NOP);
-        decoder_test(vec![0x5A], Instruction::NOP);
-        decoder_test(vec![0x7A], Instruction::NOP);
-        decoder_test(vec![0xDA], Instruction::NOP);
-        decoder_test(vec![0xFA], Instruction::NOP);
+        decoder_test(vec![0x1A], Instruction::NOPX);
+        decoder_test(vec![0x3A], Instruction::NOPX);
+        decoder_test(vec![0x5A], Instruction::NOPX);
+        decoder_test(vec![0x7A], Instruction::NOPX);
+        decoder_test(vec![0xDA], Instruction::NOPX);
+        decoder_test(vec![0xFA], Instruction::NOPX);
     }
 
     #[test]
@@ -677,7 +677,7 @@ mod test {
         decoder_test(vec![0xF1, 0xAB], Instruction::SBC(Operand::PostIndexedIndirect(0xAB)));
 
         // Unofficial SBC variant
-        decoder_test(vec![0xEB, 0x42], Instruction::SBC(Operand::Immediate(0x42)));
+        decoder_test(vec![0xEB, 0x42], Instruction::SBCX(Operand::Immediate(0x42)));
     }
 
     #[test]
@@ -777,14 +777,14 @@ mod test {
     }
 
     #[test]
-    pub fn can_decode_isc() {
-        decoder_test(vec![0xE3, 0xAB], Instruction::ISC(Operand::PreIndexedIndirect(0xAB)));
-        decoder_test(vec![0xE7, 0xAB], Instruction::ISC(Operand::Absolute(0x00AB)));
-        decoder_test(vec![0xEF, 0xCD, 0xAB], Instruction::ISC(Operand::Absolute(0xABCD)));
-        decoder_test(vec![0xF3, 0xAB], Instruction::ISC(Operand::PostIndexedIndirect(0xAB)));
-        decoder_test(vec![0xF7, 0xAB], Instruction::ISC(Operand::Indexed(0x00AB, RegisterName::X)));
-        decoder_test(vec![0xFB, 0xCD, 0xAB], Instruction::ISC(Operand::Indexed(0xABCD, RegisterName::Y)));
-        decoder_test(vec![0xFF, 0xCD, 0xAB], Instruction::ISC(Operand::Indexed(0xABCD, RegisterName::X)));
+    pub fn can_decode_isb() {
+        decoder_test(vec![0xE3, 0xAB], Instruction::ISB(Operand::PreIndexedIndirect(0xAB)));
+        decoder_test(vec![0xE7, 0xAB], Instruction::ISB(Operand::Absolute(0x00AB)));
+        decoder_test(vec![0xEF, 0xCD, 0xAB], Instruction::ISB(Operand::Absolute(0xABCD)));
+        decoder_test(vec![0xF3, 0xAB], Instruction::ISB(Operand::PostIndexedIndirect(0xAB)));
+        decoder_test(vec![0xF7, 0xAB], Instruction::ISB(Operand::Indexed(0x00AB, RegisterName::X)));
+        decoder_test(vec![0xFB, 0xCD, 0xAB], Instruction::ISB(Operand::Indexed(0xABCD, RegisterName::Y)));
+        decoder_test(vec![0xFF, 0xCD, 0xAB], Instruction::ISB(Operand::Indexed(0xABCD, RegisterName::X)));
     }
 
     #[test]

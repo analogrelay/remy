@@ -20,6 +20,12 @@ impl<'a> Segment<'a> {
     }
 }
 
+impl<'a> fmt::Debug for Segment<'a> {
+    fn fmt(&self, fmt: &mut fmt::Formatter) -> fmt::Result {
+        fmt.write_fmt(format_args!("${:04X} - ${:04X}", self.base, self.base + self.memory.len() - 1))
+    }
+}
+
 /// Represents an error that can occur during a virtual memory management operation
 #[derive(Copy,Clone,Debug,Eq,PartialEq)]
 pub enum Error {
@@ -100,6 +106,12 @@ impl<'a> Virtual<'a> {
 
     fn find_mut(&mut self, addr: u64) -> Option<&mut Segment<'a>> {
         self.segments.iter_mut().find(|l| l.has_addr(addr))
+    }
+}
+
+impl<'a> fmt::Debug for Virtual<'a> {
+    fn fmt(&self, fmt: &mut fmt::Formatter) -> fmt::Result {
+        self.segments.iter().fold(fmt.debug_list(), |b, e| b.entry(e)).finish()
     }
 }
 

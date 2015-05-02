@@ -176,6 +176,16 @@ impl Mos6502 {
         let addr = (self.registers.sp as u64) + super::STACK_START;
         mem.get_u8(addr)
     }
+
+    /// Gets the top value off the stack without advancing the SP
+    ///
+    /// Note: A `MemoryError::OutOfBounds` result is returned
+    /// if there is no memory available in the stack range
+    /// ($0100 - $01FF)
+    pub fn peek<M>(&mut self, mem: &M) -> mem::Result<u8> where M: mem::Memory {
+        let addr = (self.registers.sp as u64 + 1) + super::STACK_START;
+        mem.get_u8(addr)
+    }
 }
 
 /// Represents the 8-bit registers available on the MOS 6502 processor

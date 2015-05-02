@@ -1,11 +1,12 @@
-use mem;
+use mem::{self,MemoryExt};
 
 use instr;
 
 use cpus::mos6502::exec;
-use cpus::mos6502::{Mos6502,Operand};
+use cpus::mos6502::{Mos6502,Operand,operand};
 
 use std::{convert,fmt,io};
+use byteorder::LittleEndian;
 
 /// Represents an instruction that can be executed on a `Mos6502` processor
 #[derive(Copy,Clone,Debug,Eq,PartialEq)]
@@ -35,7 +36,7 @@ pub enum Instruction {
     EOR(Operand),
     IGN(Operand),
     INC(Operand),
-    ISC(Operand),
+    ISB(Operand),
     JMP(Operand),
     JSR(Operand),
     LAS(Operand),
@@ -51,6 +52,7 @@ pub enum Instruction {
     RRA(Operand),
     SAX(Operand),
     SBC(Operand),
+    SBCX(Operand),
     SHY(Operand),
     SHX(Operand),
     SKB(Operand),
@@ -71,7 +73,7 @@ pub enum Instruction {
     HLT,
     INX,
     INY,
-    NOP,
+    NOP, NOPX,
     PHA,
     PHP,
     PLA,
@@ -127,7 +129,7 @@ impl Instruction {
             Instruction::EOR(op) |
             Instruction::IGN(op) |
             Instruction::INC(op) |
-            Instruction::ISC(op) |
+            Instruction::ISB(op) |
             Instruction::JMP(op) |
             Instruction::JSR(op) |
             Instruction::LAS(op) |
@@ -142,7 +144,7 @@ impl Instruction {
             Instruction::ROR(op) |
             Instruction::RRA(op) |
             Instruction::SAX(op) |
-            Instruction::SBC(op) |
+            Instruction::SBC(op) | Instruction::SBCX(op) |
             Instruction::SHY(op) |
             Instruction::SHX(op) |
             Instruction::SKB(op) |
@@ -165,7 +167,7 @@ impl Instruction {
             Instruction::HLT |
             Instruction::INX |
             Instruction::INY |
-            Instruction::NOP |
+            Instruction::NOP | Instruction::NOPX |
             Instruction::PHA |
             Instruction::PHP |
             Instruction::PLA |
@@ -184,20 +186,55 @@ impl Instruction {
         }
     }
 
+    pub fn undocumented(&self) -> bool {
+        match self {
+            &Instruction::ALR(_) |
+            &Instruction::ANC(_) |
+            &Instruction::ARR(_) |
+            &Instruction::AXS(_) |
+            &Instruction::LAX(_) |
+            &Instruction::SAX(_) |
+            &Instruction::DCP(_) |
+            &Instruction::ISB(_) |
+            &Instruction::RLA(_) |
+            &Instruction::RRA(_) |
+            &Instruction::SLO(_) |
+            &Instruction::SRE(_) |
+            &Instruction::IGN(_) |
+            &Instruction::SKB(_) |
+            &Instruction::SBCX(_) |
+            &Instruction::NOPX => true,
+
+            _ => false
+        }
+    }
+
     /// Get a string in the form of the nestest "golden log" output
-    pub fn get_log_string<M>(&self, cpu: &Mos6502, mem: &M) -> String where M: mem::Memory {
+    pub fn get_log_string<M>(&self, cpu: &Mos6502, mem: &M) -> operand::Result<String> where M: mem::Memory {
         use instr::Instruction as InstrTrait;
 
-        format!(
+        Ok(format!(
             "{}{}",
-            self.mnemonic(),
             match self {
-                &Instruction::JMP(op) | &Instruction::JSR(op) => format!(" {}", op),
+                i if i.undocumented() => format!("*{}", self.mnemonic()),
+                _ => format!(" {}", self.mnemonic())
+            },
+            match self {
+                &Instruction::JMP(op) |
+                    &Instruction::JSR(op) =>
+                        match op {
+                            // Technically this isn't the way the indirect address is calculated,
+                            // but it is now nestest.log displays it
+                            Operand::Indirect(addr) => format!(" {} = {:04X}", op, try!(mem.get_u16::<LittleEndian>(addr as u64))),
+                            _                       => format!(" {}", op)
+                        },
                 _ => match self.operand() {
-                    Some(op) => format!(" {}", op.get_log_string(cpu, mem)),
+                    Some(op) => {
+                        format!(" {}", try!(op.get_log_string(cpu, mem)))
+                    },
                     None => convert::Into::into("")
                 }
-            })
+            }))
     }
 }
 
@@ -228,9 +265,9 @@ impl instr::Instruction for Instruction {
             &Instruction::DCP(_) => "DCP",
             &Instruction::DEC(_) => "DEC",
             &Instruction::EOR(_) => "EOR",
-            &Instruction::IGN(_) => "IGN",
+            &Instruction::IGN(_) => "NOP",
             &Instruction::INC(_) => "INC",
-            &Instruction::ISC(_) => "ISC",
+            &Instruction::ISB(_) => "ISB",
             &Instruction::JMP(_) => "JMP",
             &Instruction::JSR(_) => "JSR",
             &Instruction::LAS(_) => "LAS",
@@ -245,10 +282,10 @@ impl instr::Instruction for Instruction {
             &Instruction::ROR(_) => "ROR",
             &Instruction::RRA(_) => "RRA",
             &Instruction::SAX(_) => "SAX",
-            &Instruction::SBC(_) => "SBC",
+            &Instruction::SBC(_) | &Instruction::SBCX(_) => "SBC",
             &Instruction::SHY(_) => "SHY",
             &Instruction::SHX(_) => "SHX",
-            &Instruction::SKB(_) => "SKB",
+            &Instruction::SKB(_) => "NOP",
             &Instruction::SLO(_) => "SLO",
             &Instruction::SRE(_) => "SRE",
             &Instruction::STA(_) => "STA",
@@ -266,7 +303,7 @@ impl instr::Instruction for Instruction {
             &Instruction::HLT => "HLT",
             &Instruction::INX => "INX",
             &Instruction::INY => "INY",
-            &Instruction::NOP => "NOP",
+            &Instruction::NOP | &Instruction::NOPX => "NOP",
             &Instruction::PHA => "PHA",
             &Instruction::PHP => "PHP",
             &Instruction::PLA => "PLA",

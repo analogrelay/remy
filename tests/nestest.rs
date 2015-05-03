@@ -3,18 +3,23 @@
 
 extern crate remy;
 
-use std::{env,fs};
+use std::{env,fs,io};
+use std::io::BufRead;
 
 use remy::systems::nes;
 use remy::cpus::mos6502;
 use remy::mem::{self,Memory};
 use remy::instr::Instruction;
 
-fn main() {
+#[test]
+pub fn mos6502_can_run_nestest_rom() {
     // Locate the test rom
     let mut romfile = env::current_dir().unwrap();
     romfile.push("tests");
     romfile.push("files");
+
+    let mut logfile = romfile.clone();
+    logfile.push("nestest.log");
     romfile.push("nestest.nes");
 
     // Load the test rom
@@ -27,7 +32,7 @@ fn main() {
     let prg_rom = Box::new(mem::read_only(mem::Mirrored::new(mem::Fixed::from_contents(rom.prg_banks.remove(0)), 0x8000)));
 
     // Create a black hole for APU/IO registers
-    let apu_io = Box::new(mem::Fixed::new(0x4000));
+    let apu_io = Box::new(mem::Fixed::from_contents(vec![0xFF; 0x20]));
 
     // Set up the virtual memory
     let mut memory = mem::Virtual::new();
@@ -46,7 +51,10 @@ fn main() {
     cpu.flags.replace(mos6502::Flags::new(0x24));
     cpu.pc.set(0xC000);
 
-    loop {
+    // Load the test log
+    let log = io::BufReader::new(fs::File::open(logfile).unwrap());
+
+    for log_line in log.lines() {
         // Fetch next instruction
         let addr = cpu.pc.get();
         if addr == 0x0000 {
@@ -84,11 +92,11 @@ fn main() {
             panic!("Error at ${:04X} {}: {}", addr, instr, e)
         }
 
-        // Log stuff
-        //  In the style of the nestest log
+        // Generate the log line in the style of the nestest log
         // C000  4C F5 C5  JMP $C5F5                       A:00 X:00 Y:00 P:24 SP:FD CYC:  0 SL:241
-        println!(
-            "{:04X}  {:<9}{:<32} A:{:02X} X:{:02X} Y:{:02X} P:{:02X} SP:{:02X} CYC:  0 SL:  0",
+        // (We're going to strip "SL" and "CYC" out of the input line)
+        let actual_log = format!(
+            "{:04X}  {:<9}{:<32} A:{:02X} X:{:02X} Y:{:02X} P:{:02X} SP:{:02X}",
             addr,
             buf.iter()
                 .take(instr_size)
@@ -100,5 +108,16 @@ fn main() {
             y,
             p,
             sp);
+
+        // Compare to the next line in the
+        let mut expected_log = log_line.unwrap();
+        let end = expected_log.find("CYC:").unwrap() - 1;
+        expected_log.truncate(end);
+        if expected_log != actual_log {
+            println!("Execution Error");
+            println!("Expected: {}", expected_log);
+            println!("  Actual: {}", actual_log);
+            panic!("CPU execution did not match expected results");
+        }
     }
 }

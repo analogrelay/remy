@@ -22,7 +22,7 @@ pub enum Error {
     EndOfFileDuringBank,
 
     /// Indicates that an I/O error occurred while reading/writing to a ROM file
-    IoError(io::Error)
+    IoError(io::Error),
 }
 
 impl error::Error for Error {

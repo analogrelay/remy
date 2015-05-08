@@ -134,6 +134,28 @@ impl Operand {
         }
     }
 
+    /// Determines the number of cycles that may be wasted due to "oops" cycles
+    ///
+    /// http://wiki.nesdev.com/w/index.php/CPU_addressing_modes
+    pub fn oops_cycle<M>(&self, cpu: &Mos6502, mem: &M) -> Result<u64> where M: mem::Memory {
+        let (start, offset) = match self {
+            &Operand::Indexed(addr, r) => (addr, r.get(cpu) as u16),
+            &Operand::PostIndexedIndirect(addr) => {
+                // Indirect accesses can't leave the page, they wrap around
+                let low = try!(mem.get_u8(addr as u64)) as u64;
+                let high = try!(mem.get_u8((addr as u64 + 1) & 0xFF)) as u64;
+                ((low | (high << 8)) as u16, cpu.registers.y as u16)
+            },
+            _ => return Ok(0)
+        };
+
+        if (start & 0xFF00) == ((start + offset) & 0xFF00) {
+            Ok(0)
+        } else {
+            Ok(1)
+        }
+    }
+
     /// Retrieves the address of the operand on the specified cpu
     ///
     /// # Arguments
@@ -167,7 +189,7 @@ impl Operand {
                 (high << 8) | low
             },
             &Operand::PostIndexedIndirect(addr)  => {
-                // Indirect accesses can't leave the zero page, they wrap around
+                // Indirect accesses can't leave the page, they wrap around
                 let low = try!(mem.get_u8(addr as u64)) as u64;
                 let high = try!(mem.get_u8((addr as u64 + 1) & 0xFF)) as u64;
                 (((low | (high << 8)) + cpu.registers.y as u64) & 0xFFFF) as u16

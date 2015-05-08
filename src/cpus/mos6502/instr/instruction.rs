@@ -101,6 +101,268 @@ impl Instruction {
         exec::dispatch(self, cpu, mem)
     }
 
+    /// Get the base number of cycles, EXCLUDING additional cycles cause by "oops cycles" (where
+    /// indexed memory accesses hopped a page) and cycles lost during branching and jumping
+    pub fn base_cycles(&self) -> u64 {
+        match self {
+            &Instruction::ADC(Operand::Immediate(_)) => 2,
+            &Instruction::ADC(Operand::Absolute(addr)) if addr < 0x0100 => 3,
+            &Instruction::ADC(Operand::Indexed(addr, _)) if addr < 0x0100 => 4,
+            &Instruction::ADC(Operand::Absolute(_)) => 4,
+            &Instruction::ADC(Operand::Indexed(..)) => 4,
+            &Instruction::ADC(Operand::PreIndexedIndirect(_)) => 6,
+            &Instruction::ADC(Operand::PostIndexedIndirect(_)) => 5,
+
+            &Instruction::AHX(Operand::Absolute(_)) => 5,
+            &Instruction::AHX(Operand::PostIndexedIndirect(_)) => 6,
+
+            &Instruction::ALR(..) => 2,
+
+            &Instruction::AND(Operand::Immediate(_)) => 2,
+            &Instruction::AND(Operand::Absolute(addr)) if addr < 0x0100 => 2,
+            &Instruction::AND(Operand::Indexed(addr, _)) if addr < 0x0100 => 3,
+            &Instruction::AND(Operand::Absolute(_)) => 4,
+            &Instruction::AND(Operand::Indexed(..)) => 4,
+            &Instruction::AND(Operand::PreIndexedIndirect(_)) => 6,
+            &Instruction::AND(Operand::PostIndexedIndirect(_)) => 5,
+
+            &Instruction::ANC(..) => 2,
+
+            &Instruction::ASL(Operand::Accumulator) => 2,
+            &Instruction::ASL(Operand::Absolute(addr)) if addr < 0x0100 => 5,
+            &Instruction::ASL(Operand::Indexed(addr, _)) if addr < 0x0100 => 6,
+            &Instruction::ASL(Operand::Absolute(_)) => 6,
+            &Instruction::ASL(Operand::Indexed(..)) => 7,
+
+            &Instruction::ARR(..) => 2,
+            &Instruction::AXS(..) => 2,
+
+            &Instruction::BCC(..) => 2,
+            &Instruction::BCS(..) => 2,
+            &Instruction::BEQ(..) => 2,
+
+            &Instruction::BIT(Operand::Absolute(addr)) if addr < 0x0100 => 3,
+            &Instruction::BIT(Operand::Absolute(_)) => 4,
+
+            &Instruction::BMI(..) => 2,
+            &Instruction::BNE(..) => 2,
+            &Instruction::BPL(..) => 2,
+
+            &Instruction::BVC(..) => 2,
+            &Instruction::BVS(..) => 2,
+
+            &Instruction::CMP(Operand::Immediate(_)) => 2,
+            &Instruction::CMP(Operand::Absolute(addr)) if addr < 0x0100 => 3,
+            &Instruction::CMP(Operand::Indexed(addr, _)) if addr < 0x0100 => 4,
+            &Instruction::CMP(Operand::Absolute(_)) => 4,
+            &Instruction::CMP(Operand::Indexed(..)) => 4,
+            &Instruction::CMP(Operand::PreIndexedIndirect(_)) => 6,
+            &Instruction::CMP(Operand::PostIndexedIndirect(_)) => 5,
+
+            &Instruction::CPX(Operand::Immediate(_)) => 2,
+            &Instruction::CPX(Operand::Absolute(addr)) if addr < 0x0100 => 3,
+            &Instruction::CPX(Operand::Absolute(_)) => 4,
+
+            &Instruction::CPY(Operand::Immediate(_)) => 2,
+            &Instruction::CPY(Operand::Absolute(addr)) if addr < 0x0100 => 3,
+            &Instruction::CPY(Operand::Absolute(_)) => 4,
+
+            &Instruction::DCP(Operand::Absolute(addr)) if addr < 0x0100 => 5,
+            &Instruction::DCP(Operand::Indexed(addr, _)) if addr < 0x0100 => 6,
+            &Instruction::DCP(Operand::Absolute(_)) => 6,
+            &Instruction::DCP(Operand::Indexed(..)) => 7,
+            &Instruction::DCP(Operand::PreIndexedIndirect(_)) => 8,
+            &Instruction::DCP(Operand::PostIndexedIndirect(_)) => 8,
+
+            &Instruction::DEC(Operand::Absolute(addr)) if addr < 0x0100 => 5,
+            &Instruction::DEC(Operand::Indexed(addr, _)) if addr < 0x0100 => 6,
+            &Instruction::DEC(Operand::Absolute(_)) => 6,
+            &Instruction::DEC(Operand::Indexed(..)) => 7,
+
+            &Instruction::EOR(Operand::Immediate(_)) => 2,
+            &Instruction::EOR(Operand::Absolute(addr)) if addr < 0x0100 => 3,
+            &Instruction::EOR(Operand::Indexed(addr, _)) if addr < 0x0100 => 4,
+            &Instruction::EOR(Operand::Absolute(_)) => 4,
+            &Instruction::EOR(Operand::Indexed(..)) => 4,
+            &Instruction::EOR(Operand::PreIndexedIndirect(_)) => 6,
+            &Instruction::EOR(Operand::PostIndexedIndirect(_)) => 5,
+
+            &Instruction::IGN(Operand::Absolute(addr)) if addr < 0x0100 => 3,
+            &Instruction::IGN(Operand::Indexed(addr, _)) if addr < 0x0100 => 4,
+            &Instruction::IGN(Operand::Absolute(_)) => 4,
+            &Instruction::IGN(Operand::Indexed(..)) => 4,
+
+            &Instruction::INC(Operand::Absolute(addr)) if addr < 0x0100 => 5,
+            &Instruction::INC(Operand::Indexed(addr, _)) if addr < 0x0100 => 6,
+            &Instruction::INC(Operand::Absolute(_)) => 6,
+            &Instruction::INC(Operand::Indexed(..)) => 7,
+
+            &Instruction::ISB(Operand::Absolute(addr)) if addr < 0x0100 => 5,
+            &Instruction::ISB(Operand::Indexed(addr, _)) if addr < 0x0100 => 6,
+            &Instruction::ISB(Operand::Absolute(_)) => 6,
+            &Instruction::ISB(Operand::Indexed(..)) => 7,
+            &Instruction::ISB(Operand::PreIndexedIndirect(_)) => 8,
+            &Instruction::ISB(Operand::PostIndexedIndirect(_)) => 8,
+
+            &Instruction::JMP(Operand::Absolute(_)) => 3,
+            &Instruction::JMP(..) => 5,
+
+            &Instruction::JSR(..) => 6,
+            &Instruction::LAS(..) => 4,
+
+            &Instruction::LAX(Operand::Absolute(addr)) if addr < 0x0100 => 3,
+            &Instruction::LAX(Operand::Indexed(addr, _)) if addr < 0x0100 => 4,
+            &Instruction::LAX(Operand::Absolute(_)) => 4,
+            &Instruction::LAX(Operand::Indexed(..)) => 4,
+            &Instruction::LAX(Operand::PreIndexedIndirect(_)) => 6,
+            &Instruction::LAX(Operand::PostIndexedIndirect(_)) => 5,
+
+            &Instruction::LDA(Operand::Immediate(_)) => 2,
+            &Instruction::LDA(Operand::Absolute(addr)) if addr < 0x0100 => 3,
+            &Instruction::LDA(Operand::Indexed(addr, _)) if addr < 0x0100 => 4,
+            &Instruction::LDA(Operand::Absolute(_)) => 4,
+            &Instruction::LDA(Operand::Indexed(..)) => 4,
+            &Instruction::LDA(Operand::PreIndexedIndirect(_)) => 6,
+            &Instruction::LDA(Operand::PostIndexedIndirect(_)) => 5,
+
+            &Instruction::LDX(Operand::Immediate(_)) => 2,
+            &Instruction::LDX(Operand::Absolute(addr)) if addr < 0x0100 => 3,
+            &Instruction::LDX(Operand::Indexed(addr, _)) if addr < 0x0100 => 4,
+            &Instruction::LDX(Operand::Absolute(_)) => 4,
+            &Instruction::LDX(Operand::Indexed(..)) => 4,
+
+            &Instruction::LDY(Operand::Immediate(_)) => 2,
+            &Instruction::LDY(Operand::Absolute(addr)) if addr < 0x0100 => 3,
+            &Instruction::LDY(Operand::Indexed(addr, _)) if addr < 0x0100 => 4,
+            &Instruction::LDY(Operand::Absolute(_)) => 4,
+            &Instruction::LDY(Operand::Indexed(..)) => 4,
+
+            &Instruction::LSR(Operand::Immediate(_)) => 2,
+            &Instruction::LSR(Operand::Absolute(addr)) if addr < 0x0100 => 5,
+            &Instruction::LSR(Operand::Indexed(addr, _)) if addr < 0x0100 => 6,
+            &Instruction::LSR(Operand::Absolute(_)) => 6,
+            &Instruction::LSR(Operand::Indexed(..)) => 7,
+
+            &Instruction::ORA(Operand::Immediate(_)) => 2,
+            &Instruction::ORA(Operand::Absolute(addr)) if addr < 0x0100 => 2,
+            &Instruction::ORA(Operand::Indexed(addr, _)) if addr < 0x0100 => 3,
+            &Instruction::ORA(Operand::Absolute(_)) => 4,
+            &Instruction::ORA(Operand::Indexed(..)) => 4,
+            &Instruction::ORA(Operand::PreIndexedIndirect(_)) => 6,
+            &Instruction::ORA(Operand::PostIndexedIndirect(_)) => 5,
+
+            &Instruction::RLA(Operand::Absolute(addr)) if addr < 0x0100 => 5,
+            &Instruction::RLA(Operand::Indexed(addr, _)) if addr < 0x0100 => 6,
+            &Instruction::RLA(Operand::Absolute(_)) => 6,
+            &Instruction::RLA(Operand::Indexed(..)) => 7,
+            &Instruction::RLA(Operand::PreIndexedIndirect(_)) => 8,
+            &Instruction::RLA(Operand::PostIndexedIndirect(_)) => 8,
+
+            &Instruction::ROL(Operand::Immediate(_)) => 2,
+            &Instruction::ROL(Operand::Absolute(addr)) if addr < 0x0100 => 5,
+            &Instruction::ROL(Operand::Indexed(addr, _)) if addr < 0x0100 => 6,
+            &Instruction::ROL(Operand::Absolute(_)) => 6,
+            &Instruction::ROL(Operand::Indexed(..)) => 7,
+
+            &Instruction::ROR(Operand::Immediate(_)) => 2,
+            &Instruction::ROR(Operand::Absolute(addr)) if addr < 0x0100 => 5,
+            &Instruction::ROR(Operand::Indexed(addr, _)) if addr < 0x0100 => 6,
+            &Instruction::ROR(Operand::Absolute(_)) => 6,
+            &Instruction::ROR(Operand::Indexed(..)) => 7,
+
+            &Instruction::RRA(Operand::Absolute(addr)) if addr < 0x0100 => 5,
+            &Instruction::RRA(Operand::Indexed(addr, _)) if addr < 0x0100 => 6,
+            &Instruction::RRA(Operand::Absolute(_)) => 6,
+            &Instruction::RRA(Operand::Indexed(..)) => 7,
+            &Instruction::RRA(Operand::PreIndexedIndirect(_)) => 8,
+            &Instruction::RRA(Operand::PostIndexedIndirect(_)) => 8,
+
+            &Instruction::SAX(Operand::Absolute(addr)) if addr < 0x0100 => 3,
+            &Instruction::SAX(Operand::Absolute(_)) => 4,
+            &Instruction::SAX(Operand::PreIndexedIndirect(_)) => 6,
+            &Instruction::SAX(Operand::PostIndexedIndirect(_)) => 4,
+
+            &Instruction::SBC(Operand::Immediate(_)) => 2,
+            &Instruction::SBC(Operand::Absolute(addr)) if addr < 0x0100 => 3,
+            &Instruction::SBC(Operand::Indexed(addr, _)) if addr < 0x0100 => 4,
+            &Instruction::SBC(Operand::Absolute(_)) => 4,
+            &Instruction::SBC(Operand::Indexed(..)) => 4,
+            &Instruction::SBC(Operand::PreIndexedIndirect(_)) => 6,
+            &Instruction::SBC(Operand::PostIndexedIndirect(_)) => 5,
+            &Instruction::SBCX(Operand::Immediate(_)) => 2,
+            &Instruction::SBCX(Operand::Absolute(addr)) if addr < 0x0100 => 3,
+            &Instruction::SBCX(Operand::Indexed(addr, _)) if addr < 0x0100 => 4,
+            &Instruction::SBCX(Operand::Absolute(_)) => 4,
+            &Instruction::SBCX(Operand::Indexed(..)) => 4,
+            &Instruction::SBCX(Operand::PreIndexedIndirect(_)) => 6,
+            &Instruction::SBCX(Operand::PostIndexedIndirect(_)) => 5,
+
+            &Instruction::SHY(..) => 5,
+            &Instruction::SHX(..) => 5,
+            &Instruction::SKB(..) => 2,
+
+            &Instruction::SLO(Operand::Absolute(addr)) if addr < 0x0100 => 5,
+            &Instruction::SLO(Operand::Indexed(addr, _)) if addr < 0x0100 => 6,
+            &Instruction::SLO(Operand::Absolute(_)) => 6,
+            &Instruction::SLO(Operand::Indexed(..)) => 7,
+            &Instruction::SLO(Operand::PreIndexedIndirect(_)) => 8,
+            &Instruction::SLO(Operand::PostIndexedIndirect(_)) => 8,
+
+            &Instruction::SRE(Operand::Absolute(addr)) if addr < 0x0100 => 5,
+            &Instruction::SRE(Operand::Indexed(addr, _)) if addr < 0x0100 => 6,
+            &Instruction::SRE(Operand::Absolute(_)) => 6,
+            &Instruction::SRE(Operand::Indexed(..)) => 7,
+            &Instruction::SRE(Operand::PreIndexedIndirect(_)) => 8,
+            &Instruction::SRE(Operand::PostIndexedIndirect(_)) => 8,
+
+            &Instruction::STA(Operand::Absolute(addr)) if addr < 0x0100 => 3,
+            &Instruction::STA(Operand::Indexed(addr, _)) if addr < 0x0100 => 4,
+            &Instruction::STA(Operand::Absolute(_)) => 4,
+            &Instruction::STA(Operand::Indexed(..)) => 5,
+            &Instruction::STA(Operand::PreIndexedIndirect(_)) => 6,
+            &Instruction::STA(Operand::PostIndexedIndirect(_)) => 6,
+
+            &Instruction::STX(Operand::Absolute(addr)) if addr < 0x0100 => 3,
+            &Instruction::STX(Operand::Indexed(addr, _)) if addr < 0x0100 => 4,
+            &Instruction::STX(Operand::Absolute(_)) => 4,
+
+            &Instruction::STY(Operand::Absolute(addr)) if addr < 0x0100 => 3,
+            &Instruction::STY(Operand::Indexed(addr, _)) if addr < 0x0100 => 4,
+            &Instruction::STY(Operand::Absolute(_)) => 4,
+
+            &Instruction::TAS(..) => 5,
+            &Instruction::XAA(..) => 2,
+
+            &Instruction::BRK => 7,
+            &Instruction::CLC => 2,
+            &Instruction::CLD => 2,
+            &Instruction::CLI => 2,
+            &Instruction::CLV => 2,
+            &Instruction::DEX => 2,
+            &Instruction::DEY => 2,
+            &Instruction::INX => 2,
+            &Instruction::INY => 2,
+            &Instruction::NOP | &Instruction::NOPX => 2,
+            &Instruction::PHA => 3,
+            &Instruction::PHP => 3,
+            &Instruction::PLA => 4,
+            &Instruction::PLP => 4,
+            &Instruction::RTI => 6,
+            &Instruction::RTS => 6,
+            &Instruction::SEC => 2,
+            &Instruction::SED => 2,
+            &Instruction::SEI => 2,
+            &Instruction::TAX => 2,
+            &Instruction::TAY => 2,
+            &Instruction::TSX => 2,
+            &Instruction::TXA => 2,
+            &Instruction::TXS => 2,
+            &Instruction::TYA => 2,
+
+            _ => unimplemented!(),
+        }
+    }
+
     pub fn operand(self) -> Option<Operand> {
         match self {
             // Instructions with operands

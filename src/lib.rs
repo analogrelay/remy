@@ -32,3 +32,6 @@ pub mod pc;
 
 /// Contains code to run various complete systems 
 pub mod systems;
+
+/// Contains code for tracking clock cycles
+pub mod clock;

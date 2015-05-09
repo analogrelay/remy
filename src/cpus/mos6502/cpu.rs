@@ -1,7 +1,9 @@
 use std::{convert,error,fmt};
 
-use mem::{self,Memory,MemoryExt};
 use pc;
+use clock;
+use mem::{self,Memory,MemoryExt};
+
 use super::{instr,exec};
 
 #[derive(Debug)]
@@ -121,7 +123,9 @@ pub struct Mos6502 {
     /// The program counter for the cpu
     pub pc: pc::ProgramCounter,
     /// Indicates if BCD arithmetic is enabled on this instance
-    pub bcd_enabled: bool
+    pub bcd_enabled: bool,
+    /// Tracks CPU cycles spent during execution
+    pub clock: clock::Clock
 }
 
 impl Mos6502 {
@@ -134,7 +138,8 @@ impl Mos6502 {
             registers: Registers::new(),
             flags: Flags::RESERVED(),
             pc: pc::ProgramCounter::new(),
-            bcd_enabled: true
+            bcd_enabled: true,
+            clock: clock::Clock::new()
         }
     }
 
@@ -147,7 +152,8 @@ impl Mos6502 {
             registers: Registers::new(),
             flags: Flags::RESERVED(),
             pc: pc::ProgramCounter::new(),
-            bcd_enabled: false
+            bcd_enabled: false,
+            clock: clock::Clock::new()
         }
     }
 

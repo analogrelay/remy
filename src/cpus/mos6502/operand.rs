@@ -103,7 +103,7 @@ impl Operand {
     /// # Arguments
     ///
     /// * `cpu` - The cpu from which to get the operand value
-    pub fn get_u8<M>(&self, cpu: &Mos6502, mem: &M) -> Result<u8> where M: mem::Memory {
+    pub fn get_u8<M>(&self, cpu: &mut Mos6502, mem: &M) -> Result<u8> where M: mem::Memory {
         Ok(match self {
             &Operand::Immediate(n)      => n,
             &Operand::Accumulator       => cpu.registers.a,
@@ -134,41 +134,71 @@ impl Operand {
         }
     }
 
-    /// Determines the number of cycles that may be wasted due to "oops" cycles
-    ///
-    /// http://wiki.nesdev.com/w/index.php/CPU_addressing_modes
-    pub fn oops_cycle<M>(&self, cpu: &Mos6502, mem: &M) -> Result<u64> where M: mem::Memory {
-        let (start, offset) = match self {
-            &Operand::Indexed(addr, r) => (addr, r.get(cpu) as u16),
-            &Operand::PostIndexedIndirect(addr) => {
-                // Indirect accesses can't leave the page, they wrap around
-                let low = try!(mem.get_u8(addr as u64)) as u64;
-                let high = try!(mem.get_u8((addr as u64 + 1) & 0xFF)) as u64;
-                ((low | (high << 8)) as u16, cpu.registers.y as u16)
-            },
-            _ => return Ok(0)
-        };
-
-        if (start & 0xFF00) == ((start + offset) & 0xFF00) {
-            Ok(0)
-        } else {
-            Ok(1)
-        }
-    }
-
     /// Retrieves the address of the operand on the specified cpu
     ///
     /// # Arguments
     ///
     /// * `cpu` - The cpu on which to get the operand value
-    pub fn get_addr<M>(&self, cpu: &Mos6502, mem: &M) -> Result<u16> where M: mem::Memory {
+    pub fn get_addr<M>(&self, cpu: &mut Mos6502, mem: &M) -> Result<u16> where M: mem::Memory {
+        match self.get_addr_impl(cpu, mem) {
+            Ok((addr, true)) => { cpu.clock.tick(1); Ok(addr) },
+            Ok((addr, false)) => Ok(addr),
+            Err(e) => Err(e)
+        }
+    }
+
+    /// Get a string in the form of the nestest "golden log" output
+    pub fn get_log_string<M>(&self, cpu: &Mos6502, mem: &M) -> Result<String> where M: mem::Memory {
         Ok(match self {
-            &Operand::Absolute(addr)             => addr,
+            &Operand::Offset(offset) => format!("${:04X}", ((cpu.pc.get() as i32) + (offset as i32)) as u16),
+            &Operand::PreIndexedIndirect(addr) => {
+                let (preindex_addr, _) = try!(self.get_addr_impl(cpu, mem));
+                let eaddr = (addr as u64 + cpu.registers.x as u64) & 0xFF;
+                format!("{} @ {:02X} = {:04X} = {:02X}", self, eaddr, preindex_addr, try!(self.get_u8_noclock(cpu, mem)))
+            },
+            &Operand::PostIndexedIndirect(addr) => {
+                let (preindex_addr, _) = try!(self.get_addr_impl(cpu, mem));
+                let low = try!(mem.get_u8(addr as u64)) as u64;
+                let high = try!(mem.get_u8((addr as u64 + 1) & 0xFF)) as u64;
+                let eaddr = low | (high << 8);
+                format!("{} = {:04X} @ {:04X} = {:02X}", self, eaddr, preindex_addr, try!(self.get_u8_noclock(cpu, mem)))
+            },
+            &Operand::Indexed(addr, _) => {
+                let (preindex_addr, _) = try!(self.get_addr_impl(cpu, mem));
+                if addr < 0x0100 {
+                    format!("{} @ {:02X} = {:02X}", self, preindex_addr as u8, try!(self.get_u8_noclock(cpu, mem)))
+                } else {
+                    format!("{} @ {:04X} = {:02X}", self, preindex_addr, try!(self.get_u8_noclock(cpu, mem)))
+                }
+            },
+            &op if op.has_addr() => {
+                let (addr, _) = try!(op.get_addr_impl(cpu, mem));
+                let value = try!(mem.get_u8(addr as u64));
+                format!("{} = {:02X}", op, value)
+            },
+            &op => format!("{}", op),
+        })
+    }
+
+    fn get_u8_noclock<M>(&self, cpu: &Mos6502, mem: &M) -> Result<u8> where M: mem::Memory {
+        Ok(match self {
+            &Operand::Immediate(n)      => n,
+            &Operand::Accumulator       => cpu.registers.a,
+            _                           => {
+                let (addr, _) = try!(self.get_addr_impl(cpu, mem));
+                try!(mem.get_u8(addr as u64))
+            }
+        })
+    }
+
+    fn get_addr_impl<M>(&self, cpu: &Mos6502, mem: &M) -> Result<(u16,bool)> where M: mem::Memory {
+        Ok(match self {
+            &Operand::Absolute(addr)             => (addr, false),
             &Operand::Indirect(addr)             => {
                 // Indirect accesses can't leave the page, they wrap around
                 let low = try!(mem.get_u8(addr as u64)) as u64;
                 let high = try!(mem.get_u8((addr as u64 & 0xFF00) | ((addr as u64 + 1) & 0x00FF))) as u64;
-                (low | (high << 8)) as u16
+                ((low | (high << 8)) as u16, false)
             },
             &Operand::Indexed(addr, r)           => {
                 let mut eaddr = addr as u64 + r.get(cpu) as u64;
@@ -178,7 +208,7 @@ impl Operand {
                 } else {
                     eaddr = eaddr & 0xFFFF;
                 }
-                eaddr as u16
+                (eaddr as u16, oops_cycle(addr as u64, eaddr))
             },
             &Operand::PreIndexedIndirect(addr)   => {
                 // Indirect accesses can't leave the zero page, they wrap around
@@ -186,47 +216,25 @@ impl Operand {
                 let low = try!(mem.get_u8(eaddr)) as u16;
                 eaddr = (eaddr + 1) & 0xFF;
                 let high = try!(mem.get_u8(eaddr)) as u16;
-                (high << 8) | low
+                ((high << 8) | low, false)
             },
             &Operand::PostIndexedIndirect(addr)  => {
                 // Indirect accesses can't leave the page, they wrap around
                 let low = try!(mem.get_u8(addr as u64)) as u64;
                 let high = try!(mem.get_u8((addr as u64 + 1) & 0xFF)) as u64;
-                (((low | (high << 8)) + cpu.registers.y as u64) & 0xFFFF) as u16
+
+                let original_addr = low | (high << 8);
+                let final_addr = original_addr + cpu.registers.y as u64;
+                ((final_addr & 0xFFFF) as u16, oops_cycle(original_addr, final_addr))
             },
             _                                   => return Err(Error::NonAddressOperand)
         })
-    }
+}
 
-    /// Get a string in the form of the nestest "golden log" output
-    pub fn get_log_string<M>(&self, cpu: &Mos6502, mem: &M) -> Result<String> where M: mem::Memory {
-        Ok(match self {
-            &Operand::Offset(offset) => format!("${:04X}", ((cpu.pc.get() as i32) + (offset as i32)) as u16),
-            &Operand::PreIndexedIndirect(addr) => {
-                let eaddr = (addr as u64 + cpu.registers.x as u64) & 0xFF;
-                format!("{} @ {:02X} = {:04X} = {:02X}", self, eaddr, try!(self.get_addr(cpu, mem)), try!(self.get_u8(cpu, mem)))
-            },
-            &Operand::PostIndexedIndirect(addr) => {
-                let low = try!(mem.get_u8(addr as u64)) as u64;
-                let high = try!(mem.get_u8((addr as u64 + 1) & 0xFF)) as u64;
-                let eaddr = low | (high << 8);
-                format!("{} = {:04X} @ {:04X} = {:02X}", self, eaddr, try!(self.get_addr(cpu, mem)), try!(self.get_u8(cpu, mem)))
-            },
-            &Operand::Indexed(addr, _) => {
-                if addr < 0x0100 {
-                    format!("{} @ {:02X} = {:02X}", self, try!(self.get_addr(cpu, mem)) as u8, try!(self.get_u8(cpu, mem)))
-                } else {
-                    format!("{} @ {:04X} = {:02X}", self, try!(self.get_addr(cpu, mem)), try!(self.get_u8(cpu, mem)))
-                }
-            },
-            &op if op.has_addr() => {
-                let addr = try!(op.get_addr(cpu, mem));
-                let value = try!(mem.get_u8(addr as u64));
-                format!("{} = {:02X}", op, value)
-            },
-            &op => format!("{}", op),
-        })
-    }
+}
+
+fn oops_cycle(original_addr: u64, actual_addr: u64) -> bool {
+    (original_addr & 0xFF00) != (actual_addr & 0xFF00)
 }
 
 impl fmt::Display for Operand {
@@ -329,17 +337,17 @@ mod test {
 
         #[test]
         pub fn get_immediate_returns_immediate_value() {
-            let cpu = Mos6502::new();
-            let val = Operand::Immediate(42).get_u8(&cpu, &mem::Empty).unwrap();
+            let mut cpu = Mos6502::new();
+            let val = Operand::Immediate(42).get_u8(&mut cpu, &mem::Empty).unwrap();
             assert_eq!(val, 42);
         }
 
         #[test]
         pub fn get_absolute_returns_value_from_memory_address() {
             let mut mem = mem::Fixed::new(10);
-            let cpu = Mos6502::new();
+            let mut cpu = Mos6502::new();
             assert!(mem.set_u8(4, 42).is_ok());
-            let val = Operand::Absolute(4).get_u8(&cpu, &mem).unwrap();
+            let val = Operand::Absolute(4).get_u8(&mut cpu, &mem).unwrap();
             assert_eq!(val, 42);
         }
 
@@ -349,7 +357,7 @@ mod test {
             let mut cpu = Mos6502::new();
             assert!(mem.set_u8(4, 42).is_ok());
             cpu.registers.x = 2;
-            let val = Operand::Indexed(2, cpu::RegisterName::X).get_u8(&cpu, &mem).unwrap();
+            let val = Operand::Indexed(2, cpu::RegisterName::X).get_u8(&mut cpu, &mem).unwrap();
             assert_eq!(val, 42);
         }
 
@@ -359,7 +367,7 @@ mod test {
             let mut cpu = Mos6502::new();
             assert!(mem.set_u8(4, 42).is_ok());
             cpu.registers.y = 2;
-            let val = Operand::Indexed(2, cpu::RegisterName::Y).get_u8(&cpu, &mem).unwrap();
+            let val = Operand::Indexed(2, cpu::RegisterName::Y).get_u8(&mut cpu, &mem).unwrap();
             assert_eq!(val, 42);
         }
 
@@ -370,7 +378,7 @@ mod test {
             assert!(mem.set_u8(8, 42).is_ok()); // Value
             assert!(mem.set_u16::<LittleEndian>(6, 8).is_ok()); // Indirect Memory Address
             cpu.registers.x = 2;
-            let val = Operand::PreIndexedIndirect(4).get_u8(&cpu, &mem).unwrap();
+            let val = Operand::PreIndexedIndirect(4).get_u8(&mut cpu, &mem).unwrap();
             assert_eq!(val, 42);
         }
 
@@ -381,7 +389,7 @@ mod test {
             assert!(mem.set_u8(8, 42).is_ok()); // Value
             assert!(mem.set_u16::<LittleEndian>(2, 6).is_ok()); // Indirect Memory Address
             cpu.registers.y = 2;
-            let val = Operand::PostIndexedIndirect(2).get_u8(&cpu, &mem).unwrap();
+            let val = Operand::PostIndexedIndirect(2).get_u8(&mut cpu, &mem).unwrap();
             assert_eq!(val, 42);
         }
     }

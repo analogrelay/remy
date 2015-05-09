@@ -237,7 +237,7 @@ impl Instruction {
             &Instruction::LDY(Operand::Absolute(_)) => 4,
             &Instruction::LDY(Operand::Indexed(..)) => 4,
 
-            &Instruction::LSR(Operand::Immediate(_)) => 2,
+            &Instruction::LSR(Operand::Accumulator) => 2,
             &Instruction::LSR(Operand::Absolute(addr)) if addr < 0x0100 => 5,
             &Instruction::LSR(Operand::Indexed(addr, _)) if addr < 0x0100 => 6,
             &Instruction::LSR(Operand::Absolute(_)) => 6,
@@ -258,13 +258,13 @@ impl Instruction {
             &Instruction::RLA(Operand::PreIndexedIndirect(_)) => 8,
             &Instruction::RLA(Operand::PostIndexedIndirect(_)) => 8,
 
-            &Instruction::ROL(Operand::Immediate(_)) => 2,
+            &Instruction::ROL(Operand::Accumulator) => 2,
             &Instruction::ROL(Operand::Absolute(addr)) if addr < 0x0100 => 5,
             &Instruction::ROL(Operand::Indexed(addr, _)) if addr < 0x0100 => 6,
             &Instruction::ROL(Operand::Absolute(_)) => 6,
             &Instruction::ROL(Operand::Indexed(..)) => 7,
 
-            &Instruction::ROR(Operand::Immediate(_)) => 2,
+            &Instruction::ROR(Operand::Accumulator) => 2,
             &Instruction::ROR(Operand::Absolute(addr)) if addr < 0x0100 => 5,
             &Instruction::ROR(Operand::Indexed(addr, _)) if addr < 0x0100 => 6,
             &Instruction::ROR(Operand::Absolute(_)) => 6,
@@ -278,9 +278,9 @@ impl Instruction {
             &Instruction::RRA(Operand::PostIndexedIndirect(_)) => 8,
 
             &Instruction::SAX(Operand::Absolute(addr)) if addr < 0x0100 => 3,
+            &Instruction::SAX(Operand::Indexed(addr, _)) if addr < 0x0100 => 4,
             &Instruction::SAX(Operand::Absolute(_)) => 4,
             &Instruction::SAX(Operand::PreIndexedIndirect(_)) => 6,
-            &Instruction::SAX(Operand::PostIndexedIndirect(_)) => 4,
 
             &Instruction::SBC(Operand::Immediate(_)) => 2,
             &Instruction::SBC(Operand::Absolute(addr)) if addr < 0x0100 => 3,
@@ -359,7 +359,7 @@ impl Instruction {
             &Instruction::TXS => 2,
             &Instruction::TYA => 2,
 
-            _ => unimplemented!(),
+            s => panic!("Base cycle count for {:?} unknown", s)
         }
     }
 

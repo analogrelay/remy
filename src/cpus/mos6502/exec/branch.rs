@@ -3,7 +3,8 @@ use cpus::mos6502::{exec,Mos6502,Flags,Operand};
 pub fn if_clear(cpu: &mut Mos6502, op: Operand, flags: Flags) -> Result<(), exec::Error> {
     if let Operand::Offset(offset) = op {
         if !cpu.flags.intersects(flags) {
-            cpu.pc.advance(offset as i64);
+            let target = calc_target_and_tick_clock(cpu, offset);
+            cpu.pc.set(target);
         }
         Ok(())
     } else {
@@ -14,12 +15,25 @@ pub fn if_clear(cpu: &mut Mos6502, op: Operand, flags: Flags) -> Result<(), exec
 pub fn if_set(cpu: &mut Mos6502, op: Operand, flags: Flags) -> Result<(), exec::Error> {
     if let Operand::Offset(offset) = op {
         if cpu.flags.intersects(flags) {
-            cpu.pc.advance(offset as i64);
+            let target = calc_target_and_tick_clock(cpu, offset);
+            cpu.pc.set(target);
         }
         Ok(())
     } else {
         Err(exec::Error::IllegalOperand)
     }
+}
+
+fn calc_target_and_tick_clock(cpu: &mut Mos6502, offset: i8) -> u64 {
+    // Check if we're jumping pages
+    let current = cpu.pc.get();
+    let target = ((current as i64) + (offset as i64)) as u64;
+    if (current & 0xFF00) == (target & 0xFF00) {
+        cpu.clock.tick(1);
+    } else {
+        cpu.clock.tick(2);
+    }
+    target
 }
 
 #[cfg(test)]

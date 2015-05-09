@@ -93,6 +93,8 @@ impl fmt::Display for Error {
 /// * `inst` - The instruction to execute
 /// * `cpu` - The process on which to execute the instruction
 pub fn dispatch<M>(inst: Instruction, cpu: &mut Mos6502, mem: &mut M) -> Result where M: mem::Memory {
+    // Tick the base cycle count of the instruction
+    cpu.clock.tick(inst.base_cycles());
     match inst {
         Instruction::ADC(op) => adc::exec(cpu, mem, op),
         Instruction::AHX(op) => store::ahx(cpu, mem, op),

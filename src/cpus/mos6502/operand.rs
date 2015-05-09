@@ -392,5 +392,53 @@ mod test {
             let val = Operand::PostIndexedIndirect(2).get_u8(&mut cpu, &mem).unwrap();
             assert_eq!(val, 42);
         }
+
+        #[test]
+        pub fn get_indexed_does_not_tick_oops_cycle_if_page_boundary_not_crossed() {
+            let mut mem = mem::Virtual::new();
+            mem.attach(0x01F0, Box::new(mem::Fixed::new(0x20))).unwrap();
+            let mut cpu = Mos6502::new();
+            cpu.registers.y = 2;
+            cpu.clock.set(41);
+            Operand::Indexed(0x01F0, cpu::RegisterName::Y).get_u8(&mut cpu, &mem).unwrap();
+            assert_eq!(41, cpu.clock.get());
+        }
+
+        #[test]
+        pub fn get_indexed_ticks_oops_cycle_if_page_boundary_crossed() {
+            let mut mem = mem::Virtual::new();
+            mem.attach(0x01F0, Box::new(mem::Fixed::new(0x20))).unwrap();
+            let mut cpu = Mos6502::new();
+            cpu.registers.y = 2;
+            cpu.clock.set(41);
+            Operand::Indexed(0x01FF, cpu::RegisterName::Y).get_u8(&mut cpu, &mem).unwrap();
+            assert_eq!(42, cpu.clock.get());
+        }
+
+        #[test]
+        pub fn get_postindexedindirect_does_not_tick_oops_cycle_if_page_boundary_not_crossed() {
+            let mut mem = mem::Virtual::new();
+            mem.attach(0x0000, Box::new(mem::Fixed::new(0x20))).unwrap();
+            mem.attach(0x01F0, Box::new(mem::Fixed::new(0x20))).unwrap();
+            mem.set_u16::<LittleEndian>(0x0000, 0x01F0).unwrap();
+            let mut cpu = Mos6502::new();
+            cpu.registers.y = 2;
+            cpu.clock.set(41);
+            Operand::PostIndexedIndirect(0).get_u8(&mut cpu, &mem).unwrap();
+            assert_eq!(41, cpu.clock.get());
+        }
+
+        #[test]
+        pub fn get_postindexedindirect_ticks_oops_cycle_if_page_boundary_crossed() {
+            let mut mem = mem::Virtual::new();
+            mem.attach(0x0000, Box::new(mem::Fixed::new(0x20))).unwrap();
+            mem.attach(0x01F0, Box::new(mem::Fixed::new(0x20))).unwrap();
+            mem.set_u16::<LittleEndian>(0x0000, 0x01FF).unwrap();
+            let mut cpu = Mos6502::new();
+            cpu.registers.y = 2;
+            cpu.clock.set(41);
+            Operand::PostIndexedIndirect(0).get_u8(&mut cpu, &mem).unwrap();
+            assert_eq!(42, cpu.clock.get());
+        }
     }
 }

@@ -125,7 +125,7 @@ pub fn dispatch<M>(inst: Instruction, cpu: &mut Mos6502, mem: &mut M) -> Result 
         Instruction::JMP(op) => jmp::exec(cpu, mem, op),
         Instruction::JSR(op) => jsr::exec(cpu, mem, op),
         Instruction::LAS(op) => load::las(cpu, mem, op),
-        Instruction::LAX(op) => { try!(load::exec(cpu, mem, cpu::RegisterName::A, op)); load::exec(cpu, mem, cpu::RegisterName::X, op) },
+        Instruction::LAX(op) => { try!(load::exec(cpu, mem, cpu::RegisterName::A, op)); transfer::exec(cpu, cpu::RegisterName::A, cpu::RegisterName::X) },
         Instruction::LDA(op) => load::exec(cpu, mem, cpu::RegisterName::A, op),
         Instruction::LDX(op) => load::exec(cpu, mem, cpu::RegisterName::X, op),
         Instruction::LDY(op) => load::exec(cpu, mem, cpu::RegisterName::Y, op),

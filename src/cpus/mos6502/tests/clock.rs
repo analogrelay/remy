@@ -283,7 +283,9 @@ pub fn lsr() {
 
 #[test]
 pub fn nop() {
-    TestContext::new().test(Instruction::NOP, 2);
+    TestContext::new()
+        .test(Instruction::NOP, 2)
+        .test(Instruction::NOPX, 2);
 }
 
 #[test]
@@ -363,7 +365,17 @@ pub fn sbc() {
         .test(Instruction::SBC(Operand::Indexed(0x01FF, RegisterName::X)), 5)
         .test(Instruction::SBC(Operand::PreIndexedIndirect(0x0000)), 6)
         .test(Instruction::SBC(Operand::PostIndexedIndirect(0x0000)), 5)
-        .test(Instruction::SBC(Operand::PostIndexedIndirect(0x0010)), 6);
+        .test(Instruction::SBC(Operand::PostIndexedIndirect(0x0010)), 6)
+
+        .test(Instruction::SBCX(Operand::Immediate(0xA5)), 2)
+        .test(Instruction::SBCX(Operand::Absolute(0x0010)), 3)
+        .test(Instruction::SBCX(Operand::Indexed(0x0010, RegisterName::X)), 4)
+        .test(Instruction::SBCX(Operand::Absolute(0x0110)), 4)
+        .test(Instruction::SBCX(Operand::Indexed(0x01E0, RegisterName::X)), 4)
+        .test(Instruction::SBCX(Operand::Indexed(0x01FF, RegisterName::X)), 5)
+        .test(Instruction::SBCX(Operand::PreIndexedIndirect(0x0000)), 6)
+        .test(Instruction::SBCX(Operand::PostIndexedIndirect(0x0000)), 5)
+        .test(Instruction::SBCX(Operand::PostIndexedIndirect(0x0010)), 6);
 }
 
 #[test]
@@ -440,6 +452,59 @@ pub fn tya() {
     TestContext::new().test(Instruction::TYA, 2);
 }
 
+#[test]
+pub fn alr() {
+    TestContext::new().test(Instruction::ALR(Operand::Immediate(0x01)), 2);
+}
+
+#[test]
+pub fn anc() {
+    TestContext::new().test(Instruction::ANC(Operand::Immediate(0x01)), 2);
+}
+
+#[test]
+pub fn arr() {
+    TestContext::new().test(Instruction::ARR(Operand::Immediate(0x01)), 2);
+}
+
+#[test]
+pub fn axs() {
+    TestContext::new().test(Instruction::AXS(Operand::Immediate(0x00)), 2);
+}
+
+#[test]
+pub fn lax() {
+    TestContext::new()
+        .test(Instruction::LAX(Operand::Absolute(0x0010)), 3)
+        .test(Instruction::LAX(Operand::Indexed(0x0010, RegisterName::X)), 4)
+        .test(Instruction::LAX(Operand::Absolute(0x0110)), 4)
+        .test(Instruction::LAX(Operand::Indexed(0x01E0, RegisterName::X)), 4)
+        .test(Instruction::LAX(Operand::Indexed(0x01FF, RegisterName::X)), 5)
+        .test(Instruction::LAX(Operand::PreIndexedIndirect(0x0000)), 6)
+        .test(Instruction::LAX(Operand::PostIndexedIndirect(0x0000)), 5)
+        .test(Instruction::LAX(Operand::PostIndexedIndirect(0x0010)), 6);
+}
+
+#[test]
+pub fn sax() {
+    TestContext::new()
+        .test(Instruction::SAX(Operand::Absolute(0x0010)), 3)
+        .test(Instruction::SAX(Operand::Indexed(0x0010, RegisterName::X)), 4)
+        .test(Instruction::SAX(Operand::Absolute(0x0110)), 4)
+        .test(Instruction::SAX(Operand::PreIndexedIndirect(0x0000)), 6);
+}
+
+/*
+            &Instruction::DCP(_) |
+            &Instruction::ISB(_) |
+            &Instruction::RLA(_) |
+            &Instruction::RRA(_) |
+            &Instruction::SLO(_) |
+            &Instruction::SRE(_) |
+            &Instruction::IGN(_) |
+            &Instruction::SKB(_) |
+            */
+
 struct TestContext<'a> {
     cpu: mos6502::Mos6502,
     mem: mem::Virtual<'a>,
@@ -456,6 +521,12 @@ impl<'a> TestContext<'a> {
         if cycle_diff != actual_diff {
             self.errors.push(format!("{:?} cycles were {}; expected: {}", instr, actual_diff, cycle_diff));
         }
+
+        // Reset CPU state
+        self.cpu.registers.sp = 0x80;
+        self.cpu.registers.x = 10;
+        self.cpu.registers.y = 10;
+
         self
     }
 

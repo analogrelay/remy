@@ -3,9 +3,9 @@ use cpus::mos6502::exec;
 use cpus::mos6502::{Operand,Mos6502,Flags};
 
 pub fn exec<M>(cpu: &mut Mos6502, mem: &mut M, op: Operand) -> Result<(), exec::Error> where M: Memory {
-    let b = try!(op.get_u8(cpu, mem));
+    let b = try!(op.get_u8_no_oops(cpu, mem));
     let r = (b << 1) & 0xFE;
-    try!(op.set_u8(cpu, mem, r));
+    try!(op.set_u8_no_oops(cpu, mem, r));
 
     cpu.flags.set_if(Flags::CARRY(), b & 0x80 != 0);
     cpu.flags.set_sign_and_zero(r);

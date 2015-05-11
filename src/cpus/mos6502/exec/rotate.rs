@@ -11,7 +11,7 @@ pub fn right<M>(cpu: &mut Mos6502, mem: &mut M, op: Operand) -> Result<(), exec:
 }
 
 fn exec<M>(cpu: &mut Mos6502, mem: &mut M, op: Operand, left: bool) -> Result<(), exec::Error> where M : Memory {
-    let n = try!(op.get_u8(cpu, mem));
+    let n = try!(op.get_u8_no_oops(cpu, mem));
 
     // Grab the bit that's about to fall off
     let t = if left { n & 0x80 } else { n & 0x01 };
@@ -26,7 +26,7 @@ fn exec<M>(cpu: &mut Mos6502, mem: &mut M, op: Operand, left: bool) -> Result<()
             0x00
         };
     let b = (if left { n << 1 } else { n >> 1 }) | carry_byte;
-    try!(op.set_u8(cpu, mem, b));
+    try!(op.set_u8_no_oops(cpu, mem, b));
 
     // Set the flags
     cpu.flags.set_sign_and_zero(b);

@@ -90,7 +90,7 @@ pub fn decode<R>(mut reader: R) -> Result<Instruction> where R: io::Read {
         0x1E => Instruction::ASL(try!(read_abs_x(&mut reader))),
         0x1F => Instruction::SLO(try!(read_abs_x(&mut reader))),
 
-        0x20 => Instruction::JSR(try!(read_imm_word(&mut reader))),
+        0x20 => Instruction::JSR(try!(read_abs(&mut reader))),
         0x21 => Instruction::AND(try!(read_ind_x(&mut reader))),
         0x22 => Instruction::HLT,
         0x23 => Instruction::RLA(try!(read_ind_x(&mut reader))),
@@ -356,10 +356,6 @@ fn read_imm<R>(reader: &mut R) -> Result<Operand> where R: io::Read {
     Ok(Operand::Immediate(try!(read_byte(reader))))
 }
 
-fn read_imm_word<R>(reader: &mut R) -> Result<Operand> where R: io::Read {
-    Ok(Operand::TwoByteImmediate(try!(read_u16(reader))))
-}
-
 fn read_offset<R>(reader: &mut R) -> Result<Operand> where R: io::Read {
     Ok(Operand::Offset(try!(read_byte(reader)) as i8))
 }
@@ -550,7 +546,7 @@ mod test {
 
     #[test]
     pub fn can_decode_jsr() {
-        decoder_test(vec![0x20, 0xCD, 0xAB], Instruction::JSR(Operand::TwoByteImmediate(0xABCD)));
+        decoder_test(vec![0x20, 0xCD, 0xAB], Instruction::JSR(Operand::Absolute(0xABCD)));
     }
 
     #[test]

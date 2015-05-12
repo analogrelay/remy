@@ -141,36 +141,6 @@ pub fn clv() {
 }
 
 #[test]
-pub fn cmp() {
-    TestContext::new()
-        .test(Instruction::CMP(Operand::Immediate(0xA5)), 2)
-        .test(Instruction::CMP(Operand::Absolute(0x0010)), 3)
-        .test(Instruction::CMP(Operand::Indexed(0x0010, RegisterName::X)), 4)
-        .test(Instruction::CMP(Operand::Absolute(0x0110)), 4)
-        .test(Instruction::CMP(Operand::Indexed(0x01E0, RegisterName::X)), 4)
-        .test(Instruction::CMP(Operand::Indexed(0x01FF, RegisterName::X)), 5)
-        .test(Instruction::CMP(Operand::PreIndexedIndirect(0x0000)), 6)
-        .test(Instruction::CMP(Operand::PostIndexedIndirect(0x0000)), 5)
-        .test(Instruction::CMP(Operand::PostIndexedIndirect(0x0010)), 6);
-}
-
-#[test]
-pub fn cpx() {
-    TestContext::new()
-        .test(Instruction::CPX(Operand::Immediate(0xA5)), 2)
-        .test(Instruction::CPX(Operand::Absolute(0x01)), 3)
-        .test(Instruction::CPX(Operand::Absolute(0x0101)), 4);
-}
-
-#[test]
-pub fn cpy() {
-    TestContext::new()
-        .test(Instruction::CPY(Operand::Immediate(0xA5)), 2)
-        .test(Instruction::CPY(Operand::Absolute(0x01)), 3)
-        .test(Instruction::CPY(Operand::Absolute(0x0101)), 4);
-}
-
-#[test]
 pub fn dec() {
     TestContext::new()
         .test(Instruction::DEC(Operand::Absolute(0x01)), 5)
@@ -492,6 +462,19 @@ pub fn sax() {
         .test(Instruction::SAX(Operand::Indexed(0x0010, RegisterName::X)), 4)
         .test(Instruction::SAX(Operand::Absolute(0x0110)), 4)
         .test(Instruction::SAX(Operand::PreIndexedIndirect(0x0000)), 6);
+}
+
+#[test]
+pub fn dcp() {
+    TestContext::new()
+        .test(Instruction::DCP(Operand::PreIndexedIndirect(0x0000)), 8)
+        .test(Instruction::DCP(Operand::Absolute(0x0001)), 5)
+        .test(Instruction::DCP(Operand::Absolute(0x0101)), 6)
+        .test(Instruction::DCP(Operand::PostIndexedIndirect(0x0000)), 8)
+        .test(Instruction::DCP(Operand::PostIndexedIndirect(0x0010)), 8)
+        .test(Instruction::DCP(Operand::Indexed(0x0000, RegisterName::X)), 6)
+        .test(Instruction::DCP(Operand::Indexed(0x01E0, RegisterName::X)), 7)
+        .test(Instruction::DCP(Operand::Indexed(0x01FF, RegisterName::X)), 7);
 }
 
 /*

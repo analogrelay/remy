@@ -116,7 +116,7 @@ pub fn dispatch<M>(inst: Instruction, cpu: &mut Mos6502, mem: &mut M) -> Result 
         Instruction::CMP(op) => compare::exec(cpu, mem, cpu::RegisterName::A, op),
         Instruction::CPX(op) => compare::exec(cpu, mem, cpu::RegisterName::X, op),
         Instruction::CPY(op) => compare::exec(cpu, mem, cpu::RegisterName::Y, op),
-        Instruction::DCP(op) => { try!(dec::mem(cpu, mem, op)); compare::exec(cpu, mem, cpu::RegisterName::A, op) },
+        Instruction::DCP(op) => { try!(dec::mem(cpu, mem, op)); compare::no_oops(cpu, mem, cpu::RegisterName::A, op) },
         Instruction::DEC(op) => dec::mem(cpu, mem, op),
         Instruction::EOR(op) => eor::exec(cpu, mem, op),
         Instruction::IGN(op) => { try!(op.get_u8(cpu, mem)); Ok(()) }, // Read the byte to get the side effects

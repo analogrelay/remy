@@ -4,15 +4,6 @@ use cpus::mos6502::{cpu,Mos6502,Flags,Operand};
 
 pub fn exec<M>(cpu: &mut Mos6502, mem: &M, reg: cpu::RegisterName, op: Operand) -> Result<(), exec::Error> where M: Memory {
     let val = try!(op.get_u8(cpu, mem));
-    _impl(cpu, reg, val)
-}
-
-pub fn no_oops<M>(cpu: &mut Mos6502, mem: &M, reg: cpu::RegisterName, op: Operand) -> Result<(), exec::Error> where M: Memory {
-    let val = try!(op.get_u8_no_oops(cpu, mem));
-    _impl(cpu, reg, val)
-}
-
-fn _impl(cpu: &mut Mos6502, reg: cpu::RegisterName, val: u8) -> Result<(), exec::Error> {
     let t = reg.get(cpu) as i16 - val as i16;
 
     cpu.flags.set_if(Flags::CARRY(), t >= 0);

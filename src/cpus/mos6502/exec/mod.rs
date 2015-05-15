@@ -116,12 +116,20 @@ pub fn dispatch<M>(inst: Instruction, cpu: &mut Mos6502, mem: &mut M) -> Result 
         Instruction::CMP(op) => compare::exec(cpu, mem, cpu::RegisterName::A, op),
         Instruction::CPX(op) => compare::exec(cpu, mem, cpu::RegisterName::X, op),
         Instruction::CPY(op) => compare::exec(cpu, mem, cpu::RegisterName::Y, op),
-        Instruction::DCP(op) => { try!(dec::mem(cpu, mem, op)); compare::no_oops(cpu, mem, cpu::RegisterName::A, op) },
+        Instruction::DCP(op) => {
+            try!(dec::mem(cpu, mem, op));
+            let _x = cpu.clock.suspend();
+            compare::exec(cpu, mem, cpu::RegisterName::A, op)
+        },
         Instruction::DEC(op) => dec::mem(cpu, mem, op),
         Instruction::EOR(op) => eor::exec(cpu, mem, op),
         Instruction::IGN(op) => { try!(op.get_u8(cpu, mem)); Ok(()) }, // Read the byte to get the side effects
         Instruction::INC(op) => inc::mem(cpu, mem, op),
-        Instruction::ISB(op) => { try!(inc::mem(cpu, mem, op)); sbc::exec(cpu, mem, op) },
+        Instruction::ISB(op) => { 
+            try!(inc::mem(cpu, mem, op));
+            let _x = cpu.clock.suspend();
+            sbc::exec(cpu, mem, op)
+        },
         Instruction::JMP(op) => jmp::exec(cpu, mem, op),
         Instruction::JSR(op) => jsr::exec(cpu, mem, op),
         Instruction::LAS(op) => load::las(cpu, mem, op),
@@ -131,17 +139,33 @@ pub fn dispatch<M>(inst: Instruction, cpu: &mut Mos6502, mem: &mut M) -> Result 
         Instruction::LDY(op) => load::exec(cpu, mem, cpu::RegisterName::Y, op),
         Instruction::LSR(op) => lsr::exec(cpu, mem, op),
         Instruction::ORA(op) => ora::exec(cpu, mem, op),
-        Instruction::RLA(op) => { try!(rotate::left(cpu, mem, op)); and::exec(cpu, mem, op, false) },
+        Instruction::RLA(op) => {
+            let _x = cpu.clock.suspend();
+            try!(rotate::left(cpu, mem, op));
+            and::exec(cpu, mem, op, false)
+        },
         Instruction::ROL(op) => rotate::left(cpu, mem, op),
         Instruction::ROR(op) => rotate::right(cpu, mem, op),
-        Instruction::RRA(op) => { try!(rotate::right(cpu, mem, op)); adc::exec(cpu, mem, op) },
+        Instruction::RRA(op) => { 
+            let _x = cpu.clock.suspend();
+            try!(rotate::right(cpu, mem, op));
+            adc::exec(cpu, mem, op)
+        },
         Instruction::SAX(op) => store::sax(cpu, mem, op),
         Instruction::SBC(op) | Instruction::SBCX(op) => sbc::exec(cpu, mem, op),
         Instruction::SHY(op) => store::sh(cpu, mem, cpu::RegisterName::X, op),
         Instruction::SHX(op) => store::sh(cpu, mem, cpu::RegisterName::X, op),
-        Instruction::SKB(_) => Ok(()),
-        Instruction::SLO(op) => { try!(asl::exec(cpu, mem, op)); ora::exec(cpu, mem, op) },
-        Instruction::SRE(op) => { try!(lsr::exec(cpu, mem, op)); eor::exec(cpu, mem, op) },
+        Instruction::SKB(op) => { try!(op.get_u8(cpu, mem)); Ok(()) },
+        Instruction::SLO(op) => {
+            let _x = cpu.clock.suspend();
+            try!(asl::exec(cpu, mem, op));
+            ora::exec(cpu, mem, op)
+        },
+        Instruction::SRE(op) => {
+            let _x = cpu.clock.suspend();
+            try!(lsr::exec(cpu, mem, op));
+            eor::exec(cpu, mem, op)
+        },
         Instruction::STA(op) => store::exec(cpu, mem, cpu::RegisterName::A, op),
         Instruction::STX(op) => store::exec(cpu, mem, cpu::RegisterName::X, op),
         Instruction::STY(op) => store::exec(cpu, mem, cpu::RegisterName::Y, op),

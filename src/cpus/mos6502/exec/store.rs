@@ -3,8 +3,11 @@ use cpus::mos6502::{exec, cpu};
 use cpus::mos6502::{Mos6502,Operand};
 
 pub fn exec<M>(cpu: &mut Mos6502, mem: &mut M, reg: cpu::RegisterName, op: Operand) -> exec::Result where M: Memory {
+    let _x = cpu.clock.suspend();
+
     let val = reg.get(cpu);
-    try!(op.set_u8_no_oops(cpu, mem, val));
+    try!(op.set_u8(cpu, mem, val));
+
     Ok(())
 }
 

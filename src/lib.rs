@@ -30,8 +30,8 @@ pub mod instr;
 /// Contains a Program Counter object to track program counter position
 pub mod pc;
 
-/// Contains code to run various complete systems 
+/// Contains code to run various complete systems
 pub mod systems;
 
-/// Contains code for tracking clock cycles
+/// Contains code to manage clock cycles
 pub mod clock;

@@ -456,6 +456,13 @@ pub fn lax() {
 }
 
 #[test]
+pub fn las() {
+    TestContext::new()
+        .test(Instruction::LAS(Operand::Indexed(0x01E0, RegisterName::X)), 4)
+        .test(Instruction::LAS(Operand::Indexed(0x01FF, RegisterName::X)), 5);
+}
+
+#[test]
 pub fn sax() {
     TestContext::new()
         .test(Instruction::SAX(Operand::Absolute(0x0010)), 3)
@@ -477,16 +484,86 @@ pub fn dcp() {
         .test(Instruction::DCP(Operand::Indexed(0x01FF, RegisterName::X)), 7);
 }
 
-/*
-            &Instruction::DCP(_) |
-            &Instruction::ISB(_) |
-            &Instruction::RLA(_) |
-            &Instruction::RRA(_) |
-            &Instruction::SLO(_) |
-            &Instruction::SRE(_) |
-            &Instruction::IGN(_) |
-            &Instruction::SKB(_) |
-            */
+#[test]
+pub fn isb() {
+    TestContext::new()
+        .test(Instruction::ISB(Operand::PreIndexedIndirect(0x0000)), 8)
+        .test(Instruction::ISB(Operand::Absolute(0x0001)), 5)
+        .test(Instruction::ISB(Operand::Absolute(0x0101)), 6)
+        .test(Instruction::ISB(Operand::PostIndexedIndirect(0x0000)), 8)
+        .test(Instruction::ISB(Operand::PostIndexedIndirect(0x0010)), 8)
+        .test(Instruction::ISB(Operand::Indexed(0x0000, RegisterName::X)), 6)
+        .test(Instruction::ISB(Operand::Indexed(0x01E0, RegisterName::X)), 7)
+        .test(Instruction::ISB(Operand::Indexed(0x01FF, RegisterName::X)), 7);
+}
+
+#[test]
+pub fn rla() {
+    TestContext::new()
+        /*.test(Instruction::RLA(Operand::PreIndexedIndirect(0x0000)), 8)
+        .test(Instruction::RLA(Operand::Absolute(0x0001)), 5)
+        .test(Instruction::RLA(Operand::Absolute(0x0101)), 6)
+        .test(Instruction::RLA(Operand::PostIndexedIndirect(0x0000)), 8) */
+        .test(Instruction::RLA(Operand::PostIndexedIndirect(0x0010)), 8); /*
+        .test(Instruction::RLA(Operand::Indexed(0x0000, RegisterName::X)), 6)
+        .test(Instruction::RLA(Operand::Indexed(0x01E0, RegisterName::X)), 7)
+        .test(Instruction::RLA(Operand::Indexed(0x01FF, RegisterName::X)), 7);*/
+}
+
+#[test]
+pub fn rra() {
+    TestContext::new()
+        .test(Instruction::RRA(Operand::PreIndexedIndirect(0x0000)), 8)
+        .test(Instruction::RRA(Operand::Absolute(0x0001)), 5)
+        .test(Instruction::RRA(Operand::Absolute(0x0101)), 6)
+        .test(Instruction::RRA(Operand::PostIndexedIndirect(0x0000)), 8)
+        .test(Instruction::RRA(Operand::PostIndexedIndirect(0x0010)), 8)
+        .test(Instruction::RRA(Operand::Indexed(0x0000, RegisterName::X)), 6)
+        .test(Instruction::RRA(Operand::Indexed(0x01E0, RegisterName::X)), 7)
+        .test(Instruction::RRA(Operand::Indexed(0x01FF, RegisterName::X)), 7);
+}
+
+#[test]
+pub fn slo() {
+    TestContext::new()
+        .test(Instruction::SLO(Operand::PreIndexedIndirect(0x0000)), 8)
+        .test(Instruction::SLO(Operand::Absolute(0x0001)), 5)
+        .test(Instruction::SLO(Operand::Absolute(0x0101)), 6)
+        .test(Instruction::SLO(Operand::PostIndexedIndirect(0x0000)), 8)
+        .test(Instruction::SLO(Operand::PostIndexedIndirect(0x0010)), 8)
+        .test(Instruction::SLO(Operand::Indexed(0x0000, RegisterName::X)), 6)
+        .test(Instruction::SLO(Operand::Indexed(0x01E0, RegisterName::X)), 7)
+        .test(Instruction::SLO(Operand::Indexed(0x01FF, RegisterName::X)), 7);
+}
+
+#[test]
+pub fn sre() {
+    TestContext::new()
+        .test(Instruction::SRE(Operand::PreIndexedIndirect(0x0000)), 8)
+        .test(Instruction::SRE(Operand::Absolute(0x0001)), 5)
+        .test(Instruction::SRE(Operand::Absolute(0x0101)), 6)
+        .test(Instruction::SRE(Operand::PostIndexedIndirect(0x0000)), 8)
+        .test(Instruction::SRE(Operand::PostIndexedIndirect(0x0010)), 8)
+        .test(Instruction::SRE(Operand::Indexed(0x0000, RegisterName::X)), 6)
+        .test(Instruction::SRE(Operand::Indexed(0x01E0, RegisterName::X)), 7)
+        .test(Instruction::SRE(Operand::Indexed(0x01FF, RegisterName::X)), 7);
+}
+
+#[test]
+pub fn skb() {
+    TestContext::new()
+        .test(Instruction::SKB(Operand::Immediate(0x10)), 2)
+        .test(Instruction::SKB(Operand::Absolute(0x0001)), 3)
+        .test(Instruction::SKB(Operand::Indexed(0x0001, RegisterName::X)), 4);
+}
+
+#[test]
+pub fn ign() {
+    TestContext::new()
+        .test(Instruction::IGN(Operand::Absolute(0x00)), 4)
+        .test(Instruction::IGN(Operand::Indexed(0x01E0, RegisterName::X)), 4)
+        .test(Instruction::IGN(Operand::Indexed(0x01FF, RegisterName::X)), 5);
+}
 
 struct TestContext<'a> {
     cpu: mos6502::Mos6502,

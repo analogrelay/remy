@@ -187,7 +187,7 @@ impl Instruction {
             &Instruction::EOR(Operand::PreIndexedIndirect(_)) => 6,
             &Instruction::EOR(Operand::PostIndexedIndirect(_)) => 5,
 
-            &Instruction::IGN(Operand::Absolute(addr)) if addr < 0x0100 => 3,
+            &Instruction::IGN(Operand::Absolute(addr)) if addr < 0x0100 => 4,
             &Instruction::IGN(Operand::Indexed(addr, _)) if addr < 0x0100 => 4,
             &Instruction::IGN(Operand::Absolute(_)) => 4,
             &Instruction::IGN(Operand::Indexed(..)) => 4,
@@ -299,7 +299,10 @@ impl Instruction {
 
             &Instruction::SHY(..) => 5,
             &Instruction::SHX(..) => 5,
-            &Instruction::SKB(..) => 2,
+
+            &Instruction::SKB(Operand::Immediate(_)) => 2,
+            &Instruction::SKB(Operand::Absolute(addr)) if addr < 0x0100 => 3,
+            &Instruction::SKB(Operand::Indexed(addr, _)) if addr < 0x0100 => 4,
 
             &Instruction::SLO(Operand::Absolute(addr)) if addr < 0x0100 => 5,
             &Instruction::SLO(Operand::Indexed(addr, _)) if addr < 0x0100 => 6,
@@ -472,7 +475,7 @@ impl Instruction {
     }
 
     /// Get a string in the form of the nestest "golden log" output
-    pub fn get_log_string<M>(&self, cpu: &Mos6502, mem: &M) -> operand::Result<String> where M: mem::Memory {
+    pub fn get_log_string<M>(&self, cpu: &mut Mos6502, mem: &M) -> operand::Result<String> where M: mem::Memory {
         use instr::Instruction as InstrTrait;
 
         Ok(format!(

@@ -111,18 +111,6 @@ impl Operand {
         })
     }
 
-    /// Retrieves the operand value without ticking the clock for an "oops" cycle
-    pub fn get_u8_no_oops<M>(&self, cpu: &Mos6502, mem: &M) -> Result<u8> where M: mem::Memory {
-        Ok(match self {
-            &Operand::Immediate(n)      => n,
-            &Operand::Accumulator       => cpu.registers.a,
-            _                           => {
-                let (addr, _) = try!(self.get_addr_impl(cpu, mem));
-                try!(mem.get_u8(addr as u64))
-            }
-        })
-    }
-
     /// Returns true if the operand has an address (aka, it is an 'lvalue')
     pub fn has_addr(&self) -> bool {
         match self {
@@ -146,15 +134,6 @@ impl Operand {
         }
     }
 
-    /// Sets the value of the operand on the specified cpu without ticking the clock for an "oops"
-    /// cycle
-    pub fn set_u8_no_oops<M>(&self, cpu: &mut Mos6502, mem: &mut M, val: u8) -> Result<()> where M: mem::Memory {
-        match self {
-            &Operand::Accumulator        => { cpu.registers.a = val; Ok(()) },
-            _                            => { let (addr, _) = try!(self.get_addr_impl(cpu, mem)); Ok(try!(mem.set_u8(addr as u64, val))) }
-        }
-    }
-
     /// Retrieves the address of the operand on the specified cpu
     ///
     /// # Arguments
@@ -168,33 +147,30 @@ impl Operand {
         }
     }
 
-    /// Retrieves the address of the operand on the specified cpu, without ticking an "oops" cycle
-    pub fn get_addr_no_oops<M>(&self, cpu: &mut Mos6502, mem: &M) -> Result<u16> where M: mem::Memory {
-        Ok(try!(self.get_addr_impl(cpu, mem)).0)
-    }
-
     /// Get a string in the form of the nestest "golden log" output
-    pub fn get_log_string<M>(&self, cpu: &Mos6502, mem: &M) -> Result<String> where M: mem::Memory {
+    pub fn get_log_string<M>(&self, cpu: &mut Mos6502, mem: &M) -> Result<String> where M: mem::Memory {
+        let _ = cpu.clock.suspend(); // Don't tick the clock while getting the log message
+
         Ok(match self {
             &Operand::Offset(offset) => format!("${:04X}", ((cpu.pc.get() as i32) + (offset as i32)) as u16),
             &Operand::PreIndexedIndirect(addr) => {
                 let (preindex_addr, _) = try!(self.get_addr_impl(cpu, mem));
                 let eaddr = (addr as u64 + cpu.registers.x as u64) & 0xFF;
-                format!("{} @ {:02X} = {:04X} = {:02X}", self, eaddr, preindex_addr, try!(self.get_u8_no_oops(cpu, mem)))
+                format!("{} @ {:02X} = {:04X} = {:02X}", self, eaddr, preindex_addr, try!(self.get_u8(cpu, mem)))
             },
             &Operand::PostIndexedIndirect(addr) => {
                 let (preindex_addr, _) = try!(self.get_addr_impl(cpu, mem));
                 let low = try!(mem.get_u8(addr as u64)) as u64;
                 let high = try!(mem.get_u8((addr as u64 + 1) & 0xFF)) as u64;
                 let eaddr = low | (high << 8);
-                format!("{} = {:04X} @ {:04X} = {:02X}", self, eaddr, preindex_addr, try!(self.get_u8_no_oops(cpu, mem)))
+                format!("{} = {:04X} @ {:04X} = {:02X}", self, eaddr, preindex_addr, try!(self.get_u8(cpu, mem)))
             },
             &Operand::Indexed(addr, _) => {
                 let (preindex_addr, _) = try!(self.get_addr_impl(cpu, mem));
                 if addr < 0x0100 {
-                    format!("{} @ {:02X} = {:02X}", self, preindex_addr as u8, try!(self.get_u8_no_oops(cpu, mem)))
+                    format!("{} @ {:02X} = {:02X}", self, preindex_addr as u8, try!(self.get_u8(cpu, mem)))
                 } else {
-                    format!("{} @ {:04X} = {:02X}", self, preindex_addr, try!(self.get_u8_no_oops(cpu, mem)))
+                    format!("{} @ {:04X} = {:02X}", self, preindex_addr, try!(self.get_u8(cpu, mem)))
                 }
             },
             &op if op.has_addr() => {

@@ -2,11 +2,14 @@ use mem::Memory;
 use cpus::mos6502::{exec,Mos6502,Operand};
 
 pub fn exec<M>(cpu: &mut Mos6502, mem: &mut M, op: Operand) -> Result<(), exec::Error> where M: Memory {
+    let _x = cpu.clock.suspend();
+
     let pc = cpu.pc.get() - 1;
-    let addr = try!(op.get_addr_no_oops(cpu, mem));
+    let addr = try!(op.get_addr(cpu, mem));
     try!(cpu.push(mem, ((pc & 0xFF00) >> 8) as u8));
     try!(cpu.push(mem, (pc & 0x00FF) as u8));
     cpu.pc.set(addr as u64);
+
     Ok(())
 }
 

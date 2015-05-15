@@ -10,9 +10,11 @@ pub fn reg(cpu: &mut Mos6502, reg: cpu::RegisterName) -> Result<(), exec::Error>
 }
 
 pub fn mem<M>(cpu: &mut Mos6502, mem: &mut M, op: Operand) -> Result<(), exec::Error> where M: Memory {
-    let new_val = (try!(op.get_u8_no_oops(cpu, mem)).wrapping_sub(1)) & 0xFF;
+    let _x = cpu.clock.suspend();
+
+    let new_val = (try!(op.get_u8(cpu, mem)).wrapping_sub(1)) & 0xFF;
     cpu.flags.set_sign_and_zero(new_val); 
-    try!(op.set_u8_no_oops(cpu, mem, new_val));
+    try!(op.set_u8(cpu, mem, new_val));
     Ok(())
 }
 

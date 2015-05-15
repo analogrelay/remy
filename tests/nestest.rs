@@ -81,7 +81,7 @@ pub fn mos6502_can_run_nestest_rom() {
         let sp = cpu.registers.sp;
 
         // Format the instruction log entry
-        let instr_str = match instr.get_log_string(&cpu, &memory) {
+        let instr_str = match instr.get_log_string(&mut cpu, &memory) {
             Ok(s) => s,
             Err(e) => panic!("Error getting log string for ${:04X} {}: {}", addr, instr, e)
         };

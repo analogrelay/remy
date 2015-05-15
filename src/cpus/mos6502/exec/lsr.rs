@@ -3,12 +3,15 @@ use cpus::mos6502::exec;
 use cpus::mos6502::{Mos6502,Operand,Flags};
 
 pub fn exec<M>(cpu: &mut Mos6502, mem: &mut M, op: Operand) -> Result<(), exec::Error> where M : Memory {
-    let n = try!(op.get_u8_no_oops(cpu, mem));
+    let _x = cpu.clock.suspend();
+
+    let n = try!(op.get_u8(cpu, mem));
     cpu.flags.clear(Flags::SIGN());
     cpu.flags.set_if(Flags::CARRY(), (n & 0x01) != 0);
     let m = (n >> 1) & 0x7F;
     cpu.flags.set_if(Flags::ZERO(), m == 0);
-    try!(op.set_u8_no_oops(cpu, mem, m));
+    try!(op.set_u8(cpu, mem, m));
+
     Ok(())
 }
 

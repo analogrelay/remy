@@ -3,7 +3,8 @@ use cpus::mos6502::exec;
 use cpus::mos6502::{Mos6502,Operand};
 
 pub fn exec<M>(cpu: &mut Mos6502, mem: &M, op: Operand) -> Result<(), exec::Error> where M: Memory {
-    let new_value = cpu.registers.a ^ try!(op.get_u8(cpu, mem));
+    let val = try!(op.get_u8(cpu, mem));
+    let new_value = cpu.registers.a ^ val;
     cpu.flags.set_sign_and_zero(new_value);
     cpu.registers.a = new_value;
     Ok(())

@@ -4,7 +4,7 @@ use std::{env,fs,io};
 use std::path::Path;
 use std::io::Write;
 
-use remy::cpus::mos6502;
+use remy::hw::mos6502;
 use remy::systems::nes;
 
 fn main() {

@@ -7,7 +7,7 @@ use std::{env,fs,io};
 use std::io::BufRead;
 
 use remy::systems::nes;
-use remy::cpus::mos6502;
+use remy::hw::mos6502;
 use remy::mem::{self,Memory};
 use remy::instr::Instruction;
 

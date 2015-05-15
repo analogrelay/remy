@@ -60,7 +60,7 @@ impl ProgramCounter {
 #[cfg(test)]
 mod test {
     use mem;
-    use cpus::mos6502;
+    use hw::mos6502;
     use pc::ProgramCounter;
 
     #[test]

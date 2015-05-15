@@ -18,8 +18,8 @@
 // Import crates
 extern crate byteorder;
 
-/// Contains code to emulate supported CPUs
-pub mod cpus;
+/// Contains code to emulate supported Hardware
+pub mod hw;
 
 /// Contains abstractions useful for Memory Management
 pub mod mem;

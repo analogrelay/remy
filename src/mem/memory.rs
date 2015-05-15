@@ -69,6 +69,9 @@ pub enum ErrorKind {
     /// The provided address referred to memory that is not writable
     MemoryNotWritable,
 
+    /// The memory represented by this object is not currently available
+    MemoryNotPresent,
+
     /// An unknown error occurred
     Other
 }

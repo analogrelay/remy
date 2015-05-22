@@ -2,7 +2,7 @@ use std::{convert,error,fmt};
 
 use pc;
 use clock;
-use mem::{self,Memory,MemoryExt};
+use mem::{self,Memory};
 
 use super::{instr,exec};
 
@@ -344,7 +344,7 @@ impl ::std::ops::Not for Flags {
 mod test {
     mod mos6502 {
         use mem;
-        use mem::MemoryExt;
+        use mem::Memory;
 
         use hw::mos6502;
 

@@ -1,6 +1,5 @@
 use mem;
 use std::convert;
-use std::slice::bytes;
 
 /// Represents a flat fixed-size memory buffer
 ///
@@ -43,44 +42,26 @@ impl mem::Memory for Fixed {
         self.data.len() as u64
     }
 
-    /// Fills the provided buffer with data from the memory starting at the specified address
-    ///
-    /// # Arguments
-    ///
-    /// * `addr` - The address at which to start reading
-    /// * `buf` - The buffer to fill
-    fn get(&self, addr: u64, buf: &mut [u8]) -> mem::Result<()> {
-        let end = (addr as usize + buf.len() - 1) as usize;
-        if end >= self.data.len() {
-            // The read will take us out of bounds, don't start it.
+    fn get_u8(&self, addr: u64) -> mem::Result<u8> {
+        if addr >= self.data.len() as u64 {
             Err(mem::Error::with_detail(
                 mem::ErrorKind::OutOfBounds,
                 "Read would reach end of memory",
-                format!("requested: 0x{:X} - 0x{:X}, but size is 0x{:x}", addr, end, self.data.len())))
+                format!("attempted to read from 0x{:X}, but size is 0x{:x}", addr, self.data.len())))
         }
         else {
-            let start = addr as usize;
-            bytes::copy_memory(&self.data[start .. end + 1], buf);
-            Ok(())
+            Ok(self.data[addr as usize])
         }
     }
 
-    /// Writes the provided buffer to the memory starting at the specified address
-    ///
-    /// # Arguments
-    ///
-    /// * `addr` - The address at which to start writing
-    /// * `buf` - The buffer to write
-    fn set(&mut self, addr: u64, buf: &[u8]) -> mem::Result<()> {
-        let end = (addr as usize + buf.len() - 1) as usize;
-        if end >= self.data.len() {
+    fn set_u8(&mut self, addr: u64, val: u8) -> mem::Result<()> {
+        if addr >= self.data.len() as u64 {
             Err(mem::Error::with_detail(
                 mem::ErrorKind::OutOfBounds,
                 "Write would reach end of memory",
-                format!("requested: 0x{:X} - 0x{:X}, but size is 0x{:x}", addr, end, self.data.len())))
+                format!("attempted to write to 0x{:X}, but size is 0x{:x}", addr, self.data.len())))
         } else {
-            let start = addr as usize;
-            bytes::copy_memory(buf, &mut self.data[start .. end + 1]);
+            self.data[addr as usize] = val;
             Ok(())
         }
     }
@@ -89,47 +70,24 @@ impl mem::Memory for Fixed {
 #[cfg(test)]
 mod test {
     use mem;
-    use mem::{Memory,MemoryExt};
+    use mem::Memory;
 
     #[test]
     pub fn get_and_set_work() {
         let mut mem = mem::Fixed::new(10);
-        mem.set(1, &[42, 24, 44, 22]).unwrap();
-
-        let mut buf = [0, 0, 0, 0];
-        mem.get(1, &mut buf).unwrap();
-
-        assert_eq!([42, 24, 44, 22], buf);
+        mem.set_u8(1, 42).ok().expect("set failed");
+        assert_eq!(Ok(42), mem.get_u8(1));
     }
 
     #[test]
-    pub fn get_returns_err_if_would_go_out_of_bounds() {
+    pub fn get_returns_err_if_out_of_bounds() {
         let mem = mem::Fixed::new(10);
-        let mut buf = [0, 0, 0, 0];
-        assert_eq!(mem.get(8, &mut buf).unwrap_err().kind, mem::ErrorKind::OutOfBounds);
+        assert_eq!(mem::ErrorKind::OutOfBounds, mem.get_u8(12).unwrap_err().kind);
     }
 
     #[test]
-    pub fn get_does_not_fill_buffer_if_read_would_go_out_of_bounds() {
+    pub fn set_returns_err_if_out_of_bounds() {
         let mut mem = mem::Fixed::new(10);
-        mem.set(8, &[42]).unwrap();
-        let mut buf = [0, 0, 0, 0];
-        mem.get(8, &mut buf).unwrap_err();
-        assert_eq!([0, 0, 0, 0], buf);
-    }
-
-    #[test]
-    pub fn set_returns_err_if_would_go_out_of_bounds() {
-        let mut mem = mem::Fixed::new(10);
-        assert_eq!(mem.set(8, &[42, 24, 44, 22]).unwrap_err().kind, mem::ErrorKind::OutOfBounds);
-    }
-
-    #[test]
-    pub fn set_does_not_write_anything_unless_whole_write_fits() {
-        let mut mem = mem::Fixed::new(10);
-        mem.set(8, &[42, 24, 44, 22]).unwrap_err();
-
-        assert_eq!(0, mem.get_u8(8).unwrap());
-        assert_eq!(0, mem.get_u8(9).unwrap());
+        assert_eq!(mem::ErrorKind::OutOfBounds, mem.set_u8(12, 42).unwrap_err().kind);
     }
 }

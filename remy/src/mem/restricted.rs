@@ -8,13 +8,13 @@ impl<M> mem::Memory for ReadOnlyMemory<M> where M: mem::Memory {
         m.len()
     }
 
-    fn get(&self, addr: u64, buf: &mut [u8]) -> mem::Result<()> {
+    fn get_u8(&self, addr: u64) -> mem::Result<u8> {
         let &ReadOnlyMemory(ref m) = self;
-        m.get(addr, buf)
+        m.get_u8(addr)
     }
 
     #[allow(unused_variables)]
-    fn set(&mut self, addr: u64, buf: &[u8]) -> mem::Result<()> {
+    fn set_u8(&mut self, addr: u64, val: u8) -> mem::Result<()> {
         Err(mem::Error::new(mem::ErrorKind::MemoryNotWritable, "attempted to write to read-only memory"))
     }
 }
@@ -32,13 +32,13 @@ impl<M> mem::Memory for WriteOnlyMemory<M> where M: mem::Memory {
     }
 
     #[allow(unused_variables)]
-    fn get(&self, addr: u64, buf: &mut [u8]) -> mem::Result<()> {
+    fn get_u8(&self, addr: u64) -> mem::Result<u8> {
         Err(mem::Error::new(mem::ErrorKind::MemoryNotReadable, "attempted to read from write-only memory"))
     }
 
-    fn set(&mut self, addr: u64, buf: &[u8]) -> mem::Result<()> {
+    fn set_u8(&mut self, addr: u64, val: u8) -> mem::Result<()> {
         let &mut WriteOnlyMemory(ref mut m) = self;
-        m.set(addr, buf)
+        m.set_u8(addr, val)
     }
 }
 

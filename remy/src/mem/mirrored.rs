@@ -1,5 +1,4 @@
 use mem;
-use std::cmp;
 
 /// Provides a `mem::Memory` that mirrors a provided `Memory` through a certain size
 ///
@@ -28,57 +27,30 @@ impl<M> Mirrored<M> where M: mem::Memory {
 impl<M> mem::Memory for Mirrored<M> where M: mem::Memory {
     fn len(&self) -> u64 { self.size }
 
-    fn get(&self, addr: u64, buf: &mut [u8]) -> mem::Result<()> {
-        if addr >= self.size || (addr + (buf.len() - 1) as u64) >= self.size {
-            return Err(mem::Error::new(mem::ErrorKind::OutOfBounds, "attempted to read beyond the end of the memory"))
+    fn get_u8(&self, addr: u64) -> mem::Result<u8> {
+        if addr >= self.size {
+            Err(mem::Error::with_detail(
+                mem::ErrorKind::OutOfBounds,
+                "Read would reach end of memory",
+                format!("attempted to read from 0x{:X}, but size is 0x{:x}", addr, self.size)))
         }
-        // Read chunks until we've read everything we're expected to read
-        let mut ptr = 0;
-        while ptr < buf.len() {
-            // Determine the current effective address
-            let eaddr = (addr + ptr as u64) % self.mem.len();
-
-            // Determine how much we can read in a single burst
-            let to_read = cmp::min((self.mem.len() - eaddr) as usize, buf.len() - ptr);
-
-            // Read that much
-            let inp = &mut buf[ptr .. (ptr + to_read)];
-            if let Err(e) = self.mem.get(eaddr, inp) {
-                return Err(e)
-            }
-
-            // Advance the pointer
-            ptr = ptr + to_read;
+        else {
+            let eaddr = addr % self.mem.len();
+            self.mem.get_u8(eaddr)
         }
-
-        Ok(())
     }
 
-    fn set(&mut self, addr: u64, buf: &[u8]) -> mem::Result<()> {
-        if addr >= self.size || (addr + (buf.len() - 1) as u64) >= self.size {
-            return Err(mem::Error::new(mem::ErrorKind::OutOfBounds, "attempted to write beyond the end of the memory"))
+    fn set_u8(&mut self, addr: u64, val: u8) -> mem::Result<()> {
+        if addr >= self.size {
+            Err(mem::Error::with_detail(
+                mem::ErrorKind::OutOfBounds,
+                "Write would reach end of memory",
+                format!("attempted to write to 0x{:X}, but size is 0x{:x}", addr, self.size)))
         }
-
-        // Write chunks until we've written everything we're expected to write
-        let mut ptr = 0;
-        while ptr < buf.len() {
-            // Determine the current effective address
-            let eaddr = (addr + ptr as u64) % self.mem.len();
-
-            // Determine how much we can write in a single burst
-            let to_write = cmp::min((self.mem.len() - eaddr) as usize, buf.len() - ptr);
-
-            // Write that much
-            let outp = &buf[ptr .. (ptr + to_write)];
-            if let Err(e) = self.mem.set(eaddr, outp) {
-                return Err(e)
-            }
-
-            // Advance the pointer
-            ptr = ptr + to_write;
+        else {
+            let eaddr = addr % self.mem.len();
+            self.mem.set_u8(eaddr, val)
         }
-
-        Ok(())
     }
 }
 

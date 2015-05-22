@@ -87,36 +87,38 @@ pub trait Memory {
     /// Gets the size of the memory
     fn len(&self) -> u64;
 
-    /// Copies from the memory into the specified buffer, starting at the specified address
-    ///
-    /// Memory operations may fail part-way through. The contents of the memory
-    /// become undefined at that point.
+    /// Reads a single byte from the memory at `addr`
     ///
     /// # Arguments
     /// * `addr` - The address at which to begin reading the data
-    /// * `buf` - The data to copy out of the memory
-    fn get(&self, addr: u64, buf: &mut [u8]) -> Result<()>;
+    fn get_u8(&self, addr: u64) -> Result<u8>;
 
-    /// Copies the specified buffer in to the memory starting at the specified address
-    ///
-    /// Memory operations may fail part-way through. The contents of the memory
-    /// become undefined at that point.
+    /// Writes a single byte `val` to the memory at `addr`
     ///
     /// # Arguments
     /// * `addr` - The address at which to begin writing the data
-    /// * `buf` - The data to copy in to the memory
-    fn set(&mut self, addr: u64, buf: &[u8]) -> Result<()>;
+    /// * `val` - The byte to set
+    fn set_u8(&mut self, addr: u64, val: u8) -> Result<()>;
+
+    /// Fills the provided buffer with data from the memory starting at `addr`
+    fn get(&self, addr: u64, buf: &mut [u8]) -> Result<()> {
+        for i in 0..buf.len() {
+            buf[i] = try!(self.get_u8(addr + i as u64));
+        }
+        Ok(())
+    }
+
+    /// Writes the provided buffer to the memory starting at `addr`
+    fn set(&mut self, addr: u64, buf: &[u8]) -> Result<()> {
+        for i in 0..buf.len() {
+            try!(self.set_u8(addr + i as u64, buf[i]))
+        }
+        Ok(())
+    }
 }
 
 /// Extension trait that provides the ability to read specific values out of memory
 pub trait MemoryExt: Memory {
-    /// Gets a single byte from the address specified by `addr`
-    fn get_u8(&self, addr: u64) -> Result<u8> {
-        let mut buf = [0];
-        try!(self.get(addr, &mut buf));
-        Ok(buf[0])
-    }
-
     /// Gets a u16 value, in the specified byte order `B`, from the address specified by `addr`
     fn get_u16<B>(&self, addr: u64) -> Result<u16> where B: ByteOrder {
         let mut raw = [0u8; 2];
@@ -157,13 +159,6 @@ pub trait MemoryExt: Memory {
         let mut raw = [0u8; 8];
         try!(self.get(addr, &mut raw));
         Ok(<B as ByteOrder>::read_i64(&raw))
-    }
-
-    /// Writes the byte specified in `val` to the address specified by `addr`
-    fn set_u8(&mut self, addr: u64, val: u8) -> Result<()> {
-        let buf = [val];
-        try!(self.set(addr, &buf));
-        Ok(())
     }
 
     /// Writes the u16 value specified in `val` to the address specified by `addr`, in the

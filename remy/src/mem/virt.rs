@@ -1,6 +1,6 @@
 use mem;
 
-use std::{cmp,error,fmt};
+use std::{error,fmt};
 
 struct Segment<'a> {
     base : u64,
@@ -120,68 +120,32 @@ impl<'a> mem::Memory for Virtual<'a> {
         unimplemented!()
     }
 
-    fn get(&self, addr: u64, buf: &mut [u8]) -> mem::Result<()> {
-        let mut ptr = 0;
-        while ptr < buf.len() {
-            // Find the memory at the current address
-            let cur_addr = addr + ptr as u64;
-            let segment = match self.find(cur_addr) {
-                Some(l) => l,
-                None => return Err(mem::Error::with_detail(
-                    mem::ErrorKind::OutOfBounds,
-                    "Unable to locate a suitable memory segment",
-                    format!("at address: 0x{:X}", cur_addr)))
-            };
-
-            // Calculate effective address
-            let eaddr = cur_addr - segment.base;
-
-            // Figure out how much to read
-            let to_read = cmp::min((segment.memory.len() - eaddr) as usize, buf.len() - ptr);
-
-            // Read that much
-            let inp = &mut buf[ptr .. (ptr + to_read)];
-            if let Err(e) = segment.memory.get(eaddr, inp) {
-                return Err(e)
-            }
-
-            // Advance the pointer
-            ptr = ptr + to_read;
+    fn get_u8(&self, addr: u64) -> mem::Result<u8> {
+        // Find the memory at the current address
+        match self.find(addr) {
+            Some(segment) => {
+                let eaddr = addr - segment.base;
+                segment.memory.get_u8(eaddr)
+            },
+            None => Err(mem::Error::with_detail(
+                mem::ErrorKind::OutOfBounds,
+                "Unable to locate a suitable memory segment",
+                format!("at address: 0x{:X}", addr)))
         }
-
-        Ok(())
     }
 
-    fn set(&mut self, addr: u64, buf: &[u8]) -> mem::Result<()> {
-        let mut ptr = 0;
-        while ptr < buf.len() {
-            // Find the memory at the current address
-            let cur_addr = addr + ptr as u64;
-            let segment = match self.find_mut(cur_addr) {
-                Some(l) => l,
-                None => return Err(mem::Error::with_detail(
-                    mem::ErrorKind::OutOfBounds,
-                    "Unable to locate a suitable memory segment",
-                    format!("at address: 0x{:X}", cur_addr)))
-            };
-
-            // Calculate effective address
-            let eaddr = cur_addr - segment.base;
-
-            // Figure out how much to write
-            let to_write = cmp::min((segment.memory.len() - eaddr) as usize, buf.len() - ptr);
-
-            // Write that much
-            let outp = &buf[ptr .. (ptr + to_write)];
-            if let Err(e) = segment.memory.set(eaddr, outp) {
-                return Err(e)
-            }
-
-            // Advance the pointer
-            ptr = ptr + to_write;
+    fn set_u8(&mut self, addr: u64, val: u8) -> mem::Result<()> {
+        // Find the memory at the current address
+        match self.find_mut(addr) {
+            Some(segment) => {
+                let eaddr = addr - segment.base;
+                segment.memory.set_u8(eaddr, val)
+            },
+            None => Err(mem::Error::with_detail(
+                mem::ErrorKind::OutOfBounds,
+                "Unable to locate a suitable memory segment",
+                format!("at address: 0x{:X}", addr)))
         }
-
-        Ok(())
     }
 }
 

@@ -21,7 +21,7 @@ pub fn mem<M>(cpu: &mut Mos6502, mem: &mut M, op: Operand) -> Result<(), exec::E
 #[cfg(test)]
 mod test {
     use mem;
-    use mem::{Memory,MemoryExt};
+    use mem::Memory;
     use hw::mos6502::exec::dec;
     use hw::mos6502::{Mos6502,Flags,Operand};
 

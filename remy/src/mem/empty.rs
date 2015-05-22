@@ -8,12 +8,12 @@ impl mem::Memory for Empty {
     fn len(&self) -> u64 { 0 }
 
     #[allow(unused_variables)]
-    fn get(&self, addr: u64, buf: &mut [u8]) -> mem::Result<()> {
+    fn get_u8(&self, addr: u64) -> mem::Result<u8> {
         Err(mem::Error::new(mem::ErrorKind::MemoryNotReadable, "EmptyMemory cannot be read from"))
     }
 
     #[allow(unused_variables)]
-    fn set(&mut self, addr: u64, buf: &[u8]) -> mem::Result<()> {
+    fn set_u8(&mut self, addr: u64, val: u8) -> mem::Result<()> {
         Err(mem::Error::new(mem::ErrorKind::MemoryNotWritable, "EmptyMemory cannot be written to"))
     }
 }

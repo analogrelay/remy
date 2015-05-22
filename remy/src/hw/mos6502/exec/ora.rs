@@ -1,4 +1,4 @@
-use mem::{Memory,MemoryExt};
+use mem::Memory;
 use hw::mos6502::exec;
 use hw::mos6502::{Mos6502,Operand};
 
@@ -12,7 +12,7 @@ pub fn exec<M>(cpu: &mut Mos6502, mem: &M, op: Operand) -> Result<(), exec::Erro
 #[cfg(test)]
 mod test {
     use mem;
-    use mem::MemoryExt;
+    use mem::Memory;
     use hw::mos6502::exec::ora;
     use hw::mos6502::{Mos6502,Flags,Operand};
 

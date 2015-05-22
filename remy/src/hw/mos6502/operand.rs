@@ -1,7 +1,7 @@
 use std::{error,fmt};
 
 use mem;
-use mem::{Memory,MemoryExt};
+use mem::Memory;
 
 use hw::mos6502::cpu;
 use hw::mos6502::Mos6502;
@@ -259,7 +259,7 @@ impl fmt::Display for Operand {
 mod test {
     mod operand {
         use mem;
-        use mem::MemoryExt;
+        use mem::{Memory,MemoryExt};
         use hw::mos6502::{cpu,Mos6502,Operand};
         use byteorder::LittleEndian;
 

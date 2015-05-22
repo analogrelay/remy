@@ -1,4 +1,4 @@
-use mem::{Memory,MemoryExt};
+use mem::Memory;
 use hw::mos6502::{exec, cpu};
 use hw::mos6502::{Mos6502,Operand};
 
@@ -43,7 +43,7 @@ pub fn tas<M>(cpu: &mut Mos6502, mem: &mut M, op: Operand) -> exec::Result where
 #[cfg(test)]
 mod test {
     use mem;
-    use mem::MemoryExt;
+    use mem::Memory;
     use hw::mos6502::exec::store;
     use hw::mos6502::{cpu,Mos6502,Operand};
 

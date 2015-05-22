@@ -198,7 +198,7 @@ impl ::std::fmt::Debug for Rom {
 /// 
 /// # Arguments
 /// * `input` - The `std::io::Read` instance to read the ROM data from
-pub fn read<R>(input: &mut R) -> Result<Rom> where R: io::Read {
+pub fn load_rom<R>(input: &mut R) -> Result<Rom> where R: io::Read {
     // Load header
     let header = try!(read_header(input));
 

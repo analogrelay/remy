@@ -1,17 +1,24 @@
-build:
-	@cargo build --verbose
+.PHONY: remy rudy
 
-test:
-	@cargo test --verbose
+remy:
+	@cargo test --manifest-path ./remy/Cargo.toml --verbose
+
+rudy:
+	@cargo test --manifest-path ./rudy/Cargo.toml --verbose
+
+build:
+	@cargo build --manifest-path ./remy/Cargo.toml --verbose
+	@cargo build --manifest-path ./rudy/Cargo.toml --verbose
 
 doc:
-	@cargo doc --verbose
+	@cargo doc --manifest-path ./remy/Cargo.toml --verbose
 
 clean:
-	@cargo clean --verbose
+	@cargo clean --manifest-path ./remy/Cargo.toml --verbose
+	@cargo clean --manifest-path ./rudy/Cargo.toml --verbose
 
-all: build test
+all: remy rudy
 
-rebuild: clean build
+rebuild: clean all
 
 travis: all doc

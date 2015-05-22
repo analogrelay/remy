@@ -19,7 +19,7 @@ fn main() {
     let file = Path::new(&args[1]);
     println!("Loading {:?}...", file);
 
-    let rom = nes::rom::read(&mut fs::File::open(file).unwrap()).unwrap();
+    let rom = nes::load_rom(&mut fs::File::open(file).unwrap()).unwrap();
 
     // Determine the output file and delete it if already present
     let output_file = Path::new(file.file_name().unwrap()).with_extension("out");
@@ -28,7 +28,7 @@ fn main() {
 
     writeln!(&mut output, "Decompilation of {:?}", file.file_name().unwrap()).unwrap();
     writeln!(&mut output, "{}", "").unwrap();
-    
+
     decompile_banks(&mut output, "PRG", rom.prg_banks);
     write_banks(&mut output, "CHR", rom.chr_banks);
 }

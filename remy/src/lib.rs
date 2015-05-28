@@ -8,13 +8,17 @@
     unused_must_use,
     unused_features,
     unused_variables,
-    unused_comparisons)]
+    unused_comparisons,
+    non_shorthand_field_patterns)]
 
 // Features used in all builds
 #![feature(convert)]
 #![feature(debug_builders)]
 
 // Import crates
+#[macro_use]
+extern crate log;
+
 extern crate byteorder;
 
 /// Contains code to emulate supported Hardware

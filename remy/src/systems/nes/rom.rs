@@ -1,7 +1,5 @@
 use std::{error,io,fmt};
 
-use systems::nes;
-
 const HEADER_SIZE: usize = 16;
 const PRG_BANK_SIZE: usize = 16384;
 const CHR_BANK_SIZE: usize = 8192;
@@ -126,9 +124,33 @@ fn get_full_size(inp: u16) -> u16 {
     }
 }
 
+/// Describes cartridge hardware to be emulated
+#[derive(Debug)]
+pub struct CartridgeInfo {
+    /// Indicates the iNES Mapper Number to use
+    pub mapper: u16,
+
+    /// Indicates the NES 2.0 Submapper Number to use
+    pub submapper: u8,
+
+    /// Indicates if there are bus conflicts on the cartridge
+    pub bus_conflicts: bool
+}
+
+impl CartridgeInfo {
+    /// Creates a new `CartridgeInfo` from the provided values
+    pub fn new(mapper: u16, submapper: u8, bus_conflicts: bool) -> CartridgeInfo {
+        CartridgeInfo {
+            mapper: mapper,
+            submapper: submapper,
+            bus_conflicts: bus_conflicts
+        }
+    }
+}
+
 /// Represents the header values of an iNES/NES2.0 ROM
 #[derive(Debug)]
-pub struct Header {
+pub struct RomHeader {
     /// The size of the PRG ROM in 16K Banks
     pub prg_rom_size: u16,
 
@@ -142,7 +164,7 @@ pub struct Header {
     pub chr_ram_size: RamSize,
 
     /// The Cartridge to use to emulate cartridge hardware
-    pub cartridge: nes::Cartridge,
+    pub cartridge: CartridgeInfo,
 
     /// The version of the ROM
     pub version: Version,
@@ -175,21 +197,21 @@ pub struct Header {
 /// Represents an NES ROM, loaded from the iNES/NES2.0 format
 pub struct Rom {
     /// Contains the information read from the ROM header
-    pub header: Header,
+    pub header: RomHeader,
 
     /// Contains each of the 16KB PRG ROM Banks contained in the ROM file
-    pub prg_banks: Vec<Vec<u8>>,
+    pub prg: Vec<u8>,
 
     /// Contains each of the 8KB CHR ROM Banks contained in the ROM file
-    pub chr_banks: Vec<Vec<u8>>
+    pub chr: Vec<u8>
 }
 
 impl ::std::fmt::Debug for Rom {
     fn fmt(&self, fmt: &mut ::std::fmt::Formatter) -> ::std::result::Result<(), ::std::fmt::Error> {
         fmt.debug_struct("Rom")
             .field("header", &self.header)
-            .field("prg_banks", &self.prg_banks.len())
-            .field("chr_banks", &self.chr_banks.len())
+            .field("prg", &self.prg.len())
+            .field("chr", &self.chr.len())
             .finish()
     }
 }
@@ -203,30 +225,26 @@ pub fn load_rom<R>(input: &mut R) -> Result<Rom> where R: io::Read {
     let header = try!(read_header(input));
 
     // Read rom banks
-    let prg_banks = try!(read_banks(input, header.prg_rom_size, PRG_BANK_SIZE)); 
-    let chr_banks = try!(read_banks(input, header.chr_rom_size, CHR_BANK_SIZE));
+    let prg = try!(read_banks(input, header.prg_rom_size, PRG_BANK_SIZE)); 
+    let chr = try!(read_banks(input, header.chr_rom_size, CHR_BANK_SIZE));
 
     Ok(Rom {
         header: header,
-        prg_banks: prg_banks,
-        chr_banks: chr_banks
+        prg: prg,
+        chr: chr
     })
 }
 
-fn read_banks<R>(input: &mut R, bank_count: u16, bank_size: usize) -> Result<Vec<Vec<u8>>> where R: io::Read {
-    let mut banks = Vec::with_capacity(bank_count as usize);
-    for _ in (0..bank_count) {
-        banks.push(try!(read_bank(input, bank_size)));
-    }
+fn read_banks<R>(input: &mut R, bank_count: u16, bank_size: usize) -> Result<Vec<u8>> where R: io::Read {
+    use std::io::Read;
+
+    let all_banks_size = bank_count as usize * bank_size;
+    let mut banks = Vec::with_capacity(all_banks_size);
+    try!(input.take(bank_size as u64).read_to_end(&mut banks));
     Ok(banks)
 }
 
-fn read_bank<R>(input: &mut R, bank_size: usize) -> Result<Vec<u8>> where R: io::Read {
-    use std::io::Read;
-    Ok(try!(input.take(bank_size as u64).bytes().collect()))
-}
-
-fn read_header<R>(input: &mut R) -> Result<Header> where R: io::Read {
+fn read_header<R>(input: &mut R) -> Result<RomHeader> where R: io::Read {
     // Read the header into memory
     let mut header = [0u8; HEADER_SIZE];
     let read = try!(input.read(&mut header));
@@ -288,12 +306,12 @@ fn read_header<R>(input: &mut R) -> Result<Header> where R: io::Read {
     let prg_ram = RamSize::from_header_byte(header[10], version);
     let chr_ram = RamSize::from_header_byte(header[11], version);
 
-    Ok(Header {
+    Ok(RomHeader {
         prg_rom_size: prg_size,
         chr_rom_size: chr_size,
         prg_ram_size: prg_ram,
         chr_ram_size: chr_ram,
-        cartridge: nes::Cartridge::new(mapper, submapper, (header[10] & 0x20) != 0),
+        cartridge: CartridgeInfo::new(mapper, submapper, (header[10] & 0x20) != 0),
         version: version,
         vertical_arrangement: (header[6] & 0x01) == 0,
         four_screen_vram: (header[6] & 0x08) != 0,

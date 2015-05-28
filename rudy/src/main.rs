@@ -5,19 +5,18 @@ extern crate sdl2;
 extern crate remy;
 extern crate env_logger;
 
-/*
 use std::{env,fs,path};
 use remy::systems::nes;
-*/
 
-#[allow(dead_code)]
 fn main() {
-    /*
+    // Initialize logging
+    env_logger::init().unwrap();
+
     // Load the rom
     let args : Vec<String> = env::args().collect();
 
     if args.len() < 2 {
-        println!("Usage: decompiler <rom file name>");
+        println!("Usage: rudy <rom file name>");
         return;
     }
 
@@ -27,10 +26,8 @@ fn main() {
     // Load the ROM
     let rom = nes::load_rom(&mut fs::File::open(file).unwrap()).unwrap();
 
-    // Create an NES
-    let nes = nes::Nes::new();
+    let screen = gfx::BufferScreen::new(256, 240);
 
-    // Insert the cartridge
-    nes.load(rom);
-    */
+    // Create a NES
+    let nes = nes::Nes::new(rom, screen);
 }

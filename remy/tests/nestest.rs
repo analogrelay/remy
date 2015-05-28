@@ -23,13 +23,13 @@ pub fn mos6502_can_run_nestest_rom() {
     romfile.push("nestest.nes");
 
     // Load the test rom
-    let mut rom = nes::load_rom(&mut fs::File::open(romfile).unwrap()).unwrap();
+    let rom = nes::load_rom(&mut fs::File::open(romfile).unwrap()).unwrap();
 
     // 2KB internal ram mirrored through 0x1FFF
     let ram = Box::new(mem::Mirrored::new(mem::Fixed::new(0x0800), 0x2000));
 
     // Load the ROM into memory
-    let prg_rom = Box::new(mem::read_only(mem::Mirrored::new(mem::Fixed::from_contents(rom.prg_banks.remove(0)), 0x8000)));
+    let prg_rom = Box::new(mem::read_only(mem::Mirrored::new(mem::Fixed::from_contents(rom.prg), 0x8000)));
 
     // Create a black hole for APU/IO registers
     let apu_io = Box::new(mem::Fixed::from_contents(vec![0xFF; 0x20]));

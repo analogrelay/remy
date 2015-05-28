@@ -5,3 +5,4 @@ authors = ["anurse <andrew@andrewnurse.net>"]
 
 [dependencies]
 byteorder = "0.3.8"
+log = "0.3.1"

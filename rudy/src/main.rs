@@ -1,33 +1,70 @@
-#[macro_use]
-extern crate log;
-
-extern crate sdl2;
+extern crate piston;
+extern crate graphics;
+extern crate glutin_window;
+extern crate opengl_graphics;
 extern crate remy;
-extern crate env_logger;
 
-use std::{env,fs,path};
+use piston::window::WindowSettings;
+use glutin_window::GlutinWindow as Window;
+use opengl_graphics::{ GlGraphics, OpenGL };
+
 use remy::systems::nes;
 
-fn main() {
-    // Initialize logging
-    env_logger::init().unwrap();
+use std::{fs,io,env,path};
+use std::io::Write;
 
-    // Load the rom
-    let args : Vec<String> = env::args().collect();
+mod app;
+
+fn main() {
+    // Read the ROM
+    let args = env::args().collect::<Vec<_>>();
 
     if args.len() < 2 {
-        println!("Usage: rudy <rom file name>");
+        writeln!(io::stderr(), "Usage: rudy <path to rom>");
         return;
     }
 
-    let file = path::Path::new(&args[1]);
-    println!("Loading {:?}...", file);
+    let rompath = path::Path::new(&args[1]);
+    let rom = {
+        let mut romfile = fs::File::open(rompath)
+            .ok()
+            .expect("failed to open ROM file");
+        nes::load_rom(&mut romfile).ok().expect("error parsing ROM file")
+    };
+    let cart = nes::Cartridge::load(rom).ok().expect("unsupported ROM");
+    let mut nes = nes::Nes::new();
+    nes.load(cart);
 
-    // Load the ROM
-    let rom = nes::load_rom(&mut fs::File::open(file).unwrap()).unwrap();
+    start_gfx(nes);
+}
 
-    let screen = gfx::BufferScreen::new(256, 240);
+fn start_gfx(nes: nes::Nes) {
+    use piston::event::{RenderEvent,UpdateEvent,Events};
 
-    // Create a NES
-    let nes = nes::Nes::new(rom, screen);
+    let opengl = OpenGL::_3_2;
+
+    // Create an Glutin window.
+    let window = Window::new(
+        opengl,
+        WindowSettings::new(
+            "Rudy NES Emulator",
+            (512, 480)
+        )
+        .exit_on_esc(true)
+    );
+
+    // Create a new app
+    let mut app = app::App::new(
+        GlGraphics::new(opengl),
+        nes);
+
+    for e in window.events() {
+        if let Some(r) = e.render_args() {
+            app.render(&r);
+        }
+
+        if let Some(u) = e.update_args() {
+            app.update(&u);
+        }
+    }
 }

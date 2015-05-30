@@ -3,7 +3,7 @@ env:
     - secure: X7Rkx8Ymagj25MkEBV4nwOZYlWXJl/mBHkfFpZ3DeYmxqbln8o5zFqAL0pDm+e9A1ksc8Q7wJhAQDdDaWME8/p/4beEWVISYLAKwERhWcJF1OZxycaqDqf5GLSIhR35b4WETJ4hjugTNBsrgJ7jAB4hyOplimBohGU6ySMGT5zE=
 
 language: rust
-script: make travis
+script: make ci
 sudo: false
 
 after_success:

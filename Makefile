@@ -4,7 +4,7 @@ remy:
 	@cargo test --manifest-path ./remy/Cargo.toml --verbose
 
 rudy:
-	@cargo test --manifest-path ./rudy/Cargo.toml --verbose
+	@cargo build --manifest-path ./rudy/Cargo.toml --verbose
 
 build:
 	@cargo build --manifest-path ./remy/Cargo.toml --verbose
@@ -21,4 +21,7 @@ all: remy rudy
 
 rebuild: clean all
 
-travis: all doc
+ci: all doc
+
+run:
+	@cargo run --manifest-path ./rudy/Cargo.toml --verbose

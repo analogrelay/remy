@@ -111,7 +111,7 @@ impl<'a> Virtual<'a> {
 
 impl<'a> fmt::Debug for Virtual<'a> {
     fn fmt(&self, fmt: &mut fmt::Formatter) -> fmt::Result {
-        self.segments.iter().fold(fmt.debug_list(), |b, e| b.entry(e)).finish()
+        self.segments.iter().fold(&mut fmt.debug_list(), |b, e| b.entry(e)).finish()
     }
 }
 

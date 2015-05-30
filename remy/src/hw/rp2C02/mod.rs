@@ -1,2 +1,4 @@
-/// Contains code to represent the Pattern Table and Tiles
-pub mod pattern_table;
+//pub use self::ppu::Rp2C02;
+
+//// Contains code to emulate the PPU
+//pub mod ppu;

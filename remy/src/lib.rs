@@ -13,7 +13,6 @@
 
 // Features used in all builds
 #![feature(convert)]
-#![feature(debug_builders)]
 
 // Import crates
 #[macro_use]

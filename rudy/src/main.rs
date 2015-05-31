@@ -1,17 +1,12 @@
-extern crate piston;
-extern crate graphics;
-extern crate glutin_window;
-extern crate opengl_graphics;
+extern crate sdl2;
 extern crate remy;
-
-use piston::window::WindowSettings;
-use glutin_window::GlutinWindow as Window;
-use opengl_graphics::{ GlGraphics, OpenGL };
 
 use remy::systems::nes;
 
 use std::{fs,io,env,path};
 use std::io::Write;
+
+use sdl2::event;
 
 mod app;
 
@@ -39,32 +34,22 @@ fn main() {
 }
 
 fn start_gfx(nes: nes::Nes) {
-    use piston::event::{RenderEvent,UpdateEvent,Events};
+    let mut sdl = sdl2::init().everything().unwrap();
+    let window = sdl.window("Rudy NES Emulator", 512, 480).build().unwrap();
+    let mut event_pump = sdl.event_pump();
 
-    let opengl = OpenGL::_3_2;
+    // Create the app
+    let mut app = app::App::new(nes, window, (512, 480));
 
-    // Create an Glutin window.
-    let window = Window::new(
-        opengl,
-        WindowSettings::new(
-            "Rudy NES Emulator",
-            (512, 480)
-        )
-        .exit_on_esc(true)
-    );
-
-    // Create a new app
-    let mut app = app::App::new(
-        GlGraphics::new(opengl),
-        nes);
-
-    for e in window.events() {
-        if let Some(r) = e.render_args() {
-            app.render(&r);
+    // Pump events
+    loop {
+        for event in event_pump.poll_iter() {
+            if let event::Event::Quit { .. } = event {
+                return
+            }
         }
 
-        if let Some(u) = e.update_args() {
-            app.update(&u);
-        }
+        app.update();
+        app.render();
     }
 }

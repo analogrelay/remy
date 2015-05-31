@@ -15,6 +15,9 @@ pub mod rom;
 /// Contains code to emulate cartridge hardware (Mappers, etc.)
 pub mod cart;
 
+pub static SCREEN_WIDTH: usize = 256;
+pub static SCREEN_HEIGHT: usize = 240;
+
 mod memmap;
 
 pub type Result<T> = ::std::result::Result<T, Error>;

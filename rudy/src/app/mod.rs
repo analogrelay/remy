@@ -1,26 +1,47 @@
-use remy::systems::nes;
-use opengl_graphics;
-use piston::event;
+use sdl2::{video,pixels,render};
+use sdl2::rect::Rect;
 
-pub struct App {
-    gl: opengl_graphics::GlGraphics, // OpenGL drawing backend.
-    backbufer: opengl_graphics::Texture, // The back buffer to draw to
+use remy::systems::nes;
+
+pub struct App<'a> {
     nes: nes::Nes, // NES system
+    renderer: render::Renderer<'a>,
+    texture: render::Texture,
+    size: (i32, i32)
 }
 
-impl App {
-    pub fn new(gl: GlGraphics, nes: nes::Nes) -> App {
+impl<'a> App<'a> {
+    pub fn new(nes: nes::Nes, window: video::Window, size: (i32, i32)) -> App<'a> {
+        // Set up drawing surfaces
+        let renderer = window.renderer()
+            .accelerated()
+            .build()
+            .unwrap();
+        let texture = renderer.create_texture(
+            pixels::PixelFormatEnum::BGR24,
+            render::TextureAccess::Streaming,
+            (nes::SCREEN_WIDTH as i32, nes::SCREEN_HEIGHT as i32)).unwrap();
+
         App {
-            gl: gl,
-            nes: nes
+            nes: nes,
+            renderer: renderer,
+            texture: texture,
+            size: size
         }
     }
 
-    pub fn render(&mut self, args: &event::RenderArgs) {
+    pub fn update(&mut self) {
     }
 
-    pub fn update(&mut self, args: &event::UpdateArgs) {
-        // Tick the system
+    pub fn render(&mut self) {
+        let tex = &self.texture;
+        let (w, h) = self.size;
+        let mut drawer = self.renderer.drawer();
+        drawer.clear();
+        drawer.copy(
+            tex,
+            None,
+            Some(Rect::new(0, 0, w, h)));
+        drawer.present();
     }
 }
-

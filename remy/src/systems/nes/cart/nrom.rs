@@ -1,47 +1,24 @@
 use mem;
-use systems::nes;
 
-struct Prg {
+pub struct Prg {
     ram: mem::Fixed,
     rom: mem::Fixed
 }
 
-pub struct NRom {
-    prg: Prg,
-    chr: mem::Empty
+pub struct Chr {
+    rom: mem::Fixed
 }
 
-impl NRom {
-    pub fn new(ram_size: usize, rom: Vec<u8>) -> NRom {
-        NRom {
-            prg: Prg {
-                ram: mem::Fixed::new(ram_size),
-                rom: mem::Fixed::from_contents(rom)
-            },
-            chr: mem::Empty
-        }
+pub fn prg(ram_size: usize, rom: Vec<u8>) -> Prg {
+    Prg {
+        ram: mem::Fixed::new(ram_size),
+        rom: mem::Fixed::from_contents(rom)
     }
 }
 
-impl nes::Mapper for NRom {
-    fn prg(&self) -> &mem::Memory
-    {
-        return &self.prg;
-    }
-
-    fn prg_mut(&mut self) -> &mut mem::Memory
-    {
-        return &mut self.prg;
-    }
-
-    fn chr(&self) -> &mem::Memory
-    {
-        return &self.chr;
-    }
-
-    fn chr_mut(&mut self) -> &mut mem::Memory
-    {
-        return &mut self.chr;
+pub fn chr(rom: Vec<u8>) -> Chr {
+    Chr {
+        rom: mem::Fixed::from_contents(rom)
     }
 }
 
@@ -86,5 +63,17 @@ impl mem::Memory for Prg {
                     mem::ErrorKind::MemoryNotWritable,
                     "cannot write to cartridge PRG ROM"))
         }
+    }
+}
+
+impl mem::Memory for Chr {
+    fn len(&self) -> u64 { unimplemented!() }
+
+    fn get_u8(&self, addr: u64) -> mem::Result<u8> {
+        unimplmented!()
+    }
+
+    fn set_u8(&mut self, addr: u64, val: u8) -> mem::Result<()> {
+        unimplemented!()
     }
 }

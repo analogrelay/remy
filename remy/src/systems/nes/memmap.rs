@@ -3,8 +3,18 @@ use systems::nes;
 
 /// Represents the memory map for a Nintendo Entertainment System
 pub struct MemoryMap {
+    mem: Mem,
+    vmem: Vmem
+}
+
+pub struct Mem {
     ram: mem::Fixed,
-    cart: Option<nes::Cartridge>
+    cart: Box<mem::Memory>
+}
+
+pub struct Vmem {
+    ram: mem::Fixed,
+    cart: Box<mem::Memory>
 }
 
 impl MemoryMap {

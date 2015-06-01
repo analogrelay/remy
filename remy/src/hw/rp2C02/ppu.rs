@@ -1,5 +1,7 @@
-use mem::{self,Memory};
+use std::convert;
+
 use clock;
+use mem::{self,Memory};
 
 pub const NAMETABLE_SIZE: usize = 0x0400;
 pub const NAMETABLE_BASE: usize = 0x2000;
@@ -18,6 +20,8 @@ pub const SCANLINES_PER_FRAME: usize = 240;
 pub const CYCLES_PER_SCANLINE: usize = 114;
 pub const VBLANK_SCANLINE: usize = 241;
 pub const END_SCANLINE: usize = 261;
+
+pub type ScreenBuffer = [u8; BYTES_PER_SCREEN];
 
 // Unapologetically yanked from https://github.com/pcwalton/sprocketnes/blob/master/ppu.rs
 const PALETTE: [u8; 192] = [
@@ -42,6 +46,13 @@ const PALETTE: [u8; 192] = [
 pub type Result<T> = ::std::result::Result<T, Error>;
 
 pub enum Error {
+    MemoryAccessError(mem::Error)
+}
+
+impl convert::From<mem::Error> for Error {
+    fn from(err: mem::Error) -> Error {
+        Error::MemoryAccessError(err)
+    }
 }
 
 pub struct Rp2C02 {
@@ -181,7 +192,7 @@ impl Rp2C02 {
     /// the PPU clock is updated by `CYCLES_PER_SCANLINE` and the process is
     /// repeated. If it is not, this method returns to allow the CPU to continue
     /// processing.
-    pub fn step(&mut self, target_cycle: usize, mem: &mut mem::Memory, screen: &mut [u8; BYTES_PER_SCREEN]) -> Result<()> {
+    pub fn step(&mut self, target_cycle: usize, mem: &mut mem::Memory, screen: &mut ScreenBuffer) -> Result<()> {
         loop {
             // Check when the next scan line is
             let next_scan_line = self.clock.get() + CYCLES_PER_SCANLINE;
@@ -203,10 +214,8 @@ impl Rp2C02 {
                 try!(self.render_scanline(mem, scanline_screen));
             } else if self.current_scanline == VBLANK_SCANLINE {
                 debug!("vblank starting");
-                self.start_vblank();
             } else if self.current_scanline == END_SCANLINE {
                 debug!("frame completed");
-                self.end_frame();
             }
 
             // Advance to the next scanline
@@ -219,9 +228,9 @@ impl Rp2C02 {
     fn get_pixel(&self, index: usize) -> Pixel {
         assert!(index * 3 + 2 < PALETTE.len());
         Pixel {
-            red: PALETTE[index * 3 + 2],
+            blue: PALETTE[index * 3],
             green: PALETTE[index * 3 + 1],
-            blue: PALETTE[index * 3]
+            red: PALETTE[index * 3 + 2],
         }
     }
 
@@ -283,17 +292,9 @@ impl Rp2C02 {
             };
 
             // Put it to the screen
-            screen[x * 3] = pixel.red;
+            screen[x * 3] = pixel.blue;
             screen[x * 3 + 1] = pixel.green;
-            screen[x * 3 + 2] = pixel.blue;
+            screen[x * 3 + 2] = pixel.red;
         }
-    }
-
-    fn start_vblank(&mut self) {
-        unimplemented!()
-    }
-
-    fn end_frame(&mut self) {
-        unimplemented!()
     }
 }

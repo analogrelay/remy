@@ -2,12 +2,14 @@ use sdl2::{video,pixels,render};
 use sdl2::rect::Rect;
 
 use remy::systems::nes;
+use remy::hw::rp2C02;
 
 pub struct App<'a> {
     nes: nes::Nes, // NES system
     renderer: render::Renderer<'a>,
     texture: render::Texture,
-    size: (i32, i32)
+    size: (i32, i32),
+    screen: [u8; rp2C02::ppu::BYTES_PER_SCREEN]
 }
 
 impl<'a> App<'a> {
@@ -26,7 +28,8 @@ impl<'a> App<'a> {
             nes: nes,
             renderer: renderer,
             texture: texture,
-            size: size
+            size: size,
+            screen: [0; rp2C02::ppu::BYTES_PER_SCREEN]
         }
     }
 

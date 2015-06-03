@@ -70,7 +70,7 @@ impl mem::Memory for Chr {
     fn len(&self) -> u64 { unimplemented!() }
 
     fn get_u8(&self, addr: u64) -> mem::Result<u8> {
-        unimplmented!()
+        unimplemented!()
     }
 
     fn set_u8(&mut self, addr: u64, val: u8) -> mem::Result<()> {

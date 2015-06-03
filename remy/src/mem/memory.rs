@@ -117,6 +117,12 @@ pub trait Memory {
     }
 }
 
+impl<T> Memory for Box<T> where T: Memory {
+    fn len(&self) -> u64 { self.len() }
+    fn get_u8(&self, addr: u64) -> Result<u8> { self.get_u8(addr) }
+    fn set_u8(&mut self, addr: u64, val: u8) -> Result<()> { self.set_u8(addr) }
+}
+
 /// Extension trait that provides the ability to read specific values out of memory
 pub trait MemoryExt: Memory {
     /// Gets a u16 value, in the specified byte order `B`, from the address specified by `addr`

@@ -1,45 +1,32 @@
 use mem;
 use systems::nes;
-
-/// Represents the memory map for a Nintendo Entertainment System
-pub struct MemoryMap {
-    mem: Mem,
-    vmem: Vmem
-}
+use hw::rp2C02;
 
 pub struct Mem {
     ram: mem::Fixed,
-    cart: Box<mem::Memory>
+    prg: Option<Box<mem::Memory>>,
+    ppu: rp2C02::Rp2C02
 }
 
-pub struct Vmem {
-    ram: mem::Fixed,
-    cart: Box<mem::Memory>
-}
-
-impl MemoryMap {
-    /// Constructs a new `MemoryMap` with no Cartridge present
-    pub fn new() -> MemoryMap {
-        MemoryMap {
+impl Mem {
+    pub fn new(ppu: rp2C02::Rp2C02) -> Mem {
+        Mem {
             ram: mem::Fixed::new(0x0800),
-            cart: None
+            prg: None,
+            ppu: ppu
         }
     }
 
-
-    /// Loads the provided cartridge into the `MemoryMap`, releasing the cartridge previously
-    /// loaded, if any
-    pub fn load(&mut self, cart: nes::Cartridge) {
-        self.cart = Some(cart);
+    pub fn load(&mut self, prg: Box<mem::Memory>) {
+        self.prg = Some(prg);
     }
 
-    /// Releases the cartridge currently loaded, if any
     pub fn eject(&mut self) {
-        self.cart = None;
+        self.prg = None
     }
 }
 
-impl mem::Memory for MemoryMap {
+impl mem::Memory for Mem {
     fn len(&self) -> u64 { 0xFFFF }
 
     fn get_u8(&self, addr: u64) -> mem::Result<u8> {
@@ -60,16 +47,16 @@ impl mem::Memory for MemoryMap {
             // Todo: Do something!
             Ok(0)
         } else {
-            match self.cart {
+            match self.prg {
                 None => {
                     error!("read from ${:4X} failed due to missing cartridge", addr);
                     Err(mem::Error::new(
                             mem::ErrorKind::MemoryNotPresent,
                             "attempted to read from cartridge memory, but there is no cartridge present"))
                 },
-                Some(ref cart) => {
+                Some(ref prg) => {
                     info!("read from ${:4X} going to cartridge mapper", addr);
-                    cart.mapper.prg().get_u8(addr)
+                    prg.get_u8(addr)
                 }
             }
         }
@@ -93,16 +80,16 @@ impl mem::Memory for MemoryMap {
             // Todo: Do something!
             Ok(())
         } else {
-            match self.cart {
+            match self.prg {
                 None => {
                     error!("write to ${:4X} failed due to missing cartridge", addr);
                     Err(mem::Error::new(
                             mem::ErrorKind::MemoryNotPresent,
                             "attempted to write to cartridge memory, but there is no cartridge present"))
                 },
-                Some(ref mut cart) => {
+                Some(ref mut prg) => {
                     info!("write to ${:4X} going to cartridge mapper", addr);
-                    cart.mapper.prg_mut().set_u8(addr, val)
+                    prg.set_u8(addr, val)
                 }
             }
         }

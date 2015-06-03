@@ -192,7 +192,7 @@ impl Rp2C02 {
     /// the PPU clock is updated by `CYCLES_PER_SCANLINE` and the process is
     /// repeated. If it is not, this method returns to allow the CPU to continue
     /// processing.
-    pub fn step(&mut self, target_cycle: usize, mem: &mut mem::Memory, screen: &mut ScreenBuffer) -> Result<()> {
+    pub fn step(&mut self, target_cycle: u64, mem: &mut mem::Memory, screen: &mut ScreenBuffer) -> Result<()> {
         loop {
             // Check when the next scan line is
             let next_scan_line = self.clock.get() + CYCLES_PER_SCANLINE;

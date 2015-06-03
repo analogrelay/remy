@@ -34,10 +34,14 @@ impl<'a> App<'a> {
     }
 
     pub fn update(&mut self) {
+        self.nes.step(&mut self.screen).unwrap();
     }
 
     pub fn render(&mut self) {
         let tex = &self.texture;
+
+        // Blit the screen on to the 
+
         let (w, h) = self.size;
         let mut drawer = self.renderer.drawer();
         drawer.clear();

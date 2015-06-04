@@ -15,7 +15,7 @@ fn main() {
     let args = env::args().collect::<Vec<_>>();
 
     if args.len() < 2 {
-        writeln!(io::stderr(), "Usage: rudy <path to rom>");
+        writeln!(io::stderr(), "Usage: rudy <path to rom>").unwrap();
         return;
     }
 
@@ -26,9 +26,8 @@ fn main() {
             .expect("failed to open ROM file");
         nes::load_rom(&mut romfile).ok().expect("error parsing ROM file")
     };
-    let cart = nes::Cartridge::load(rom).ok().expect("unsupported ROM");
     let mut nes = nes::Nes::new();
-    nes.load(cart);
+    nes.load(rom).ok().expect("failed to load ROM into emulator");
 
     start_gfx(nes);
 }

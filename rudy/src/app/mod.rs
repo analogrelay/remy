@@ -9,7 +9,7 @@ pub struct App<'a> {
     renderer: render::Renderer<'a>,
     texture: render::Texture,
     size: (i32, i32),
-    screen: [u8; rp2C02::ppu::BYTES_PER_SCREEN]
+    screen: rp2C02::ScreenBuffer
 }
 
 impl<'a> App<'a> {
@@ -22,7 +22,7 @@ impl<'a> App<'a> {
         let texture = renderer.create_texture(
             pixels::PixelFormatEnum::BGR24,
             render::TextureAccess::Streaming,
-            (nes::SCREEN_WIDTH as i32, nes::SCREEN_HEIGHT as i32)).unwrap();
+            (nes::PIXELS_PER_SCANLINE as i32, nes::SCANLINES_PER_FRAME as i32)).unwrap();
 
         App {
             nes: nes,

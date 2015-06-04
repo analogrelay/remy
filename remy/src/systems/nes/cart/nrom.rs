@@ -5,6 +5,7 @@ pub struct Prg {
     rom: mem::Fixed
 }
 
+#[allow(dead_code)]
 pub struct Chr {
     rom: mem::Fixed
 }

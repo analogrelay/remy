@@ -1,7 +1,7 @@
-use std::convert;
-
 use clock;
 use mem::{self,Memory};
+
+use super::{Pixel,Result,registers};
 
 pub const NAMETABLE_SIZE: usize = 0x0400;
 pub const NAMETABLE_BASE: usize = 0x2000;
@@ -10,16 +10,16 @@ pub const NAMETABLE_END: usize = 0x2C00;
 pub const BACKDROP_COLOR_ADDR: u64 = 0x3F00;
 pub const BG_PALETTE_BASE: u64 = 0x3F01;
 
-pub const PIXELS_PER_SCANLINE: usize = 256;
-pub const PIXELS_PER_TILE: usize = 8;
-pub const PIXELS_PER_SCREEN: usize = PIXELS_PER_SCANLINE * SCANLINES_PER_FRAME;
-pub const BYTES_PER_PIXEL: usize = 3;
-pub const BYTES_PER_SCREEN: usize = BYTES_PER_PIXEL * PIXELS_PER_SCREEN;
-pub const TILES_PER_SCANLINE: usize = PIXELS_PER_SCANLINE / PIXELS_PER_TILE;
-pub const SCANLINES_PER_FRAME: usize = 240;
+pub const PIXELS_PER_SCANLINE: u16 = 256;
+pub const PIXELS_PER_TILE: u16 = 8;
+pub const PIXELS_PER_SCREEN: u16 = PIXELS_PER_SCANLINE * SCANLINES_PER_FRAME;
+pub const BYTES_PER_PIXEL: u16 = 3;
+pub const BYTES_PER_SCREEN: usize = BYTES_PER_PIXEL as usize * PIXELS_PER_SCREEN as usize;
+pub const TILES_PER_SCANLINE: u16 = PIXELS_PER_SCANLINE / PIXELS_PER_TILE;
+pub const SCANLINES_PER_FRAME: u16 = 240;
 pub const CYCLES_PER_SCANLINE: u64 = 114;
-pub const VBLANK_SCANLINE: usize = 241;
-pub const END_SCANLINE: usize = 261;
+pub const VBLANK_SCANLINE: u16 = 241;
+pub const END_SCANLINE: u16 = 261;
 
 pub type ScreenBuffer = [u8; BYTES_PER_SCREEN];
 
@@ -43,142 +43,17 @@ const PALETTE: [u8; 192] = [
     0,252,252,      248,216,248,    0,0,0,          0,0,0
 ];
 
-pub type Result<T> = ::std::result::Result<T, Error>;
-
-pub enum Error {
-    MemoryAccessError(mem::Error)
-}
-
-impl convert::From<mem::Error> for Error {
-    fn from(err: mem::Error) -> Error {
-        Error::MemoryAccessError(err)
-    }
-}
-
 pub struct Rp2C02 {
     clock: clock::Clock,
-    registers: Registers,
-    current_scanline: usize
-}
-
-pub struct Pixel {
-    red: u8,
-    green: u8,
-    blue: u8
-}
-
-pub struct Registers {
-    ppuctrl: PpuCtrl,
-    ppumask: PpuMask,
-    ppustatus: PpuStatus,
-    ppuscroll: PpuScroll
-}
-
-impl Registers {
-    pub fn new() -> Registers {
-        Registers {
-            ppuctrl: PpuCtrl::new(),
-            ppumask: PpuMask::new(),
-            ppustatus: PpuStatus::new(),
-            ppuscroll: PpuScroll::new()
-        }
-    }
-}
-
-pub enum NextScrollField { X, Y }
-
-pub struct PpuScroll {
-    x: u8,
-    y: u8,
-    next: NextScrollField
-}
-
-impl PpuScroll {
-    pub fn new() -> PpuScroll {
-        PpuScroll {
-            x: 0,
-            y: 0,
-            next: NextScrollField::X
-        }
-    }
-}
-
-pub enum VramDirection {
-    GoingAcross,
-    GoingDown
-}
-
-pub struct PpuCtrl {
-    nametable_base: u16,
-    vram_direction: VramDirection,
-    sprite_pattern_table: u8,
-    bg_pattern_table: u8,
-    large_sprites: bool,
-    secondary: bool,
-    generate_nmi: bool
-}
-
-impl PpuCtrl {
-    pub fn new() -> PpuCtrl {
-        PpuCtrl {
-            nametable_base: 0,
-            vram_direction: VramDirection::GoingAcross,
-            sprite_pattern_table: 0,
-            bg_pattern_table: 0,
-            large_sprites: false,
-            secondary: false,
-            generate_nmi: false
-        }
-    }
-}
-
-pub struct PpuMask {
-    greyscale: bool,
-    leftmost_background: bool,
-    leftmost_sprites: bool,
-    background: bool,
-    sprites: bool,
-    emphasize_red: bool,
-    emphasize_green: bool,
-    emphasize_blue: bool
-}
-
-impl PpuMask {
-    pub fn new() -> PpuMask {
-        PpuMask {
-            greyscale: false,
-            leftmost_background: false,
-            leftmost_sprites: false,
-            background: false,
-            sprites: false,
-            emphasize_red: false,
-            emphasize_green: false,
-            emphasize_blue: false
-        }
-    }
-}
-
-pub struct PpuStatus {
-    sprite_overflow: bool,
-    sprite_0_hit: bool,
-    vertical_blank: bool
-}
-
-impl PpuStatus {
-    pub fn new() -> PpuStatus {
-        PpuStatus {
-            sprite_overflow: false,
-            sprite_0_hit: false,
-            vertical_blank: false
-        }
-    }
+    registers: registers::Registers,
+    current_scanline: u16
 }
 
 impl Rp2C02 {
     pub fn new() -> Rp2C02 {
         Rp2C02 {
             clock: clock::Clock::new(),
-            registers: Registers::new(),
+            registers: registers::Registers::new(),
             current_scanline: 0
         }
     }
@@ -205,9 +80,9 @@ impl Rp2C02 {
                 // Render the scanline
                 debug!("rendering scanline {}", self.current_scanline);
 
-                let start = PIXELS_PER_SCANLINE * self.current_scanline;
-                let end = start + PIXELS_PER_SCANLINE;
-                assert!(start < end && start < BYTES_PER_SCREEN && end < BYTES_PER_SCREEN);
+                let start = (PIXELS_PER_SCANLINE * self.current_scanline) as usize;
+                let end = start + PIXELS_PER_SCANLINE as usize;
+                assert!(start < end && start < (BYTES_PER_SCREEN as usize) && end < (BYTES_PER_SCREEN as usize));
 
                 let scanline_screen = &mut screen[start .. end];
 
@@ -235,13 +110,18 @@ impl Rp2C02 {
         }
     }
 
-    fn get_pattern_value(&mut self, _pattern_table: u8, _tile_index: u8, _tile_x: usize, _tile_y: usize) -> u8 {
-        unimplemented!()
+    fn get_pattern_value(&self, mem: &mem::Memory, pattern_table: u16, tile_index: u8, tile_x: u16, tile_y: u16) -> mem::Result<u8> {
+        let tile_base = (pattern_table + ((tile_index as u16) << 4) as u16 + tile_y) as u64;
+        let lo_plane = try!(mem.get_u8(tile_base));
+        let hi_plane = try!(mem.get_u8(tile_base + 0x08));
+        let lo_bit = (lo_plane >> (7 - tile_x)) & 0x01;
+        let hi_bit = (hi_plane >> (7 - tile_x)) & 0x01;
+        Ok((hi_bit << 1) | lo_bit)
     }
 
-    fn get_background(&mut self, mem: &mut mem::Memory, x: usize, y: usize) -> Result<Option<Pixel>> {
+    fn get_background(&mut self, mem: &mut mem::Memory, x: u16, y: u16) -> Result<Option<Pixel>> {
         // Determine active nametable
-        let nametable = self.registers.ppuctrl.nametable_base as usize;
+        let nametable = self.registers.ppuctrl().nametable_base();
         assert!(nametable == 0x2000 || nametable == 0x2400 || nametable == 0x2800 || nametable == 0x2C00);
 
         // Calculate nametable cell and tile offset
@@ -252,8 +132,8 @@ impl Rp2C02 {
         let tile_index = try!(mem.get_u8((nametable + (row * TILES_PER_SCANLINE) + col) as u64));
 
         // Load palette index from the pattern table
-        let pattern_table = self.registers.ppuctrl.bg_pattern_table;
-        let pattern_color = self.get_pattern_value(pattern_table, tile_index, tile_x, tile_y);
+        let pattern_table = self.registers.ppuctrl().bg_pattern_table();
+        let pattern_color = try!(self.get_pattern_value(mem, pattern_table, tile_index, tile_x, tile_y));
         if pattern_color == 0 {
             // Pattern has no value here, background is transparent.
             return Ok(None);
@@ -280,7 +160,7 @@ impl Rp2C02 {
         let backdrop = self.get_pixel(backdrop_index as usize);
 
         for x in 0 .. PIXELS_PER_SCANLINE {
-            let background = if self.registers.ppumask.background {
+            let background = if self.registers.ppumask().background() {
                 let scanline = self.current_scanline;
                 try!(self.get_background(mem, x, scanline))
             } else {
@@ -296,9 +176,10 @@ impl Rp2C02 {
             };
 
             // Put it to the screen
-            screen[x * 3] = pixel.blue;
-            screen[x * 3 + 1] = pixel.green;
-            screen[x * 3 + 2] = pixel.red;
+            let base = (x * 3) as usize;
+            screen[base] = pixel.blue;
+            screen[base + 1] = pixel.green;
+            screen[base + 2] = pixel.red;
         }
 
         Ok(())

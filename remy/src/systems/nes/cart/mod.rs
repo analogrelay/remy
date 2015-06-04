@@ -5,6 +5,7 @@ pub mod nrom;
 
 pub type Result<T> = ::std::result::Result<T, Error>;
 
+#[derive(Clone,Debug,Eq,PartialEq)]
 pub enum Error {
     UnknownMapper
 }

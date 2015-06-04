@@ -7,6 +7,10 @@ use hw::mos6502::{self,exec};
 use hw::mos6502::instr::decoder;
 use hw::rp2C02;
 
+pub use hw::rp2C02::ppu::PIXELS_PER_SCANLINE;
+pub use hw::rp2C02::ppu::PIXELS_PER_SCREEN;
+pub use hw::rp2C02::ppu::SCANLINES_PER_FRAME;
+
 /// Contains code to load and manipulate ROMs in the iNES and NES 2.0 formats
 pub mod rom;
 
@@ -17,6 +21,7 @@ mod memmap;
 
 pub type Result<T> = ::std::result::Result<T, Error>;
 
+#[derive(Debug)]
 pub enum Error {
     InstructionDecodeError(decoder::Error),
     ExecutionError(exec::Error),
@@ -85,7 +90,7 @@ impl Nes {
     }
 
     /// Performs a single CPU cycle, and the matching PPU cycles.
-    pub fn step(&mut self, screen: &mut [u8; rp2C02::ppu::BYTES_PER_SCREEN]) -> Result<()> {
+    pub fn step(&mut self, screen: &mut rp2C02::ScreenBuffer) -> Result<()> {
         // Fetch next instruction
         let instr: mos6502::Instruction = try!(self.cpu.pc.decode(&self.mem));
 

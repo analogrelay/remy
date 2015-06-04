@@ -20,7 +20,14 @@ pub type Result<T> = ::std::result::Result<T, Error>;
 pub enum Error {
     InstructionDecodeError(decoder::Error),
     ExecutionError(exec::Error),
+    PpuError(rp2C02::Error),
     NoCartridgeInserted
+}
+
+impl convert::From<rp2C02::Error> for Error {
+    fn from(err: rp2C02::Error) -> Error {
+        Error::PpuError(err)
+    }
 }
 
 impl convert::From<decoder::Error> for Error {
@@ -89,7 +96,7 @@ impl Nes {
         // Run the PPU as necessary
         let cycles = self.cpu.clock.get();
         if let Some(ref mut vmem) = self.vmem {
-            self.mem.ppu.step(cycles, vmem, screen);
+            try!(self.mem.ppu.step(cycles, &mut **vmem, screen));
             Ok(())
         } else {
             Err(Error::NoCartridgeInserted)

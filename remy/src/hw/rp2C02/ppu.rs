@@ -7,8 +7,8 @@ pub const NAMETABLE_SIZE: usize = 0x0400;
 pub const NAMETABLE_BASE: usize = 0x2000;
 pub const NAMETABLE_END: usize = 0x2C00;
 
-pub const BACKDROP_COLOR_ADDR: usize = 0x3F00;
-pub const BG_PALETTE_BASE: usize = 0x3F01;
+pub const BACKDROP_COLOR_ADDR: u64 = 0x3F00;
+pub const BG_PALETTE_BASE: u64 = 0x3F01;
 
 pub const PIXELS_PER_SCANLINE: usize = 256;
 pub const PIXELS_PER_TILE: usize = 8;
@@ -17,7 +17,7 @@ pub const BYTES_PER_PIXEL: usize = 3;
 pub const BYTES_PER_SCREEN: usize = BYTES_PER_PIXEL * PIXELS_PER_SCREEN;
 pub const TILES_PER_SCANLINE: usize = PIXELS_PER_SCANLINE / PIXELS_PER_TILE;
 pub const SCANLINES_PER_FRAME: usize = 240;
-pub const CYCLES_PER_SCANLINE: usize = 114;
+pub const CYCLES_PER_SCANLINE: u64 = 114;
 pub const VBLANK_SCANLINE: usize = 241;
 pub const END_SCANLINE: usize = 261;
 
@@ -94,7 +94,7 @@ pub struct PpuScroll {
 }
 
 impl PpuScroll {
-    pub fn new() {
+    pub fn new() -> PpuScroll {
         PpuScroll {
             x: 0,
             y: 0,
@@ -121,7 +121,7 @@ pub struct PpuCtrl {
 impl PpuCtrl {
     pub fn new() -> PpuCtrl {
         PpuCtrl {
-            nametable: 0,
+            nametable_base: 0,
             vram_direction: VramDirection::GoingAcross,
             sprite_pattern_table: 0,
             bg_pattern_table: 0,
@@ -209,7 +209,7 @@ impl Rp2C02 {
                 let end = start + PIXELS_PER_SCANLINE;
                 assert!(start < end && start < BYTES_PER_SCREEN && end < BYTES_PER_SCREEN);
 
-                let scanline_screen = screen[start .. end];
+                let scanline_screen = &mut screen[start .. end];
 
                 try!(self.render_scanline(mem, scanline_screen));
             } else if self.current_scanline == VBLANK_SCANLINE {
@@ -223,6 +223,7 @@ impl Rp2C02 {
 
             self.clock.tick(CYCLES_PER_SCANLINE);
         }
+        Ok(())
     }
 
     fn get_pixel(&self, index: usize) -> Pixel {
@@ -234,9 +235,13 @@ impl Rp2C02 {
         }
     }
 
-    fn get_background(&mut self, mem: &mut mem::Memory, x: usize, y: usize) -> Option<Pixel> {
+    fn get_pattern_value(&mut self, _pattern_table: u8, _tile_index: u8, _tile_x: usize, _tile_y: usize) -> u8 {
+        unimplemented!()
+    }
+
+    fn get_background(&mut self, mem: &mut mem::Memory, x: usize, y: usize) -> Result<Option<Pixel>> {
         // Determine active nametable
-        let nametable = self.registers.ppuctrl.nametable;
+        let nametable = self.registers.ppuctrl.nametable_base as usize;
         assert!(nametable == 0x2000 || nametable == 0x2400 || nametable == 0x2800 || nametable == 0x2C00);
 
         // Calculate nametable cell and tile offset
@@ -244,19 +249,19 @@ impl Rp2C02 {
         let (row, tile_y) = (y / 8, y % 8);
 
         // Load tile from nametable
-        let tile_index = try!(mem.get_u8(nametable + (row * TILES_PER_SCANLINE) + col));
+        let tile_index = try!(mem.get_u8((nametable + (row * TILES_PER_SCANLINE) + col) as u64));
 
         // Load palette index from the pattern table
         let pattern_table = self.registers.ppuctrl.bg_pattern_table;
         let pattern_color = self.get_pattern_value(pattern_table, tile_index, tile_x, tile_y);
         if pattern_color == 0 {
             // Pattern has no value here, background is transparent.
-            return None;
+            return Ok(None);
         }
 
         // Load attribute table
         let attribute_group = row / 4 * 8 + col / 4;
-        let attribute = try!(mem.get_u8(nametable + 0x3C0 + attribute_group));
+        let attribute = try!(mem.get_u8((nametable + 0x3C0 + attribute_group) as u64));
         let palette_index = match (col % 4 < 2, row % 4 < 2) {
             (true, true) => attribute & 0x0003,
             (false, true) => (attribute >> 2) & 0x0003,
@@ -266,19 +271,18 @@ impl Rp2C02 {
 
         // Load the colour out of the palette
         let color_offset = (palette_index << 2) | pattern_color;
-        let color = try!(mem.get_u8(BG_PALETTE_BASE + color_offset));
-        Some(self.get_color(color))
+        let color = try!(mem.get_u8(BG_PALETTE_BASE + color_offset as u64));
+        Ok(Some(self.get_pixel(color as usize)))
     }
 
     fn render_scanline(&mut self, mem: &mut mem::Memory, screen: &mut [u8]) -> Result<()> {
-        let mut cursor = 0;
-
         let backdrop_index = try!(mem.get_u8(BACKDROP_COLOR_ADDR));
-        let backdrop = self.get_pixel(backdrop_index);
+        let backdrop = self.get_pixel(backdrop_index as usize);
 
         for x in 0 .. PIXELS_PER_SCANLINE {
-            let background = if self.ppumask.background {
-                self.get_background(mem, x, self.current_scanline)
+            let background = if self.registers.ppumask.background {
+                let scanline = self.current_scanline;
+                try!(self.get_background(mem, x, scanline))
             } else {
                 None
             };
@@ -287,8 +291,8 @@ impl Rp2C02 {
 
             // Determine the visible pixel
             let pixel = match background {
-                Some(pix) => pix,
-                None => backdrop
+                Some(ref pix) => pix,
+                None => &backdrop
             };
 
             // Put it to the screen
@@ -296,5 +300,7 @@ impl Rp2C02 {
             screen[x * 3 + 1] = pixel.green;
             screen[x * 3 + 2] = pixel.red;
         }
+
+        Ok(())
     }
 }

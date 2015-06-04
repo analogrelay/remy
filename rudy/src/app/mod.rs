@@ -40,7 +40,7 @@ impl<'a> App<'a> {
     pub fn render(&mut self) {
         let tex = &self.texture;
 
-        // Blit the screen on to the 
+        // Blit the screen on to the texture
 
         let (w, h) = self.size;
         let mut drawer = self.renderer.drawer();

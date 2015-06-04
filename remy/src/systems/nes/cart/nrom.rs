@@ -69,11 +69,11 @@ impl mem::Memory for Prg {
 impl mem::Memory for Chr {
     fn len(&self) -> u64 { unimplemented!() }
 
-    fn get_u8(&self, addr: u64) -> mem::Result<u8> {
+    fn get_u8(&self, _addr: u64) -> mem::Result<u8> {
         unimplemented!()
     }
 
-    fn set_u8(&mut self, addr: u64, val: u8) -> mem::Result<()> {
+    fn set_u8(&mut self, _addr: u64, _val: u8) -> mem::Result<()> {
         unimplemented!()
     }
 }

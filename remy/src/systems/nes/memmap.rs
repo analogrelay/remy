@@ -1,11 +1,10 @@
 use mem;
-use systems::nes;
 use hw::rp2C02;
 
 pub struct Mem {
     ram: mem::Fixed,
     prg: Option<Box<mem::Memory>>,
-    ppu: rp2C02::Rp2C02
+    pub ppu: rp2C02::Rp2C02
 }
 
 impl Mem {

@@ -100,6 +100,7 @@ impl Nes {
 
         // Run the PPU as necessary
         let cycles = self.cpu.clock.get();
+        debug!("running PPU to cycle: {}", cycles);
         if let Some(ref mut vmem) = self.vmem {
             try!(self.mem.ppu.step(cycles, &mut **vmem, screen));
             Ok(())

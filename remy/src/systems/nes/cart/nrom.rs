@@ -36,12 +36,12 @@ impl mem::Memory for Prg {
         } else if addr < 0x8000 {
             // RAM! Mirrored as needed
             let eaddr = (addr - 0x6000) % self.ram.len();
-            info!("read from ${:4X} going to cartridge PRG RAM", addr);
+            trace!("read from ${:4X} going to cartridge PRG RAM", addr);
             self.ram.get_u8(eaddr)
         } else {
             // ROM! Mirrored again as needed
             let eaddr = (addr - 0x8000) % self.rom.len();
-            info!("read from ${:4X} going to cartridge PRG ROM", addr);
+            trace!("read from ${:4X} going to cartridge PRG ROM", addr);
             self.rom.get_u8(eaddr)
         }
     }
@@ -56,7 +56,7 @@ impl mem::Memory for Prg {
         } else if addr < 0x8000 {
             // RAM! Mirrored as needed
             let eaddr = (addr - 0x6000) % self.ram.len();
-            info!("write to ${:4X} going to cartridge PRG RAM", addr);
+            trace!("write to ${:4X} going to cartridge PRG RAM", addr);
             self.ram.set_u8(eaddr, val)
         } else {
             // ROM! Can't write to that!

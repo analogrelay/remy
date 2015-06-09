@@ -1,5 +1,9 @@
 extern crate sdl2;
 extern crate remy;
+extern crate env_logger;
+
+#[macro_use]
+extern crate log;
 
 use remy::systems::nes;
 
@@ -11,6 +15,9 @@ use sdl2::event;
 mod app;
 
 fn main() {
+    // Initialize Logging
+    env_logger::init().unwrap();
+
     // Read the ROM
     let args = env::args().collect::<Vec<_>>();
 
@@ -34,11 +41,11 @@ fn main() {
 
 fn start_gfx(nes: nes::Nes) {
     let mut sdl = sdl2::init().everything().unwrap();
-    let window = sdl.window("Rudy NES Emulator", 512, 480).build().unwrap();
+    let window = sdl.window("Rudy NES Emulator", 1024, 960).build().unwrap();
     let mut event_pump = sdl.event_pump();
 
     // Create the app
-    let mut app = app::App::new(nes, window, (512, 480));
+    let mut app = app::App::new(nes, window, (1024, 960));
 
     // Pump events
     loop {

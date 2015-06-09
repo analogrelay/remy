@@ -31,18 +31,18 @@ impl mem::Memory for Mem {
     fn get_u8(&self, addr: u64) -> mem::Result<u8> {
         if addr < 0x2000 {
             let eaddr = addr % 0x0800;
-            info!("read from ${:4X} going to RAM at ${:4X}", addr, eaddr);
+            trace!("read from ${:4X} going to RAM at ${:4X}", addr, eaddr);
             self.ram.get_u8(eaddr)
         }
         else if addr < 0x4000 {
             let eaddr = (addr - 0x2000) % 0x0008;
-            info!("read from ${:4X} going to PPU register at ${:4X}", addr, eaddr);
+            trace!("read from ${:4X} going to PPU register at ${:4X}", addr, eaddr);
             // Todo: Do something!
             Ok(0)
         }
         else if addr < 0x4020 {
             let eaddr = addr - 0x4000;
-            info!("read from ${:4X} going to APU or I/O register at ${:4X}", addr, eaddr);
+            trace!("read from ${:4X} going to APU or I/O register at ${:4X}", addr, eaddr);
             // Todo: Do something!
             Ok(0)
         } else {
@@ -54,7 +54,7 @@ impl mem::Memory for Mem {
                             "attempted to read from cartridge memory, but there is no cartridge present"))
                 },
                 Some(ref prg) => {
-                    info!("read from ${:4X} going to cartridge mapper", addr);
+                    trace!("read from ${:4X} going to cartridge mapper", addr);
                     prg.get_u8(addr)
                 }
             }
@@ -64,18 +64,18 @@ impl mem::Memory for Mem {
     fn set_u8(&mut self, addr: u64, val: u8) -> mem::Result<()> {
         if addr < 0x2000 {
             let eaddr = addr % 0x0800;
-            info!("write to ${:4X} going to RAM at ${:4X}", addr, eaddr);
+            trace!("write to ${:4X} going to RAM at ${:4X}", addr, eaddr);
             self.ram.set_u8(eaddr, val)
         }
         else if addr < 0x4000 {
             let eaddr = (addr - 0x2000) % 0x0008;
-            info!("write to ${:4X} going to PPU register at ${:4X}", addr, eaddr);
+            trace!("write to ${:4X} going to PPU register at ${:4X}", addr, eaddr);
             // Todo: Do something!
             Ok(())
         }
         else if addr < 0x4020 {
             let eaddr = addr - 0x4000;
-            info!("write to ${:4X} going to APU or I/O register at ${:4X}", addr, eaddr);
+            trace!("write to ${:4X} going to APU or I/O register at ${:4X}", addr, eaddr);
             // Todo: Do something!
             Ok(())
         } else {
@@ -87,7 +87,7 @@ impl mem::Memory for Mem {
                             "attempted to write to cartridge memory, but there is no cartridge present"))
                 },
                 Some(ref mut prg) => {
-                    info!("write to ${:4X} going to cartridge mapper", addr);
+                    trace!("write to ${:4X} going to cartridge mapper", addr);
                     prg.set_u8(addr, val)
                 }
             }

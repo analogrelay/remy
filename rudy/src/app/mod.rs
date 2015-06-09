@@ -8,8 +8,7 @@ pub struct App<'a> {
     nes: nes::Nes, // NES system
     renderer: render::Renderer<'a>,
     texture: render::Texture,
-    size: (i32, i32),
-    screen: rp2C02::ScreenBuffer
+    size: (i32, i32)
 }
 
 impl<'a> App<'a> {
@@ -28,18 +27,24 @@ impl<'a> App<'a> {
             nes: nes,
             renderer: renderer,
             texture: texture,
-            size: size,
-            screen: [0; rp2C02::ppu::BYTES_PER_SCREEN]
+            size: size
         }
     }
 
     pub fn update(&mut self) {
+        trace!("stepping NES system");
+
+        let tex = &mut self.texture;
+        let nes = &mut self.nes;
+        tex.with_lock(None, |buf, pitch| {
+            let mut screen = rp2C02::ScreenBuffer::new(buf, pitch);
+            nes.step(&mut screen);
+        }).unwrap();
     }
 
     pub fn render(&mut self) {
+        trace!("rendering NES display");
         let tex = &self.texture;
-
-        // Blit the screen on to the texture
 
         let (w, h) = self.size;
         let mut drawer = self.renderer.drawer();

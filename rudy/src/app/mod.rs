@@ -34,7 +34,6 @@ impl<'a> App<'a> {
     }
 
     pub fn update(&mut self) {
-        self.nes.step(&mut self.screen).unwrap();
     }
 
     pub fn render(&mut self) {

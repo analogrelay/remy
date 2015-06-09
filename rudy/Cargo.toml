@@ -2,6 +2,8 @@
 name = "rudy"
 version = "0.0.1"
 authors = ["anurse <andrew@andrewnurse.net>"]
+links = "sdl2"
+build = "build.rs"
 
 [dependencies]
 sdl2 = "0.4.0"

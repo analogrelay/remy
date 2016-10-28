@@ -1,4 +1,4 @@
-use mem::{self,Memory,MemoryExt};
+use mem::{self,MemoryExt};
 use hw::mos6502::{self,Instruction,Operand,RegisterName,Flags};
 
 use byteorder::LittleEndian;

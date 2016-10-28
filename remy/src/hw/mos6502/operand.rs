@@ -1,7 +1,6 @@
 use std::{error,fmt};
 
 use mem;
-use mem::Memory;
 
 use hw::mos6502::cpu;
 use hw::mos6502::Mos6502;

@@ -13,7 +13,7 @@ pub fn exec<M>(cpu: &mut Mos6502, mem: &M, op: Operand) -> Result<(), exec::Erro
 mod test {
     use byteorder::LittleEndian;
 
-    use mem::{self,Memory,MemoryExt};
+    use mem::{self,MemoryExt};
     use hw::mos6502::exec::jmp;
     use hw::mos6502::{Mos6502,Operand};
 

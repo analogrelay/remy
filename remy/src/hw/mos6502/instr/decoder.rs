@@ -906,7 +906,7 @@ mod test {
     }
 
     fn decoder_test(bytes: Vec<u8>, expected: Instruction) {
-        let result = decode(&mut Cursor::new(bytes.as_ref()));
+        let result = decode(&mut Cursor::new(bytes.as_slice()));
         match result {
             Ok(actual) => if actual != expected {
                 panic!("Decoding of 0x{:X} was [{}] but expected [{}]", bytes[0], actual, expected);

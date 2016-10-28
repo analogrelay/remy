@@ -16,7 +16,6 @@ pub fn exec<M>(cpu: &mut Mos6502, mem: &mut M, op: Operand) -> Result<(), exec::
 #[cfg(test)]
 mod test {
     use mem;
-    use mem::Memory;
     use hw::mos6502::{Mos6502,Operand,STACK_START};
     use hw::mos6502::exec::jsr;
 

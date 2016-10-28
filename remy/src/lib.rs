@@ -11,9 +11,6 @@
     unused_comparisons,
     non_shorthand_field_patterns)]
 
-// Features used in all builds
-#![feature(convert)]
-
 // Import crates
 #[macro_use]
 extern crate log;

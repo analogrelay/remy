@@ -1,6 +1,6 @@
 use std::{error,io};
 
-pub trait Instruction {
+pub trait Instruction: Sized {
     type DecodeError: error::Error;
 
     fn mnemonic(&self) -> &'static str;

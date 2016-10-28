@@ -1,8 +1,8 @@
 use std::{convert,error,fmt};
 
 use pc;
+use mem;
 use clock;
-use mem::{self,Memory};
 
 use super::{instr,exec};
 

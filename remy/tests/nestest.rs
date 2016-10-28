@@ -1,6 +1,4 @@
 //! Tests the MOS6502 CPU using the nestest rom
-#![feature(convert)]
-
 extern crate remy;
 
 use std::{env,fs,io};
@@ -9,7 +7,6 @@ use std::io::BufRead;
 use remy::systems::nes;
 use remy::hw::mos6502;
 use remy::mem::{self,Memory};
-use remy::instr::Instruction;
 
 #[test]
 pub fn mos6502_can_run_nestest_rom() {

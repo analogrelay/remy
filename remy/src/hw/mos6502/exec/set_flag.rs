@@ -1,4 +1,3 @@
-use mem::Memory;
 use hw::mos6502::exec;
 use hw::mos6502::{Mos6502,Flags};
 

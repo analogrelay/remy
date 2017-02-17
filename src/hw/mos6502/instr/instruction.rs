@@ -602,3 +602,9 @@ impl fmt::Display for Instruction {
         }
     }
 }
+
+impl ::slog::ser::Serialize for Instruction {
+    fn serialize(&self, _record: &::slog::Record, key: &'static str, serializer: &mut ::slog::ser::Serializer) -> Result<(), ::slog::ser::Error> {
+        serializer.emit_str(key, &format!("{}", self))
+    }
+}

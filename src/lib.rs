@@ -12,10 +12,17 @@
     non_shorthand_field_patterns)]
 
 // Import crates
+
+/// Copy of the 'slog' logging crate (https://github.com/slog-rs/slog). Will be overridden (and shared) by the application's copy if one is added
 #[macro_use]
-extern crate log;
+pub extern crate slog;
+extern crate slog_stdlog;
 
 extern crate byteorder;
+
+// Internal macros
+#[macro_use]
+mod macros;
 
 /// Contains code to emulate supported Hardware
 pub mod hw;

@@ -4,5 +4,7 @@ version = "0.0.1"
 authors = ["anurse <andrew@andrewnurse.net>"]
 
 [dependencies]
+slog = "1.5.2"
+slog-stdlog = "1.1.0"
 byteorder = "0.5.3"
 log = "0.3.6"

@@ -1,3 +1,5 @@
+use slog;
+
 use mem;
 use systems::nes;
 
@@ -25,6 +27,8 @@ impl Cartridge {
 }
 
 pub trait Mapper {
+    fn name(&self) -> &'static str;
+
     /// Gets a `Memory` representing the active PRG banks
     fn prg(&self) -> &mem::Memory;
 
@@ -42,27 +46,44 @@ impl Cartridge {
     pub fn new(header: nes::RomHeader, mapper: Box<Mapper>) -> Cartridge {
         Cartridge {
             header: header,
-            mapper: mapper
+            mapper: mapper,
         }
     }
 
     /// Consumes the provided `Rom` and uses it to build a `Cartridge` to execute
-    pub fn load(rom: nes::Rom) -> Result<Cartridge> {
+    pub fn load(rom: nes::Rom, logger: Option<slog::Logger>) -> Result<Cartridge> {
+        let log = unwrap_logger!(logger);
+
         // Pull apart the rom
         let nes::Rom { header, prg, chr } = rom;
 
-        let mapper = create_mapper(&header, prg, chr);
+        let mapper = create_mapper(&header, prg, chr, log.clone());
 
         match mapper {
-            Some(m) => Ok(Cartridge { header: header, mapper: m }),
-            None => Err(Error::UnknownMapper(header.cartridge.mapper, header.cartridge.submapper))
+            Some(m) => {
+                info!(log,
+                    "mapper_id" => header.cartridge.mapper,
+                    "submapper_id" => header.cartridge.submapper,
+                    "mapper" => m.name();
+                    "loaded mapper {}.{} {}", header.cartridge.mapper, header.cartridge.submapper, m.name());
+
+                Ok(Cartridge { header: header, mapper: m })
+            },
+            None => {
+                error!(log,
+                    "mapper_id" => header.cartridge.mapper,
+                    "submapper_id" => header.cartridge.submapper,
+                    "error" => stringify!(Error::UnknownMapper);
+                    "unknown mapper {}.{}", header.cartridge.mapper, header.cartridge.submapper);
+                Err(Error::UnknownMapper(header.cartridge.mapper, header.cartridge.submapper))
+            }
         }
     }
 }
 
-fn create_mapper(header: &nes::RomHeader, prg: Vec<u8>, _chr: Vec<u8>) -> Option<Box<Mapper>> {
+fn create_mapper(header: &nes::RomHeader, prg: Vec<u8>, _chr: Vec<u8>, log: slog::Logger) -> Option<Box<Mapper>> {
     match (header.cartridge.mapper, header.cartridge.submapper) {
-        (0, _) => Some(Box::new(NRom::new(0x2000, prg))),
+        (0, _) => Some(Box::new(NRom::new(0x2000, prg, Some(log)))),
         _ => None
     }
 }

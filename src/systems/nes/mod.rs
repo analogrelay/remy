@@ -1,8 +1,8 @@
 pub use self::cart::{Mapper,Cartridge};
 pub use self::rom::{Rom,RomHeader,load_rom};
 
+use slog;
 use std::convert;
-//use log::LogLevel;
 
 use mem;
 use hw::mos6502::{self,exec};
@@ -40,20 +40,25 @@ impl convert::From<exec::Error> for Error {
 
 /// Represents a complete NES system, including all necessary hardware and memory
 pub struct Nes {
-    cpu: mos6502::Mos6502,
-    mem: memmap::MemoryMap
+    pub cpu: mos6502::Mos6502,
+    pub mem: memmap::MemoryMap,
+    
+    log: slog::Logger
 }
 
 impl Nes {
     /// Construct a new NES
-    pub fn new() -> Nes {
+    pub fn new(logger: Option<slog::Logger>) -> Nes {
+        let log = unwrap_logger!(logger);
+
         // Set up the CPU
         let mut cpu = mos6502::Mos6502::without_bcd();
         cpu.flags.replace(mos6502::Flags::new(0x24));
 
         Nes {
             cpu: cpu,
-            mem: memmap::MemoryMap::new()
+            mem: memmap::MemoryMap::new(Some(log.clone())),
+            log: log
         }
     }
 
@@ -83,8 +88,15 @@ impl Nes {
         let instr: mos6502::Instruction = try!(self.cpu.pc.decode(&self.mem));
 
         // Dispatch the instruction
-        debug!("dispatching {:?}", instr);
+        debug!(self.log,
+            "instr" => instr,
+            "cycle" => self.cpu.clock.get();
+            "dispatching");
         try!(mos6502::dispatch(instr, &mut self.cpu, &mut self.mem));
+        debug!(self.log,
+            "instr" => instr,
+            "cycle" => self.cpu.clock.get();
+            "dispatched");
 
         // Run the PPU as necessary
         //let cycles = self.cpu.clock.get();

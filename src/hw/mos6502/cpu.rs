@@ -125,7 +125,7 @@ pub struct Mos6502 {
     /// Indicates if BCD arithmetic is enabled on this instance
     pub bcd_enabled: bool,
     /// Tracks CPU cycles spent during execution
-    pub clock: clock::Clock
+    pub clock: clock::Clock,
 }
 
 impl Mos6502 {

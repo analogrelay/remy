@@ -77,6 +77,9 @@ pub enum TvSystem {
 /// Describes the version of a ROM
 #[derive(Copy,Clone,Debug,PartialEq,Eq)]
 pub enum Version {
+    /// Indicates that the ROM is in the "Archaic" INES format
+    ArchaicINES,
+
     /// Indicates that the ROM is in INES format
     INES,
 
@@ -103,7 +106,9 @@ impl RamSize {
     /// Creates a `RamSize` based on the RAM size byte of the iNES/NES2.0 header
     pub fn from_header_byte(val: u8, version: Version) -> RamSize {
         match version {
+            Version::ArchaicINES |
             Version::INES => RamSize::empty(),
+
             Version::NES2 => {
                 let bat = get_full_size(((val & 0xF0) >> 4) as u16);
                 let non_bat = get_full_size((val & 0x0F) as u16);
@@ -225,7 +230,7 @@ pub fn load_rom<R>(input: &mut R) -> Result<Rom> where R: io::Read {
     let header = try!(read_header(input));
 
     // Read rom banks
-    let prg = try!(read_banks(input, header.prg_rom_size, PRG_BANK_SIZE)); 
+    let prg = try!(read_banks(input, header.prg_rom_size, PRG_BANK_SIZE));
     let chr = try!(read_banks(input, header.chr_rom_size, CHR_BANK_SIZE));
 
     Ok(Rom {
@@ -240,7 +245,7 @@ fn read_banks<R>(input: &mut R, bank_count: u16, bank_size: usize) -> Result<Vec
 
     let all_banks_size = bank_count as usize * bank_size;
     let mut banks = Vec::with_capacity(all_banks_size);
-    try!(input.take(bank_size as u64).read_to_end(&mut banks));
+    try!(input.take(all_banks_size as u64).read_to_end(&mut banks));
     Ok(banks)
 }
 
@@ -258,17 +263,23 @@ fn read_header<R>(input: &mut R) -> Result<RomHeader> where R: io::Read {
     // Based on algorithm in http://wiki.nesdev.com/w/index.php/INES#Variant_comparison
     let version = if header[7] & 0x0C == 0x08 {
         Version::NES2
+    } else if header[12..15].iter().all(|i| { *i == 0 }) {
+        Version::ArchaicINES
     } else {
         Version::INES
     };
 
     // Read ROM sizes 
     let prg_size = match version {
+        Version::ArchaicINES |
         Version::INES => header[4] as u16,
+
         Version::NES2 => header[4] as u16 | ((header[9] & 0x0F) as u16)
     };
     let chr_size = match version {
+        Version::ArchaicINES |
         Version::INES => header[5] as u16,
+
         Version::NES2 => header[5] as u16 | (((header[9] & 0xF0) >> 4) as u16)
     };
 
@@ -276,10 +287,9 @@ fn read_header<R>(input: &mut R) -> Result<RomHeader> where R: io::Read {
     // Load mapper number
     let mut mapper = ((header[6] & 0xF0) >> 4) as u16;
     let mut submapper : u8 = 0;
-    let archaic = header[12..15].iter().all(|i| { *i == 0 });
 
-    // If this isn't Archaic iNES, read the second nybble
-    if version == Version::INES || !archaic {
+    // If this is iNES, read the second nybble
+    if version == Version::INES {
         mapper = (mapper | ((header[7] as u16 & 0xF0))) as u16;
     }
 
@@ -291,7 +301,7 @@ fn read_header<R>(input: &mut R) -> Result<RomHeader> where R: io::Read {
 
     // Read TV System
     let tv_system = match version {
-        Version::INES if archaic => TvSystem::Unknown,
+        Version::ArchaicINES => TvSystem::Unknown,
         Version::INES => if header[9] & 0x01 == 0 { TvSystem::NTSC } else { TvSystem::PAL },
         Version::NES2 => if header[12] & 0x02 != 0 { 
             TvSystem::Dual

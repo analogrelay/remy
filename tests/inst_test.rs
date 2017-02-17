@@ -1,19 +1,23 @@
 //! Tests the NES using the inst_test rom
 extern crate remy;
 
-use std::{env,fs,io};
-use std::io::BufRead;
+use std::{env,fs};
 
 use remy::systems::nes;
 
 #[test]
-pub fn mos6502_can_run_inst_test_rom() {
+pub fn mos6502_can_run_01_basics_rom() {
+    run_test("01-basics.nes");
+}
+
+fn run_test(rom_name: &str) {
     // Locate the test rom
     let mut romfile = env::current_dir().unwrap();
     romfile.push("tests");
     romfile.push("roms");
     romfile.push("inst_test");
-    romfile.push("all_instrs.nes");
+    romfile.push("rom_singles");
+    romfile.push(rom_name);
 
     // Create a NES
     let mut nes = nes::Nes::new();
@@ -31,6 +35,6 @@ pub fn mos6502_can_run_inst_test_rom() {
 
         // Read the test status
         let status = nes.mem().get_u8(0x6000).expect("failed to read test status");
-        println!("current test status: 0x{:X}", status);
+        println!("[after cycle {}] current test status: 0x{:X}", nes.cpu.clock.get(), status);
     }
 }

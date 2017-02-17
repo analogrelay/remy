@@ -1,0 +1,7 @@
+[package]
+name = "romdump"
+version = "0.1.0"
+authors = ["Andrew Stanton-Nurse <andrew@andrewnurse.net>"]
+
+[dependencies]
+remy = { path = "../.." }

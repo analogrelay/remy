@@ -1,14 +1,26 @@
+use slog;
 use mem::Memory;
 use hw::mos6502::exec;
 use hw::mos6502::{Operand,Mos6502,Flags};
 
-pub fn exec<M>(cpu: &mut Mos6502, mem: &mut M, op: Operand) -> Result<(), exec::Error> where M: Memory {
+pub fn exec<M>(cpu: &mut Mos6502, mem: &mut M, op: Operand, log: &slog::Logger) -> Result<(), exec::Error> where M: Memory {
     let _x = cpu.clock.suspend();
     let b = try!(op.get_u8(cpu, mem));
     let r = (b << 1) & 0xFE;
+
+    trace!(log, cpu_state!(cpu),
+        "b" => b,
+        "r" => r,
+        "op" => op;
+        "evaluated b << 1 = r");
+
     try!(op.set_u8(cpu, mem, r));
 
-    cpu.flags.set_if(Flags::CARRY(), b & 0x80 != 0);
+    if cpu.flags.set_if(Flags::CARRY(), b & 0x80 != 0) {
+        trace!(log, cpu_state!(cpu), "setting CARRY");
+    } else {
+        trace!(log, cpu_state!(cpu), "clearing CARRY");
+    }
     cpu.flags.set_sign_and_zero(r);
     Ok(())
 }

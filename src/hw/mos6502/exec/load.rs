@@ -1,19 +1,36 @@
+use slog;
 use mem::Memory;
 use hw::mos6502::{exec, cpu};
 use hw::mos6502::{Mos6502,Operand};
 
-pub fn exec<M>(cpu: &mut Mos6502, mem: &M, reg: cpu::RegisterName, op: Operand) -> exec::Result where M: Memory {
+pub fn exec<M>(cpu: &mut Mos6502, mem: &M, reg: cpu::RegisterName, op: Operand, log: &slog::Logger) -> exec::Result where M: Memory {
     let val = try!(op.get_u8(cpu, mem));
     reg.set(cpu, val);
+    trace!(log, cpu_state!(cpu),
+        "register" => reg,
+        "value" => val,
+        "op" => op;
+        "stored value in {:?}", reg);
+
     cpu.flags.set_sign_and_zero(val);
     Ok(())
 }
 
-pub fn las<M>(cpu: &mut Mos6502, mem: &M, op: Operand) -> exec::Result where M: Memory {
-    let val = try!(op.get_u8(cpu, mem)) & cpu.registers.sp;
+pub fn las<M>(cpu: &mut Mos6502, mem: &M, op: Operand, log: &slog::Logger) -> exec::Result where M: Memory {
+    let a = try!(op.get_u8(cpu, mem));
+    let val = a & cpu.registers.sp;
+    trace!(log, cpu_state!(cpu),
+        "a" => a,
+        "s" => cpu.registers.sp,
+        "r" => val,
+        "op" => op;
+        "evaluated a & s = r");
+
     cpu.registers.a = val;
     cpu.registers.x = val;
     cpu.registers.sp = val;
+    trace!(log, cpu_state!(cpu), "stored result in A, X and SP");
+
     cpu.flags.set_sign_and_zero(val);
     Ok(())
 }

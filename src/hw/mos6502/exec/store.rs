@@ -1,42 +1,107 @@
+use slog;
 use mem::Memory;
 use hw::mos6502::{exec, cpu};
 use hw::mos6502::{Mos6502,Operand};
 
-pub fn exec<M>(cpu: &mut Mos6502, mem: &mut M, reg: cpu::RegisterName, op: Operand) -> exec::Result where M: Memory {
+pub fn exec<M>(cpu: &mut Mos6502, mem: &mut M, reg: cpu::RegisterName, op: Operand, log: &slog::Logger) -> exec::Result where M: Memory {
     let _x = cpu.clock.suspend();
 
     let val = reg.get(cpu);
     try!(op.set_u8(cpu, mem, val));
+    trace!(log, cpu_state!(cpu),
+        "addr" => try!(op.get_addr(cpu, mem)),
+        "register" => reg,
+        "op" => op;
+        "stored {:?} at ${:04X}", reg, try!(op.get_addr(cpu, mem)));
 
     Ok(())
 }
 
-pub fn ahx<M>(cpu: &mut Mos6502, mem: &mut M, op: Operand) -> exec::Result where M: Memory {
+pub fn ahx<M>(cpu: &mut Mos6502, mem: &mut M, op: Operand, log: &slog::Logger) -> exec::Result where M: Memory {
     let h = ((try!(op.get_addr(cpu, mem)) & 0xFF00) >> 8) as u8;
     let val = cpu.registers.a & cpu.registers.x & h;
+    trace!(log, cpu_state!(cpu),
+        "a" => { cpu.registers.a },
+        "x" => { cpu.registers.x },
+        "h" => h,
+        "r" => val,
+        "addr" => try!(op.get_addr(cpu, mem)),
+        "op" => op;
+        "evaluated a & x & h = r");
+
     try!(op.set_u8(cpu, mem, val));
+    trace!(log, cpu_state!(cpu),
+        "addr" => try!(op.get_addr(cpu, mem)),
+        "op" => op;
+        "stored result at ${:04X}", try!(op.get_addr(cpu, mem)));
+
     Ok(())
 }
 
-pub fn sax<M>(cpu: &mut Mos6502, mem: &mut M, op: Operand) -> exec::Result where M: Memory {
+pub fn sax<M>(cpu: &mut Mos6502, mem: &mut M, op: Operand, log: &slog::Logger) -> exec::Result where M: Memory {
     let val = cpu.registers.a & cpu.registers.x;
+    trace!(log, cpu_state!(cpu),
+        "a" => cpu.registers.a,
+        "x" => cpu.registers.x,
+        "r" => val;
+        "evaluated a & x = r");
+
     try!(op.set_u8(cpu, mem, val));
+    trace!(log, cpu_state!(cpu),
+        "addr" => try!(op.get_addr(cpu, mem)),
+        "op" => op;
+        "stored result at ${:04X}", try!(op.get_addr(cpu, mem)));
+
     Ok(())
 }
 
-pub fn sh<M>(cpu: &mut Mos6502, mem: &mut M, reg: cpu::RegisterName, op: Operand) -> exec::Result where M: Memory {
+pub fn sh<M>(cpu: &mut Mos6502, mem: &mut M, reg: cpu::RegisterName, op: Operand, log: &slog::Logger) -> exec::Result where M: Memory {
     let h = ((try!(op.get_addr(cpu, mem)) & 0xFF00) >> 8) as u8;
-    let val = reg.get(cpu) & h;
+    let r = reg.get(cpu);
+    let val = r & h;
+    trace!(log, cpu_state!(cpu),
+        "reg" => r,
+        "h" => h,
+        "r" => val,
+        "addr" => try!(op.get_addr(cpu, mem)),
+        "op" => op;
+        "evaluated reg[{:?}] & h = r", reg);
+
     try!(op.set_u8(cpu, mem, val));
+    trace!(log, cpu_state!(cpu), 
+        "addr" => try!(op.get_addr(cpu, mem)),
+        "op" => op;
+        "stored result at ${:04X}", try!(op.get_addr(cpu, mem)));
+
     Ok(())
 }
 
-pub fn tas<M>(cpu: &mut Mos6502, mem: &mut M, op: Operand) -> exec::Result where M: Memory {
+pub fn tas<M>(cpu: &mut Mos6502, mem: &mut M, op: Operand, log: &slog::Logger) -> exec::Result where M: Memory {
     let val = cpu.registers.a & cpu.registers.x;
+    trace!(log, cpu_state!(cpu),
+        "a" => cpu.registers.a,
+        "x" => cpu.registers.x,
+        "r" => val;
+        "evaluated a & x = r");
+
     cpu.registers.sp = val;
-    let h = ((try!(op.get_addr(cpu, mem)) & 0xFF00) >> 8) as u8;
+    trace!(log, cpu_state!(cpu), "stored result in SP");
+
+    let v = try!(op.get_addr(cpu, mem));
+    let h = ((v & 0xFF00) >> 8) as u8;
     let mem_val = val & h;
+    trace!(log, cpu_state!(cpu),
+        "r" => val,
+        "m" => h,
+        "r2" => mem_val;
+        "evaluated r & m = r2");
+    
     try!(op.set_u8(cpu, mem, mem_val));
+    trace!(log, cpu_state!(cpu), 
+        "addr" => try!(op.get_addr(cpu, mem)),
+        "op" => op;
+        "stored result at ${:04X}", try!(op.get_addr(cpu, mem)));
+
     Ok(())
 }
 

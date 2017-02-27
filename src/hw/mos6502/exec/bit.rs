@@ -1,27 +1,41 @@
+use slog;
 use mem::Memory;
 use hw::mos6502::exec;
 use hw::mos6502::{Mos6502,Flags,Operand};
 
-pub fn exec<M>(cpu: &mut Mos6502, mem: &M, op: Operand) -> Result<(), exec::Error> where M: Memory {
+pub fn exec<M>(cpu: &mut Mos6502, mem: &M, op: Operand, log: &slog::Logger) -> Result<(), exec::Error> where M: Memory {
     let m = try!(op.get_u8(cpu, mem));
     let t = cpu.registers.a & m;
 
+    trace!(log, cpu_state!(cpu),
+        "a" => cpu.registers.a,
+        "m" => m,
+        "r" => t,
+        "op" => op;
+        "evaluated a & m = r");
+
     if m & 0x80 != 0 {
         cpu.flags.set(Flags::SIGN());
+        trace!(log, cpu_state!(cpu), "setting SIGN");
     } else {
         cpu.flags.clear(Flags::SIGN());
+        trace!(log, cpu_state!(cpu), "clearing SIGN");
     }
 
     if m & 0x40 != 0 {
         cpu.flags.set(Flags::OVERFLOW());
+        trace!(log, cpu_state!(cpu), "setting OVERFLOW");
     } else {
         cpu.flags.clear(Flags::OVERFLOW());
+        trace!(log, cpu_state!(cpu), "clearing OVERFLOW");
     }
 
     if t == 0 {
         cpu.flags.set(Flags::ZERO());
+        trace!(log, cpu_state!(cpu), "setting ZERO");
     } else {
         cpu.flags.clear(Flags::ZERO());
+        trace!(log, cpu_state!(cpu), "clearing ZERO");
     }
 
     Ok(())

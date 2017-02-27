@@ -1,16 +1,17 @@
+use slog;
 use mem::Memory;
 use hw::mos6502::exec;
 use hw::mos6502::{Mos6502,Operand,Flags};
 
-pub fn left<M>(cpu: &mut Mos6502, mem: &mut M, op: Operand) -> Result<(), exec::Error> where M : Memory {
-    exec(cpu, mem, op, true)
+pub fn left<M>(cpu: &mut Mos6502, mem: &mut M, op: Operand, log: &slog::Logger) -> Result<(), exec::Error> where M : Memory {
+    exec(cpu, mem, op, true, log)
 }
 
-pub fn right<M>(cpu: &mut Mos6502, mem: &mut M, op: Operand) -> Result<(), exec::Error> where M : Memory {
-    exec(cpu, mem, op, false)
+pub fn right<M>(cpu: &mut Mos6502, mem: &mut M, op: Operand, log: &slog::Logger) -> Result<(), exec::Error> where M : Memory {
+    exec(cpu, mem, op, false, log)
 }
 
-fn exec<M>(cpu: &mut Mos6502, mem: &mut M, op: Operand, left: bool) -> Result<(), exec::Error> where M : Memory {
+fn exec<M>(cpu: &mut Mos6502, mem: &mut M, op: Operand, left: bool, log: &slog::Logger) -> Result<(), exec::Error> where M : Memory {
     let _x = cpu.clock.suspend();
 
     let n = try!(op.get_u8(cpu, mem));
@@ -28,7 +29,17 @@ fn exec<M>(cpu: &mut Mos6502, mem: &mut M, op: Operand, left: bool) -> Result<()
             0x00
         };
     let b = (if left { n << 1 } else { n >> 1 }) | carry_byte;
+
+    trace!(log, cpu_state!(cpu),
+        "direction" => if left { "left" } else { "right" },
+        "mem" => n,
+        "result" => b,
+        "carry_out" => t,
+        "carry_in" => carry_byte;
+        "rotated mem[${:04X}] {}", try!(op.get_addr(cpu, mem)), if left { "left" } else { "right" });
+
     try!(op.set_u8(cpu, mem, b));
+    trace!(log, cpu_state!(cpu), "addr" => try!(op.get_addr(cpu, mem)); "stored result at ${:04X}", try!(op.get_addr(cpu, mem)));
 
     // Set the flags
     cpu.flags.set_sign_and_zero(b);

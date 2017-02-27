@@ -1,11 +1,14 @@
+use slog;
 use mem::Memory;
 use hw::mos6502::exec;
 use hw::mos6502::{Mos6502,Operand};
 
-pub fn exec<M>(cpu: &mut Mos6502, mem: &M, op: Operand) -> Result<(), exec::Error> where M: Memory {
+pub fn exec<M>(cpu: &mut Mos6502, mem: &M, op: Operand, log: &slog::Logger) -> Result<(), exec::Error> where M: Memory {
     let addr = try!(op.get_addr(cpu, mem));
 
+    trace!(log, cpu_state!(cpu), "target" => addr; "jumping to ${:04X}", addr);
     cpu.pc.set(addr as u64);
+
     Ok(())
 }
 

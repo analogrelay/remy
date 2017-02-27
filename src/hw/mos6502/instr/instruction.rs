@@ -1,3 +1,4 @@
+use slog;
 use mem::{self,MemoryExt};
 
 use instr;
@@ -97,8 +98,8 @@ impl Instruction {
     /// # Arguments
     ///
     /// * `cpu` - The process on which to execute the instruction
-    pub fn exec<M>(self, cpu: &mut Mos6502, mem: &mut M) -> Result<(), exec::Error> where M: mem::Memory {
-        exec::dispatch(self, cpu, mem)
+    pub fn exec<M>(self, cpu: &mut Mos6502, mem: &mut M, logger: Option<slog::Logger>) -> Result<(), exec::Error> where M: mem::Memory {
+        exec::dispatch(self, cpu, mem, logger)
     }
 
     /// Get the base number of cycles, EXCLUDING additional cycles cause by "oops cycles" (where
@@ -608,3 +609,5 @@ impl ::slog::ser::Serialize for Instruction {
         serializer.emit_str(key, &format!("{}", self))
     }
 }
+
+impl ::slog::ser::SyncSerialize for Instruction {}

@@ -1,9 +1,20 @@
+use slog;
 use hw::mos6502::{exec,cpu};
 use hw::mos6502::Mos6502;
 
-pub fn exec(cpu: &mut Mos6502, src: cpu::RegisterName, dst: cpu::RegisterName) -> Result<(), exec::Error> {
+pub fn exec(cpu: &mut Mos6502, src: cpu::RegisterName, dst: cpu::RegisterName, log: &slog::Logger) -> Result<(), exec::Error> {
     let val = src.get(cpu);
+    trace!(log, cpu_state!(cpu),
+        "register" => src,
+        "value" => val;
+        "read value from {}", src);
+
     dst.set(cpu, val);
+    trace!(log, cpu_state!(cpu),
+        "register" => dst,
+        "value" => val;
+        "storing value in {}", dst);
+
     if dst != cpu::RegisterName::S {
         cpu.flags.set_sign_and_zero(val);
     }

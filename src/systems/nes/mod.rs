@@ -88,12 +88,12 @@ impl Nes {
         let instr: mos6502::Instruction = try!(self.cpu.pc.decode(&self.mem));
 
         // Dispatch the instruction
-        debug!(self.log,
+        trace!(self.log,
             "instr" => instr,
             "cycle" => self.cpu.clock.get();
             "dispatching");
-        try!(mos6502::dispatch(instr, &mut self.cpu, &mut self.mem));
-        debug!(self.log,
+        try!(mos6502::dispatch(instr, &mut self.cpu, &mut self.mem, Some(self.log.clone())));
+        trace!(self.log,
             "instr" => instr,
             "cycle" => self.cpu.clock.get();
             "dispatched");

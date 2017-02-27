@@ -1,10 +1,14 @@
+use slog;
 use hw::mos6502::{exec,Mos6502,Flags,Operand};
 
-pub fn if_clear(cpu: &mut Mos6502, op: Operand, flags: Flags) -> Result<(), exec::Error> {
+pub fn if_clear(cpu: &mut Mos6502, op: Operand, flags: Flags, log: &slog::Logger) -> Result<(), exec::Error> {
     if let Operand::Offset(offset) = op {
         if !cpu.flags.intersects(flags) {
-            let target = calc_target_and_tick_clock(cpu, offset);
+            let target = calc_target_and_tick_clock(cpu, offset, log);
+            trace!(log, cpu_state!(cpu), "target" => target; "jumping to ${:04X}", target);
             cpu.pc.set(target);
+        } else {
+            trace!(log, cpu_state!(cpu), "branch condition not met");
         }
         Ok(())
     } else {
@@ -12,11 +16,14 @@ pub fn if_clear(cpu: &mut Mos6502, op: Operand, flags: Flags) -> Result<(), exec
     }
 }
 
-pub fn if_set(cpu: &mut Mos6502, op: Operand, flags: Flags) -> Result<(), exec::Error> {
+pub fn if_set(cpu: &mut Mos6502, op: Operand, flags: Flags, log: &slog::Logger) -> Result<(), exec::Error> {
     if let Operand::Offset(offset) = op {
         if cpu.flags.intersects(flags) {
-            let target = calc_target_and_tick_clock(cpu, offset);
+            let target = calc_target_and_tick_clock(cpu, offset, log);
+            trace!(log, cpu_state!(cpu), "target" => target; "jumping to ${:04X}", target);
             cpu.pc.set(target);
+        } else {
+            trace!(log, cpu_state!(cpu), "branch condition not met");
         }
         Ok(())
     } else {
@@ -24,13 +31,15 @@ pub fn if_set(cpu: &mut Mos6502, op: Operand, flags: Flags) -> Result<(), exec::
     }
 }
 
-fn calc_target_and_tick_clock(cpu: &mut Mos6502, offset: i8) -> u64 {
+fn calc_target_and_tick_clock(cpu: &mut Mos6502, offset: i8, log: &slog::Logger) -> u64 {
     // Check if we're jumping pages
     let current = cpu.pc.get();
     let target = ((current as i64) + (offset as i64)) as u64;
     if (current & 0xFF00) == (target & 0xFF00) {
+        trace!(log, cpu_state!(cpu), "ticking clock for near jump");
         cpu.clock.tick(1);
     } else {
+        trace!(log, cpu_state!(cpu), "ticking clock for far jump");
         cpu.clock.tick(2);
     }
     target

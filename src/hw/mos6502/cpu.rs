@@ -1,3 +1,4 @@
+use slog;
 use std::{convert,error,fmt};
 
 use pc;
@@ -98,6 +99,14 @@ impl RegisterName {
         }
     }
 }
+
+impl ::slog::ser::Serialize for RegisterName {
+    fn serialize(&self, _record: &::slog::Record, key: &'static str, serializer: &mut ::slog::ser::Serializer) -> Result<(), ::slog::ser::Error> {
+        serializer.emit_str(key, &format!("{}", self))
+    }
+}
+
+impl ::slog::ser::SyncSerialize for RegisterName {}
 
 impl fmt::Display for RegisterName {
     fn fmt(&self, formatter: &mut fmt::Formatter) -> Result<(), fmt::Error> {
@@ -214,6 +223,15 @@ impl Registers {
     }
 }
 
+impl ::slog::ser::Serialize for Registers {
+    fn serialize(&self, _record: &::slog::Record, key: &'static str, serializer: &mut ::slog::ser::Serializer) -> Result<(), ::slog::ser::Error> {
+        try!(serializer.emit_u8("A", self.a));
+        try!(serializer.emit_u8("X", self.x));
+        try!(serializer.emit_u8("Y", self.y));
+        serializer.emit_u8("SP", self.sp)
+    }
+}
+
 /// Represents the processor status flags supported by the MOS 6502 CPU
 #[derive(Copy,Clone,Eq,PartialEq)]
 pub struct Flags {
@@ -259,11 +277,15 @@ impl Flags {
     }
 
     /// Sets or clears the specified flags based on the provided condition
-    pub fn set_if(&mut self, flag_selector: Flags, condition: bool) {
+    ///
+    /// # Returns
+    /// A boolean indicating if the flag was set, or cleared
+    pub fn set_if(&mut self, flag_selector: Flags, condition: bool) -> bool {
         self.clear(flag_selector);
         if condition {
             self.set(flag_selector);
         }
+        condition
     }
 
     /// Replaces all flags with the provided value
@@ -275,6 +297,69 @@ impl Flags {
     pub fn set_sign_and_zero(&mut self, val: u8) {
         self.set_if(Flags::ZERO(), val == 0);
         self.set_if(Flags::SIGN(), val & 0x80 != 0);
+    }
+}
+
+impl fmt::Display for Flags {
+    fn fmt(&self, fmt: &mut fmt::Formatter) -> fmt::Result {
+        let mut val = String::new();
+        if self.intersects(Flags::SIGN()) {
+            val.push_str("S");
+        }
+        else {
+            val.push_str("s");
+        }
+
+        if self.intersects(Flags::OVERFLOW()) {
+            val.push_str("O");
+        }
+        else {
+            val.push_str("o");
+        }
+
+        if self.intersects(Flags::RESERVED()) {
+            val.push_str("R");
+        }
+        else {
+            val.push_str("r");
+        }
+
+        if self.intersects(Flags::BREAK()) {
+            val.push_str("B");
+        }
+        else {
+            val.push_str("b");
+        }
+
+        if self.intersects(Flags::BCD()) {
+            val.push_str("D");
+        }
+        else {
+            val.push_str("d");
+        }
+
+        if self.intersects(Flags::INTERRUPT()) {
+            val.push_str("I");
+        }
+        else {
+            val.push_str("i");
+        }
+
+        if self.intersects(Flags::ZERO()) {
+            val.push_str("Z");
+        }
+        else {
+            val.push_str("z");
+        }
+
+        if self.intersects(Flags::CARRY()) {
+            val.push_str("C");
+        }
+        else {
+            val.push_str("c");
+        }
+
+        fmt.write_str(val.as_str())
     }
 }
 
@@ -337,6 +422,12 @@ impl ::std::ops::Not for Flags {
     /// Negates the value of the flags
     fn not(self) -> Flags {
         Flags::new(!self.bits)
+    }
+}
+
+impl ::slog::ser::Serialize for Flags {
+    fn serialize(&self, _record: &::slog::Record, key: &'static str, serializer: &mut ::slog::ser::Serializer) -> Result<(), ::slog::ser::Error> {
+        serializer.emit_arguments(key, &format_args!("{}", self))
     }
 }
 

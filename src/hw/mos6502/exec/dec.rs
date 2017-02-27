@@ -1,20 +1,41 @@
+use slog;
 use mem::Memory;
 use hw::mos6502::exec;
 use hw::mos6502::{cpu,Mos6502,Operand};
 
-pub fn reg(cpu: &mut Mos6502, reg: cpu::RegisterName) -> Result<(), exec::Error> {
-    let new_val = (reg.get(cpu).wrapping_sub(1)) & 0xFF;
+pub fn reg(cpu: &mut Mos6502, reg: cpu::RegisterName, log: &slog::Logger) -> Result<(), exec::Error> {
+    let old_val = reg.get(cpu);
+    let new_val = (old_val.wrapping_sub(1)) & 0xFF;
+
+    trace!(log, cpu_state!(cpu), 
+        "reg" => old_val, 
+        "r" => new_val, 
+        "register" => reg; 
+        "evaluated reg[{:?}]-- = r", reg);
+
     cpu.flags.set_sign_and_zero(new_val); 
     reg.set(cpu, new_val);
+    trace!(log, cpu_state!(cpu), "register" => reg; "stored result in {:?}", reg);
+
     Ok(())
 }
 
-pub fn mem<M>(cpu: &mut Mos6502, mem: &mut M, op: Operand) -> Result<(), exec::Error> where M: Memory {
+pub fn mem<M>(cpu: &mut Mos6502, mem: &mut M, op: Operand, log: &slog::Logger) -> Result<(), exec::Error> where M: Memory {
     let _x = cpu.clock.suspend();
 
-    let new_val = (try!(op.get_u8(cpu, mem)).wrapping_sub(1)) & 0xFF;
+    let old_val = try!(op.get_u8(cpu, mem));
+    let new_val = (old_val.wrapping_sub(1)) & 0xFF;
+
+    trace!(log, cpu_state!(cpu), 
+        "mem" => old_val,
+        "r" => new_val,
+        "addr" => try!(op.get_addr(cpu, mem));
+        "evaluated mem[{}]-- = r", try!(op.get_addr(cpu, mem)));
+
     cpu.flags.set_sign_and_zero(new_val); 
     try!(op.set_u8(cpu, mem, new_val));
+    trace!(log, cpu_state!(cpu), "addr" => try!(op.get_addr(cpu, mem)); "stored result at {}", try!(op.get_addr(cpu, mem)));
+
     Ok(())
 }
 

@@ -1,12 +1,22 @@
+use slog;
 use mem::Memory;
 use hw::mos6502::exec;
 use hw::mos6502::{Mos6502,Operand};
 
-pub fn exec<M>(cpu: &mut Mos6502, mem: &M, op: Operand) -> Result<(), exec::Error> where M: Memory {
+pub fn exec<M>(cpu: &mut Mos6502, mem: &M, op: Operand, log: &slog::Logger) -> Result<(), exec::Error> where M: Memory {
     let val = try!(op.get_u8(cpu, mem));
     let new_value = cpu.registers.a ^ val;
+    trace!(log, cpu_state!(cpu),
+        "a" => cpu.registers.a,
+        "m" => val,
+        "r" => new_value,
+        "op" => op;
+        "evaluated a ^ m = r");
+
     cpu.flags.set_sign_and_zero(new_value);
     cpu.registers.a = new_value;
+    trace!(log, cpu_state!(cpu), "stored result in A");
+
     Ok(())
 }
 

@@ -13,8 +13,10 @@ use remy::systems::nes;
 
 pub fn main() {
     // Set up console logging
-    let drain = slog_term::streamer().compact().build().fuse();
-    let log = slog::Logger::root(drain, o!());
+    let drain = slog_term::streamer().build().fuse();
+    let log = slog::Logger::root(drain, o!(
+        "module" => move |info: &Record| info.module() 
+    ));
 
     let rom_path = match env::args().nth(1) {
         Some(r) => r,

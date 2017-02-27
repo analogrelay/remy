@@ -227,6 +227,14 @@ fn oops_cycle(original_addr: u64, actual_addr: u64) -> bool {
     (original_addr & 0xFF00) != (actual_addr & 0xFF00)
 }
 
+impl ::slog::ser::Serialize for Operand {
+    fn serialize(&self, _record: &::slog::Record, key: &'static str, serializer: &mut ::slog::ser::Serializer) -> ::std::result::Result<(), ::slog::ser::Error> {
+        serializer.emit_str(key, &format!("{}", self))
+    }
+}
+
+impl ::slog::ser::SyncSerialize for Operand {}
+
 impl fmt::Display for Operand {
     /// Returns a string representing the instruction
     fn fmt(&self, formatter: &mut fmt::Formatter) -> ::std::result::Result<(), fmt::Error> {

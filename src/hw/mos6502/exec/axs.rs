@@ -1,13 +1,29 @@
+use slog;
 use mem::Memory;
 use hw::mos6502::exec;
 use hw::mos6502::{Operand,Mos6502,Flags};
 
 // X := A & X - op ; with sign, zero and carry set as appropriate
-pub fn exec<M>(cpu: &mut Mos6502, mem: &M, op: Operand) -> exec::Result where M: Memory {
-    let val = (cpu.registers.a & cpu.registers.x) - try!(op.get_u8(cpu, mem));
+pub fn exec<M>(cpu: &mut Mos6502, mem: &M, op: Operand, log: &slog::Logger) -> exec::Result where M: Memory {
+    let m = try!(op.get_u8(cpu, mem));
+    let val = (cpu.registers.a & cpu.registers.x) - m;
+    trace!(log, cpu_state!(cpu),
+        "a" => cpu.registers.a,
+        "x" => cpu.registers.x,
+        "m" => m,
+        "r" => val,
+        "op" => op;
+        "evaluating a & x - m = r");
+
+    if cpu.flags.set_if(Flags::CARRY(), (val & 0x80) != 0) {
+        trace!(log, cpu_state!(cpu), "setting CARRY");
+    } else {
+        trace!(log, cpu_state!(cpu), "clearing CARRY");
+    }
     cpu.flags.set_sign_and_zero(val);
-    cpu.flags.set_if(Flags::CARRY(), (val & 0x80) != 0);
+
     cpu.registers.x = val;
+    trace!(log, cpu_state!(cpu), "stored result in X");
     Ok(())
 }
 

@@ -7,14 +7,14 @@ pub fn exec<M>(cpu: &mut Mos6502, mem: &mut M, r: cpu::RegisterName, log: &slog:
     let val = if r == cpu::RegisterName::P {
         // http://visual6502.org/wiki/index.php?title=6502_BRK_and_B_bit
         // Set B bit on the value before pushing it
-        trace!(log, cpu_state!(cpu), "setting BREAK on flags before pushing");
+        trace!(log, "cpu" => cpu; "setting BREAK on flags before pushing");
         (cpu::Flags::BREAK() | cpu::Flags::new(r.get(cpu))).bits
     } else {
         r.get(cpu)
     };
     let dest = cpu.registers.sp;
-    try!(cpu.push(mem, val));
-    trace!(log, cpu_state!(cpu),
+    try_log!(cpu.push(mem, val), log);
+    trace!(log, "cpu" => cpu,
         "from" => dest,
         "value" => val,
         "register" => r;

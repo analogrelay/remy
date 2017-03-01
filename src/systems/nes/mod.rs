@@ -2,7 +2,6 @@ pub use self::cart::{Mapper,Cartridge};
 pub use self::rom::{Rom,RomHeader,load_rom};
 
 use slog;
-use std::convert;
 
 use mem;
 use hw::mos6502::{self,exec};
@@ -20,22 +19,36 @@ mod memmap;
 
 pub type Result<T> = ::std::result::Result<T, Error>;
 
+pub struct Error {
+    kind: ErrorKind,
+    address: u64,
+    instruction: Option<mos6502::Instruction>
+}
+
+impl Error {
+    pub fn new(kind: ErrorKind, address: u64, instruction: Option<mos6502::Instruction>) -> Error {
+        Error {
+            kind: kind,
+            address: address,
+            instruction: instruction
+        }
+    }
+}
+
+impl ::std::fmt::Debug for Error {
+    fn fmt(&self, fmt: &mut ::std::fmt::Formatter) -> ::std::fmt::Result {
+        fmt.debug_struct(stringify!(Error))
+            .field("kind", &self.kind)
+            .field("address", &format!("${:04X}", self.address))
+            .field("instruction", &self.instruction)
+            .finish()
+    }
+}
+
 #[derive(Debug)]
-pub enum Error {
+pub enum ErrorKind {
     InstructionDecodeError(decoder::Error),
     ExecutionError(exec::Error)
-}
-
-impl convert::From<decoder::Error> for Error {
-    fn from(err: decoder::Error) -> Error {
-        Error::InstructionDecodeError(err)
-    }
-}
-
-impl convert::From<exec::Error> for Error {
-    fn from(err: exec::Error) -> Error {
-        Error::ExecutionError(err)
-    }
 }
 
 /// Represents a complete NES system, including all necessary hardware and memory
@@ -62,6 +75,17 @@ impl Nes {
         }
     }
 
+    /// Reset the CPU
+    ///
+    /// This reads the value in the reset vector ($FFFC) and then sets the program counter
+    /// to that value
+    pub fn reset(&mut self) -> mem::Result<()> {
+        use mem::MemoryExt;
+        let addr = try_log!(self.mem.get_u16::<::byteorder::LittleEndian>(0xFFFC), self.log);
+        self.cpu.pc.set(addr as u64);
+        Ok(())
+    }
+
     /// Gets a mutable reference to the current memory
     pub fn mem_mut(&mut self) -> &mut mem::Memory {
         &mut self.mem
@@ -85,14 +109,29 @@ impl Nes {
     /// Runs a single frame of the system
     pub fn step(&mut self) -> Result<()> {
         // Fetch next instruction
-        let instr: mos6502::Instruction = try!(self.cpu.pc.decode(&self.mem));
+        let addr = self.cpu.pc.get();
+        let instr: mos6502::Instruction = match self.cpu.pc.decode(&self.mem) {
+            Ok(i) => i,
+            Err(e) => return Err(Error::new(
+                ErrorKind::InstructionDecodeError(e),
+                addr,
+                None
+            ))
+        };
 
         // Dispatch the instruction
         trace!(self.log,
             "instr" => instr,
             "cycle" => self.cpu.clock.get();
             "dispatching");
-        try!(mos6502::dispatch(instr, &mut self.cpu, &mut self.mem, Some(self.log.clone())));
+        match mos6502::dispatch(instr, &mut self.cpu, &mut self.mem, Some(self.log.clone())) {
+            Ok(_) => {},
+            Err(e) => return Err(Error::new(
+                ErrorKind::ExecutionError(e),
+                addr,
+                Some(instr)
+            ))
+        };
         trace!(self.log,
             "instr" => instr,
             "cycle" => self.cpu.clock.get();

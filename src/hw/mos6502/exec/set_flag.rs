@@ -3,7 +3,7 @@ use hw::mos6502::exec;
 use hw::mos6502::{Mos6502,Flags};
 
 pub fn exec(cpu: &mut Mos6502, flag_selector: Flags, log: &slog::Logger) -> Result<(), exec::Error> {
-    trace!(log, cpu_state!(cpu), "flag" => flag_selector; "setting {:?}", flag_selector);
+    trace!(log, "cpu" => cpu, "flag" => flag_selector; "setting {:?}", flag_selector);
     cpu.flags.set(flag_selector);
     Ok(())
 }

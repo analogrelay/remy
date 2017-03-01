@@ -4,9 +4,9 @@ use hw::mos6502::exec;
 use hw::mos6502::{Mos6502,Operand};
 
 pub fn exec<M>(cpu: &mut Mos6502, mem: &M, op: Operand, log: &slog::Logger) -> Result<(), exec::Error> where M : Memory {
-    let m = try!(op.get_u8(cpu, mem));
+    let m = try_log!(op.get_u8(cpu, mem), log);
     let v = cpu.registers.a | m;
-    trace!(log, cpu_state!(cpu),
+    trace!(log, "cpu" => cpu,
         "a" => cpu.registers.a,
         "m" => m,
         "r" => v,
@@ -15,7 +15,7 @@ pub fn exec<M>(cpu: &mut Mos6502, mem: &M, op: Operand, log: &slog::Logger) -> R
 
     cpu.flags.set_sign_and_zero(v);
     cpu.registers.a = v;
-    trace!(log, cpu_state!(cpu), "stored result in A");
+    trace!(log, "cpu" => cpu; "stored result in A");
 
     Ok(())
 }

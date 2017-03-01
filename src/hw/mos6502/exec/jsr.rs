@@ -6,13 +6,13 @@ pub fn exec<M>(cpu: &mut Mos6502, mem: &mut M, op: Operand, log: &slog::Logger) 
     let _x = cpu.clock.suspend();
 
     let pc = cpu.pc.get() - 1;
-    let addr = try!(op.get_addr(cpu, mem));
+    let addr = try_log!(op.get_addr(cpu, mem), log);
 
-    try!(cpu.push(mem, ((pc & 0xFF00) >> 8) as u8));
-    try!(cpu.push(mem, (pc & 0x00FF) as u8));
-    trace!(log, cpu_state!(cpu), "next_pc" => pc; "pushed next PC value on stack");
+    try_log!(cpu.push(mem, ((pc & 0xFF00) >> 8) as u8), log);
+    try_log!(cpu.push(mem, (pc & 0x00FF) as u8), log);
+    trace!(log, "cpu" => cpu, "next_pc" => pc; "pushed next PC value on stack");
 
-    trace!(log, cpu_state!(cpu), "target" => addr; "jumping to ${:04X}", addr);
+    trace!(log, "cpu" => cpu, "target" => addr; "jumping to ${:04X}", addr);
     cpu.pc.set(addr as u64);
 
     Ok(())

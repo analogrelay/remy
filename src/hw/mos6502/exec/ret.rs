@@ -4,32 +4,32 @@ use hw::mos6502::exec;
 use hw::mos6502::{Flags,Mos6502};
 
 pub fn from_interrupt<M>(cpu: &mut Mos6502, mem: &M, log: &slog::Logger) -> Result<(), exec::Error> where M : Memory {
-    let p = try!(cpu.pull(mem));
+    let p = try_log!(cpu.pull(mem), log);
     let flags = Flags::new(p);
-    trace!(log, cpu_state!(cpu),
+    trace!(log, "cpu" => cpu,
         "from" => cpu.registers.sp,
         "flags" => flags;
         "pulled flags from stack");
 
-    let l = try!(cpu.pull(mem)) as u64;
-    let h = try!(cpu.pull(mem)) as u64;
+    let l = try_log!(cpu.pull(mem), log) as u64;
+    let h = try_log!(cpu.pull(mem), log) as u64;
     let pc = (h << 8) | l;
-    trace!(log, cpu_state!(cpu),
+    trace!(log, "cpu" => cpu,
         "from" => cpu.registers.sp - 1,
         "pc" => pc;
         "pulled new PC from stack");
 
     cpu.pc.set(pc);
     cpu.flags.replace(flags);
-    trace!(log, cpu_state!(cpu), "updated flags and PC");
+    trace!(log, "cpu" => cpu; "updated flags and PC");
     Ok(())
 }
 
 pub fn from_sub<M>(cpu: &mut Mos6502, mem: &M, log: &slog::Logger) -> Result<(), exec::Error> where M : Memory {
-    let l = try!(cpu.pull(mem)) as u64;
-    let h = try!(cpu.pull(mem)) as u64;
+    let l = try_log!(cpu.pull(mem), log) as u64;
+    let h = try_log!(cpu.pull(mem), log) as u64;
     let pc = ((h << 8) | l) + 1;
-    trace!(log, cpu_state!(cpu),
+    trace!(log, "cpu" => cpu,
         "from" => cpu.registers.sp - 1,
         "pc" => pc;
         "pulled new PC from stack");

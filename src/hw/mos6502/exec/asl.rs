@@ -5,21 +5,21 @@ use hw::mos6502::{Operand,Mos6502,Flags};
 
 pub fn exec<M>(cpu: &mut Mos6502, mem: &mut M, op: Operand, log: &slog::Logger) -> Result<(), exec::Error> where M: Memory {
     let _x = cpu.clock.suspend();
-    let b = try!(op.get_u8(cpu, mem));
+    let b = try_log!(op.get_u8(cpu, mem), log);
     let r = (b << 1) & 0xFE;
 
-    trace!(log, cpu_state!(cpu),
+    trace!(log, "cpu" => cpu,
         "b" => b,
         "r" => r,
         "op" => op;
         "evaluated b << 1 = r");
 
-    try!(op.set_u8(cpu, mem, r));
+    try_log!(op.set_u8(cpu, mem, r), log);
 
     if cpu.flags.set_if(Flags::CARRY(), b & 0x80 != 0) {
-        trace!(log, cpu_state!(cpu), "setting CARRY");
+        trace!(log, "cpu" => cpu; "setting CARRY");
     } else {
-        trace!(log, cpu_state!(cpu), "clearing CARRY");
+        trace!(log, "cpu" => cpu; "clearing CARRY");
     }
     cpu.flags.set_sign_and_zero(r);
     Ok(())

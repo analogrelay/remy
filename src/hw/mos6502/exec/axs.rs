@@ -5,9 +5,9 @@ use hw::mos6502::{Operand,Mos6502,Flags};
 
 // X := A & X - op ; with sign, zero and carry set as appropriate
 pub fn exec<M>(cpu: &mut Mos6502, mem: &M, op: Operand, log: &slog::Logger) -> exec::Result where M: Memory {
-    let m = try!(op.get_u8(cpu, mem));
-    let val = (cpu.registers.a & cpu.registers.x) - m;
-    trace!(log, cpu_state!(cpu),
+    let m = try_log!(op.get_u8(cpu, mem), log);
+    let val = (cpu.registers.a & cpu.registers.x).wrapping_sub(m);
+    trace!(log, "cpu" => cpu,
         "a" => cpu.registers.a,
         "x" => cpu.registers.x,
         "m" => m,
@@ -16,14 +16,14 @@ pub fn exec<M>(cpu: &mut Mos6502, mem: &M, op: Operand, log: &slog::Logger) -> e
         "evaluating a & x - m = r");
 
     if cpu.flags.set_if(Flags::CARRY(), (val & 0x80) != 0) {
-        trace!(log, cpu_state!(cpu), "setting CARRY");
+        trace!(log, "cpu" => cpu; "setting CARRY");
     } else {
-        trace!(log, cpu_state!(cpu), "clearing CARRY");
+        trace!(log, "cpu" => cpu; "clearing CARRY");
     }
     cpu.flags.set_sign_and_zero(val);
 
     cpu.registers.x = val;
-    trace!(log, cpu_state!(cpu), "stored result in X");
+    trace!(log, "cpu" => cpu; "stored result in X");
     Ok(())
 }
 

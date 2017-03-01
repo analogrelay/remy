@@ -4,10 +4,10 @@ use hw::mos6502::exec;
 use hw::mos6502::{cpu,Mos6502,Flags,Operand};
 
 pub fn exec<M>(cpu: &mut Mos6502, mem: &M, reg: cpu::RegisterName, op: Operand, log: &slog::Logger) -> Result<(), exec::Error> where M: Memory {
-    let val = try!(op.get_u8(cpu, mem));
+    let val = try_log!(op.get_u8(cpu, mem), log);
     let r = reg.get(cpu) as i16;
     let t = r - val as i16;
-    trace!(log, cpu_state!(cpu),
+    trace!(log, "cpu" => cpu,
         "reg" => r, 
         "m" => val, 
         "r" => t, 
@@ -16,9 +16,9 @@ pub fn exec<M>(cpu: &mut Mos6502, mem: &M, reg: cpu::RegisterName, op: Operand, 
         "evaluated reg[{:?}] - m = r", reg);
 
     if cpu.flags.set_if(Flags::CARRY(), t >= 0) {
-        trace!(log, cpu_state!(cpu), "setting CARRY");
+        trace!(log, "cpu" => cpu; "setting CARRY");
     } else {
-        trace!(log, cpu_state!(cpu), "clearing CARRY");
+        trace!(log, "cpu" => cpu; "clearing CARRY");
     }
 
     cpu.flags.set_sign_and_zero(t as u8);

@@ -211,6 +211,7 @@ impl Instruction {
             &Instruction::JSR(..) => 6,
             &Instruction::LAS(..) => 4,
 
+            &Instruction::LAX(Operand::Immediate(_)) => 2,
             &Instruction::LAX(Operand::Absolute(addr)) if addr < 0x0100 => 3,
             &Instruction::LAX(Operand::Indexed(addr, _)) if addr < 0x0100 => 4,
             &Instruction::LAX(Operand::Absolute(_)) => 4,
@@ -604,10 +605,6 @@ impl fmt::Display for Instruction {
     }
 }
 
-impl ::slog::ser::Serialize for Instruction {
-    fn serialize(&self, _record: &::slog::Record, key: &'static str, serializer: &mut ::slog::ser::Serializer) -> Result<(), ::slog::ser::Error> {
-        serializer.emit_str(key, &format!("{}", self))
-    }
-}
+serialize_via_display!(Instruction);
 
 impl ::slog::ser::SyncSerialize for Instruction {}

@@ -4,10 +4,10 @@ use hw::mos6502::exec;
 use hw::mos6502::{Operand,Mos6502,Flags};
 
 pub fn exec<M>(cpu: &mut Mos6502, mem: &M, op: Operand, with_carry: bool, log: &slog::Logger) -> exec::Result where M: Memory {
-    let opv = try!(op.get_u8(cpu, mem));
+    let opv = try_log!(op.get_u8(cpu, mem), log);
     let res = cpu.registers.a & opv;
 
-    trace!(log, cpu_state!(cpu),
+    trace!(log, "cpu" => cpu,
         "a" => cpu.registers.a,
         "m" => opv,
         "r" => res,
@@ -17,13 +17,13 @@ pub fn exec<M>(cpu: &mut Mos6502, mem: &M, op: Operand, with_carry: bool, log: &
     cpu.registers.a = res;
     cpu.flags.set_sign_and_zero(res);
 
-    trace!(log, cpu_state!(cpu), "stored result in A");
+    trace!(log, "cpu" => cpu; "stored result in A");
 
     if with_carry {
         if cpu.flags.set_if(Flags::CARRY(), res & 0x80 != 0) {
-            trace!(log, cpu_state!(cpu), "setting CARRY");
+            trace!(log, "cpu" => cpu; "setting CARRY");
         } else {
-            trace!(log, cpu_state!(cpu), "clearing CARRY");
+            trace!(log, "cpu" => cpu; "clearing CARRY");
         }
     }
 
@@ -31,13 +31,13 @@ pub fn exec<M>(cpu: &mut Mos6502, mem: &M, op: Operand, with_carry: bool, log: &
 }
 
 pub fn xaa<M>(cpu: &mut Mos6502, mem: &M, op: Operand, log: &slog::Logger) -> exec::Result where M: Memory {
-    let m = try!(op.get_u8(cpu, mem));
+    let m = try_log!(op.get_u8(cpu, mem), log);
     let val = cpu.registers.x & m;
-    trace!(log, cpu_state!(cpu),
+    trace!(log, "cpu" => cpu,
         "x" => { cpu.registers.x },
         "m" => m,
         "r" => val,
-        "addr" => try!(op.get_addr(cpu, mem)),
+        "addr" => addr_str!(op.get_addr(cpu, mem)),
         "op" => op;
         "evaluated x & m = r");
     cpu.registers.a = val;

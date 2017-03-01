@@ -57,6 +57,8 @@ impl fmt::Display for Error {
     }
 }
 
+serialize_via_debug!(Error);
+
 #[derive(Clone,Copy,Debug,Eq,PartialEq)]
 /// Defines the kind of a `Error`
 pub enum ErrorKind {

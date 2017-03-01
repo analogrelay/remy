@@ -33,15 +33,6 @@ mod transfer;
 
 pub type Result = ::std::result::Result<(), Error>;
 
-macro_rules! cpu_state {
-    ($cpu: expr) => {
-        "cycle" => |_: &::slog::Record| $cpu.clock.get(),
-        "pc" => |_: &::slog::Record| $cpu.pc.get(),
-        "register" => |_: &::slog::Record| $cpu.registers,
-        "flags" => |_: &::slog::Record| $cpu.flags
-    }
-}
-
 /// Represents an error that can occur while executing an instruction
 #[derive(Clone,PartialEq,Eq,Debug)]
 pub enum Error {
@@ -54,6 +45,8 @@ pub enum Error {
     /// Indicates that the HLT instruction was invoked
     HaltInstruction
 }
+
+serialize_via_debug!(Error);
 
 impl error::Error for Error {
     fn description(&self) -> &str {
@@ -107,17 +100,17 @@ pub fn dispatch<M>(inst: Instruction, cpu: &mut Mos6502, mem: &mut M, logger: Op
         "inst" => inst
     ));
 
-    debug!(log, "executing");
+    trace!(log, "executing"; "cpu" => cpu);
 
     // Tick the base cycle count of the instruction
     cpu.clock.tick(inst.base_cycles());
     let result = match inst {
         Instruction::ADC(op) => adc::exec(cpu, mem, op, &log),
         Instruction::AHX(op) => store::ahx(cpu, mem, op, &log),
-        Instruction::ALR(op) => { try!(and::exec(cpu, mem, op, true, &log)); lsr::exec(cpu, mem, operand::Operand::Accumulator, &log) },
+        Instruction::ALR(op) => { try_log!(and::exec(cpu, mem, op, true, &log), log); lsr::exec(cpu, mem, operand::Operand::Accumulator, &log) },
         Instruction::AND(op) => and::exec(cpu, mem, op, false, &log),
         Instruction::ANC(op) => and::exec(cpu, mem, op, true, &log),
-        Instruction::ARR(op) => { try!(and::exec(cpu, mem, op, true, &log)); rotate::right(cpu, mem, operand::Operand::Accumulator, &log) },
+        Instruction::ARR(op) => { try_log!(and::exec(cpu, mem, op, true, &log), log); rotate::right(cpu, mem, operand::Operand::Accumulator, &log) },
         Instruction::ASL(op) => asl::exec(cpu, mem, op, &log),
         Instruction::AXS(op) => axs::exec(cpu, mem, op, &log),
         Instruction::BCC(op) => branch::if_clear(cpu, op, Flags::CARRY(), &log),
@@ -133,23 +126,23 @@ pub fn dispatch<M>(inst: Instruction, cpu: &mut Mos6502, mem: &mut M, logger: Op
         Instruction::CPX(op) => compare::exec(cpu, mem, cpu::RegisterName::X, op, &log),
         Instruction::CPY(op) => compare::exec(cpu, mem, cpu::RegisterName::Y, op, &log),
         Instruction::DCP(op) => {
-            try!(dec::mem(cpu, mem, op, &log));
+            try_log!(dec::mem(cpu, mem, op, &log), log);
             let _x = cpu.clock.suspend();
             compare::exec(cpu, mem, cpu::RegisterName::A, op, &log)
         },
         Instruction::DEC(op) => dec::mem(cpu, mem, op, &log),
         Instruction::EOR(op) => eor::exec(cpu, mem, op, &log),
-        Instruction::IGN(op) => { try!(op.get_u8(cpu, mem)); debug!(log, "executing"); Ok(()) }, // Read the byte to get the side effects
+        Instruction::IGN(op) => { try_log!(op.get_u8(cpu, mem), log); debug!(log, "executing"); Ok(()) }, // Read the byte to get the side effects
         Instruction::INC(op) => inc::mem(cpu, mem, op, &log),
         Instruction::ISB(op) => { 
-            try!(inc::mem(cpu, mem, op, &log));
+            try_log!(inc::mem(cpu, mem, op, &log), log);
             let _x = cpu.clock.suspend();
             sbc::exec(cpu, mem, op, &log)
         },
         Instruction::JMP(op) => jmp::exec(cpu, mem, op, &log),
         Instruction::JSR(op) => jsr::exec(cpu, mem, op, &log),
         Instruction::LAS(op) => load::las(cpu, mem, op, &log),
-        Instruction::LAX(op) => { try!(load::exec(cpu, mem, cpu::RegisterName::A, op, &log)); transfer::exec(cpu, cpu::RegisterName::A, cpu::RegisterName::X, &log) },
+        Instruction::LAX(op) => { try_log!(load::exec(cpu, mem, cpu::RegisterName::A, op, &log), log); transfer::exec(cpu, cpu::RegisterName::A, cpu::RegisterName::X, &log) },
         Instruction::LDA(op) => load::exec(cpu, mem, cpu::RegisterName::A, op, &log),
         Instruction::LDX(op) => load::exec(cpu, mem, cpu::RegisterName::X, op, &log),
         Instruction::LDY(op) => load::exec(cpu, mem, cpu::RegisterName::Y, op, &log),
@@ -157,29 +150,29 @@ pub fn dispatch<M>(inst: Instruction, cpu: &mut Mos6502, mem: &mut M, logger: Op
         Instruction::ORA(op) => ora::exec(cpu, mem, op, &log),
         Instruction::RLA(op) => {
             let _x = cpu.clock.suspend();
-            try!(rotate::left(cpu, mem, op, &log));
+            try_log!(rotate::left(cpu, mem, op, &log), log);
             and::exec(cpu, mem, op, false, &log)
         },
         Instruction::ROL(op) => rotate::left(cpu, mem, op, &log),
         Instruction::ROR(op) => rotate::right(cpu, mem, op, &log),
         Instruction::RRA(op) => { 
             let _x = cpu.clock.suspend();
-            try!(rotate::right(cpu, mem, op, &log));
+            try_log!(rotate::right(cpu, mem, op, &log), log);
             adc::exec(cpu, mem, op, &log)
         },
         Instruction::SAX(op) => store::sax(cpu, mem, op, &log),
         Instruction::SBC(op) | Instruction::SBCX(op) => sbc::exec(cpu, mem, op, &log),
         Instruction::SHY(op) => store::sh(cpu, mem, cpu::RegisterName::X, op, &log),
         Instruction::SHX(op) => store::sh(cpu, mem, cpu::RegisterName::X, op, &log),
-        Instruction::SKB(op) => { try!(op.get_u8(cpu, mem)); debug!(log, "executing"); Ok(()) },
+        Instruction::SKB(op) => { try_log!(op.get_u8(cpu, mem), log); debug!(log, "executing"); Ok(()) },
         Instruction::SLO(op) => {
             let _x = cpu.clock.suspend();
-            try!(asl::exec(cpu, mem, op, &log));
+            try_log!(asl::exec(cpu, mem, op, &log), log);
             ora::exec(cpu, mem, op, &log)
         },
         Instruction::SRE(op) => {
             let _x = cpu.clock.suspend();
-            try!(lsr::exec(cpu, mem, op, &log));
+            try_log!(lsr::exec(cpu, mem, op, &log), log);
             eor::exec(cpu, mem, op, &log)
         },
         Instruction::STA(op) => store::exec(cpu, mem, cpu::RegisterName::A, op, &log),

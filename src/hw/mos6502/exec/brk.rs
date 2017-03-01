@@ -8,16 +8,16 @@ use hw::mos6502::{Mos6502,Flags};
 pub fn exec<M>(cpu: &mut Mos6502, mem: &mut M, log: &slog::Logger) -> Result<(), exec::Error> where M: Memory {
     cpu.pc.advance(1);
     let pc = cpu.pc.get();
-    try!(cpu.push(mem, ((pc & 0xFF00) >> 8) as u8));
-    try!(cpu.push(mem, (pc & 0x00FF) as u8));
-    trace!(log, cpu_state!(cpu), "next_pc" => pc; "pushed next PC value on stack");
+    try_log!(cpu.push(mem, ((pc & 0xFF00) >> 8) as u8), log);
+    try_log!(cpu.push(mem, (pc & 0x00FF) as u8), log);
+    trace!(log, "cpu" => cpu, "next_pc" => pc; "pushed next PC value on stack");
 
     let new_flags = cpu.flags | Flags::BREAK();
-    try!(cpu.push(mem, new_flags.bits));
-    trace!(log, cpu_state!(cpu), "pushed_flags" => new_flags; "pushed flags on stack");
+    try_log!(cpu.push(mem, new_flags.bits), log);
+    trace!(log, "cpu" => cpu, "pushed_flags" => new_flags; "pushed flags on stack");
 
-    trace!(log, cpu_state!(cpu), "jumping to $FFFE");
-    cpu.pc.set(try!(mem.get_u16::<LittleEndian>(0xFFFE)) as u64);
+    trace!(log, "cpu" => cpu; "jumping to $FFFE");
+    cpu.pc.set(try_log!(mem.get_u16::<LittleEndian>(0xFFFE), log) as u64);
     Ok(())
 }
 

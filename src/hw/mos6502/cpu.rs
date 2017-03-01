@@ -1,4 +1,3 @@
-use slog;
 use std::{convert,error,fmt};
 
 use pc;
@@ -100,11 +99,7 @@ impl RegisterName {
     }
 }
 
-impl ::slog::ser::Serialize for RegisterName {
-    fn serialize(&self, _record: &::slog::Record, key: &'static str, serializer: &mut ::slog::ser::Serializer) -> Result<(), ::slog::ser::Error> {
-        serializer.emit_str(key, &format!("{}", self))
-    }
-}
+serialize_via_display!(RegisterName);
 
 impl ::slog::ser::SyncSerialize for RegisterName {}
 
@@ -203,6 +198,25 @@ impl Mos6502 {
     }
 }
 
+impl<'a> ::slog::ser::Serialize for &'a mut Mos6502 {
+    fn serialize(&self, _record: &::slog::Record, key: &'static str, serializer: &mut ::slog::ser::Serializer) -> Result<(), ::slog::ser::Error> {
+        serializer.emit_arguments(
+            key,
+            &format_args!(
+                "PC=${:04X},A=${:04X},X=${:04X},Y=${:04X},SP=${:04X},P={},Cyc={}",
+                self.pc.get(),
+                self.registers.a,
+                self.registers.x,
+                self.registers.y,
+                self.registers.sp,
+                self.flags,
+                self.clock.get()
+            )
+        )
+    }
+}
+
+
 /// Represents the 8-bit registers available on the MOS 6502 processor
 #[derive(Copy,Clone,Debug,Eq,PartialEq)]
 pub struct Registers {
@@ -220,15 +234,6 @@ impl Registers {
     /// Allocates an empty set of registers
     pub fn new() -> Registers {
         Registers { a: 0, x: 0, y: 0, sp: 0xFD }
-    }
-}
-
-impl ::slog::ser::Serialize for Registers {
-    fn serialize(&self, _record: &::slog::Record, key: &'static str, serializer: &mut ::slog::ser::Serializer) -> Result<(), ::slog::ser::Error> {
-        try!(serializer.emit_u8("A", self.a));
-        try!(serializer.emit_u8("X", self.x));
-        try!(serializer.emit_u8("Y", self.y));
-        serializer.emit_u8("SP", self.sp)
     }
 }
 
@@ -425,11 +430,7 @@ impl ::std::ops::Not for Flags {
     }
 }
 
-impl ::slog::ser::Serialize for Flags {
-    fn serialize(&self, _record: &::slog::Record, key: &'static str, serializer: &mut ::slog::ser::Serializer) -> Result<(), ::slog::ser::Error> {
-        serializer.emit_arguments(key, &format_args!("{}", self))
-    }
-}
+serialize_via_display!(Flags);
 
 #[cfg(test)]
 mod test {

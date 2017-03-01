@@ -4,7 +4,7 @@ use hw::mos6502::exec;
 use hw::mos6502::{Operand,Mos6502,Flags};
 
 pub fn exec<M>(cpu: &mut Mos6502, mem: &M, op: Operand, log: &slog::Logger) -> Result<(), exec::Error> where M: Memory {
-    let m = try!(op.get_u8(cpu, mem));
+    let m = try_log!(op.get_u8(cpu, mem), log);
     let a = cpu.registers.a;
     let c = if cpu.flags.carry() { 0 } else { 1 };
 
@@ -15,7 +15,7 @@ pub fn exec<M>(cpu: &mut Mos6502, mem: &M, op: Operand, log: &slog::Logger) -> R
     let t = (a as i16) - (m as i16) - (c as i16);
     let r = t as u8;
 
-    trace!(log, cpu_state!(cpu),
+    trace!(log, "cpu" => cpu,
         "a" => a,
         "m" => m,
         "c" => c,
@@ -23,20 +23,20 @@ pub fn exec<M>(cpu: &mut Mos6502, mem: &M, op: Operand, log: &slog::Logger) -> R
         "evaluated a - m - c = r");
 
     if cpu.flags.set_if(Flags::CARRY(), t >= 0) {
-        trace!(log, cpu_state!(cpu); "setting CARRY");
+        trace!(log, "cpu" => cpu; "setting CARRY");
     } else {
-        trace!(log, cpu_state!(cpu); "clearing CARRY");
+        trace!(log, "cpu" => cpu; "clearing CARRY");
     }
 
     if cpu.flags.set_if(Flags::OVERFLOW(), ((cpu.registers.a ^ r) & 0x80 != 0) && ((cpu.registers.a ^ m) & 0x80 == 0x80)) {
-        trace!(log, cpu_state!(cpu); "setting OVERFLOW");
+        trace!(log, "cpu" => cpu; "setting OVERFLOW");
     } else {
-        trace!(log, cpu_state!(cpu); "clearing OVERFLOW");
+        trace!(log, "cpu" => cpu; "clearing OVERFLOW");
     }
 
     cpu.registers.a = r;
     cpu.flags.set_sign_and_zero(cpu.registers.a);
-    trace!(log, cpu_state!(cpu); "stored result in A");
+    trace!(log, "cpu" => cpu; "stored result in A");
 
     Ok(())
 }

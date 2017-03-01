@@ -96,6 +96,12 @@ impl From<mem::Error> for Error {
     }
 }
 
+impl ::slog::ser::Serialize for Error {
+    fn serialize(&self, _record: &::slog::Record, key: &'static str, serializer: &mut ::slog::ser::Serializer) -> ::std::result::Result<(), ::slog::ser::Error> {
+        serializer.emit_str(key, &format!("{:?}", self))
+    }
+}
+
 impl Operand {
     /// Retrieves the operand value
     ///
@@ -106,7 +112,13 @@ impl Operand {
         Ok(match self {
             &Operand::Immediate(n)      => n,
             &Operand::Accumulator       => cpu.registers.a,
-            _                           => try!(mem.get_u8(try!(self.get_addr(cpu, mem)) as u64))
+            _                           => {
+                let (addr, oops) = try!(self.get_addr_impl(cpu, mem));
+                if oops {
+                    cpu.clock.tick(1);
+                }
+                try!(mem.get_u8(addr as u64))
+            }
         })
     }
 
@@ -129,7 +141,13 @@ impl Operand {
     pub fn set_u8<M>(&self, cpu: &mut Mos6502, mem: &mut M, val: u8) -> Result<()> where M: mem::Memory {
         match self {
             &Operand::Accumulator        => { cpu.registers.a = val; Ok(()) },
-            _                            => { let addr = try!(self.get_addr(cpu, mem)) as u64; Ok(try!(mem.set_u8(addr, val))) }
+            _                            => {
+                let (addr, oops) = try!(self.get_addr_impl(cpu, mem));
+                if oops {
+                    cpu.clock.tick(1);
+                }
+                Ok(try!(mem.set_u8(addr as u64, val)))
+            }
         }
     }
 
@@ -138,10 +156,9 @@ impl Operand {
     /// # Arguments
     ///
     /// * `cpu` - The cpu on which to get the operand value
-    pub fn get_addr<M>(&self, cpu: &mut Mos6502, mem: &M) -> Result<u16> where M: mem::Memory {
+    pub fn get_addr<M>(&self, cpu: &Mos6502, mem: &M) -> Result<u16> where M: mem::Memory {
         match self.get_addr_impl(cpu, mem) {
-            Ok((addr, true)) => { cpu.clock.tick(1); Ok(addr) },
-            Ok((addr, false)) => Ok(addr),
+            Ok((addr, _)) => Ok(addr),
             Err(e) => Err(e)
         }
     }

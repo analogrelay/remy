@@ -4,21 +4,21 @@ use hw::mos6502::{exec,cpu};
 use hw::mos6502::Mos6502;
 
 pub fn exec<M>(cpu: &mut Mos6502, mem: &M, r: cpu::RegisterName, log: &slog::Logger) -> Result<(), exec::Error> where M : Memory {
-    let val = try!(cpu.pull(mem));
-    trace!(log, cpu_state!(cpu),
+    let val = try_log!(cpu.pull(mem), log);
+    trace!(log, "cpu" => cpu,
         "from" => cpu.registers.sp,
         "value" => val;
         "pulling from ${:04X}", cpu.registers.sp);
 
     r.set(cpu, val);
-    trace!(log, cpu_state!(cpu), "register" => r; "stored value in {:?}", r);
+    trace!(log, "cpu" => cpu, "register" => r; "stored value in {:?}", r);
 
     if r != cpu::RegisterName::P {
         cpu.flags.set_sign_and_zero(val);
-        trace!(log, cpu_state!(cpu), "updated flags");
+        trace!(log, "cpu" => cpu; "updated flags");
     } else {
         cpu.flags.clear(cpu::Flags::BREAK());
-        trace!(log, cpu_state!(cpu), "cleared BREAK");
+        trace!(log, "cpu" => cpu; "cleared BREAK");
     }
     Ok(())
 }

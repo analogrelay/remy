@@ -4,13 +4,13 @@ use hw::mos6502::Mos6502;
 
 pub fn exec(cpu: &mut Mos6502, src: cpu::RegisterName, dst: cpu::RegisterName, log: &slog::Logger) -> Result<(), exec::Error> {
     let val = src.get(cpu);
-    trace!(log, cpu_state!(cpu),
+    trace!(log, "cpu" => cpu,
         "register" => src,
         "value" => val;
         "read value from {}", src);
 
     dst.set(cpu, val);
-    trace!(log, cpu_state!(cpu),
+    trace!(log, "cpu" => cpu,
         "register" => dst,
         "value" => val;
         "storing value in {}", dst);

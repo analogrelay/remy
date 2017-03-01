@@ -14,7 +14,7 @@ pub fn right<M>(cpu: &mut Mos6502, mem: &mut M, op: Operand, log: &slog::Logger)
 fn exec<M>(cpu: &mut Mos6502, mem: &mut M, op: Operand, left: bool, log: &slog::Logger) -> Result<(), exec::Error> where M : Memory {
     let _x = cpu.clock.suspend();
 
-    let n = try!(op.get_u8(cpu, mem));
+    let n = try_log!(op.get_u8(cpu, mem), log);
 
     // Grab the bit that's about to fall off
     let t = if left { n & 0x80 } else { n & 0x01 };
@@ -30,16 +30,17 @@ fn exec<M>(cpu: &mut Mos6502, mem: &mut M, op: Operand, left: bool, log: &slog::
         };
     let b = (if left { n << 1 } else { n >> 1 }) | carry_byte;
 
-    trace!(log, cpu_state!(cpu),
+    trace!(log, "cpu" => cpu,
         "direction" => if left { "left" } else { "right" },
         "mem" => n,
+        "addr" => addr_str!(op.get_addr(cpu, mem)),
         "result" => b,
         "carry_out" => t,
         "carry_in" => carry_byte;
-        "rotated mem[${:04X}] {}", try!(op.get_addr(cpu, mem)), if left { "left" } else { "right" });
+        "rotated mem {}", if left { "left" } else { "right" });
 
-    try!(op.set_u8(cpu, mem, b));
-    trace!(log, cpu_state!(cpu), "addr" => try!(op.get_addr(cpu, mem)); "stored result at ${:04X}", try!(op.get_addr(cpu, mem)));
+    try_log!(op.set_u8(cpu, mem, b), log);
+    trace!(log, "cpu" => cpu, "addr" => addr_str!(op.get_addr(cpu, mem)); "stored result");
 
     // Set the flags
     cpu.flags.set_sign_and_zero(b);

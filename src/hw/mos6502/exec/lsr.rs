@@ -6,31 +6,31 @@ use hw::mos6502::{Mos6502,Operand,Flags};
 pub fn exec<M>(cpu: &mut Mos6502, mem: &mut M, op: Operand, log: &slog::Logger) -> Result<(), exec::Error> where M : Memory {
     let _x = cpu.clock.suspend();
 
-    let n = try!(op.get_u8(cpu, mem));
+    let n = try_log!(op.get_u8(cpu, mem), log);
 
     cpu.flags.clear(Flags::SIGN());
 
     if cpu.flags.set_if(Flags::CARRY(), (n & 0x01) != 0) {
-        trace!(log, cpu_state!(cpu), "setting CARRY");
+        trace!(log, "cpu" => cpu; "setting CARRY");
     } else {
-        trace!(log, cpu_state!(cpu), "clearing CARRY");
+        trace!(log, "cpu" => cpu; "clearing CARRY");
     }
 
     let m = (n >> 1) & 0x7F;
-    trace!(log, cpu_state!(cpu),
+    trace!(log, "cpu" => cpu,
         "b" => n,
         "r" => m,
         "op" => op;
         "evaluated b >> 1 = r");
 
     if cpu.flags.set_if(Flags::ZERO(), m == 0) {
-        trace!(log, cpu_state!(cpu), "setting ZERO");
+        trace!(log, "cpu" => cpu; "setting ZERO");
     } else {
-        trace!(log, cpu_state!(cpu), "clearing ZERO");
+        trace!(log, "cpu" => cpu; "clearing ZERO");
     }
 
     try!(op.set_u8(cpu, mem, m));
-    trace!(log, cpu_state!(cpu), "addr" => try!(op.get_addr(cpu, mem)); "storing result at ${:04X}", try!(op.get_addr(cpu, mem)));
+    trace!(log, "cpu" => cpu, "addr" => op.get_addr(cpu, mem).ok(); "storing result");
 
     Ok(())
 }

@@ -62,7 +62,7 @@ impl mem::Memory for MemoryMap {
                 "action" => "read");
             self.ram.get_u8(eaddr)
         }
-        else if addr < 0x0400 {
+        else if addr < 0x4000 {
             let eaddr = (addr - 0x2000) % 0x0008;
             trace!(self.memlog,
                 "read";
@@ -73,8 +73,8 @@ impl mem::Memory for MemoryMap {
             // Todo: Do something!
             Ok(0)
         }
-        else if addr < 0x0420 {
-            let eaddr = addr - 0x0400;
+        else if addr < 0x4200 {
+            let eaddr = addr - 0x4000;
             trace!(self.memlog,
                 "read";
                 "vaddr" => format!("${:04X}", addr),
@@ -115,7 +115,7 @@ impl mem::Memory for MemoryMap {
                 "action" => "write");
             self.ram.set_u8(eaddr, val)
         }
-        else if addr < 0x0400 {
+        else if addr < 0x4000 {
             let eaddr = (addr - 0x2000) % 0x0008;
             trace!(self.memlog,
                 "write";
@@ -126,8 +126,8 @@ impl mem::Memory for MemoryMap {
             // Todo: Do something!
             Ok(())
         }
-        else if addr < 0x0420 {
-            let eaddr = addr - 0x0400;
+        else if addr < 0x4200 {
+            let eaddr = addr - 0x4000;
             trace!(self.memlog,
                 "write";
                 "vaddr" => format!("${:04X}", addr),

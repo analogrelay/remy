@@ -5,10 +5,10 @@ pub fn if_clear(cpu: &mut Mos6502, op: Operand, flags: Flags, log: &slog::Logger
     if let Operand::Offset(offset) = op {
         if !cpu.flags.intersects(flags) {
             let target = calc_target_and_tick_clock(cpu, offset, log);
-            trace!(log, cpu_state!(cpu), "target" => target; "jumping to ${:04X}", target);
+            trace!(log, "cpu" => cpu, "target" => target; "jumping to ${:04X}", target);
             cpu.pc.set(target);
         } else {
-            trace!(log, cpu_state!(cpu), "branch condition not met");
+            trace!(log, "cpu" => cpu; "branch condition not met");
         }
         Ok(())
     } else {
@@ -20,10 +20,10 @@ pub fn if_set(cpu: &mut Mos6502, op: Operand, flags: Flags, log: &slog::Logger) 
     if let Operand::Offset(offset) = op {
         if cpu.flags.intersects(flags) {
             let target = calc_target_and_tick_clock(cpu, offset, log);
-            trace!(log, cpu_state!(cpu), "target" => target; "jumping to ${:04X}", target);
+            trace!(log, "cpu" => cpu, "target" => target; "jumping to ${:04X}", target);
             cpu.pc.set(target);
         } else {
-            trace!(log, cpu_state!(cpu), "branch condition not met");
+            trace!(log, "cpu" => cpu; "branch condition not met");
         }
         Ok(())
     } else {
@@ -36,10 +36,10 @@ fn calc_target_and_tick_clock(cpu: &mut Mos6502, offset: i8, log: &slog::Logger)
     let current = cpu.pc.get();
     let target = ((current as i64) + (offset as i64)) as u64;
     if (current & 0xFF00) == (target & 0xFF00) {
-        trace!(log, cpu_state!(cpu), "ticking clock for near jump");
+        trace!(log, "cpu" => cpu; "ticking clock for near jump");
         cpu.clock.tick(1);
     } else {
-        trace!(log, cpu_state!(cpu), "ticking clock for far jump");
+        trace!(log, "cpu" => cpu; "ticking clock for far jump");
         cpu.clock.tick(2);
     }
     target

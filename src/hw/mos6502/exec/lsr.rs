@@ -37,6 +37,7 @@ pub fn exec<M>(cpu: &mut Mos6502, mem: &mut M, op: Operand, log: &slog::Logger) 
 
 #[cfg(test)]
 mod test {
+    use slog;
     use mem;
     use hw::mos6502::exec::lsr;
     use hw::mos6502::{Mos6502,Operand,Flags};
@@ -46,7 +47,7 @@ mod test {
         let mut cpu = Mos6502::new();
         cpu.flags.set(Flags::SIGN() | Flags::ZERO() | Flags::CARRY()); 
 
-        lsr::exec(&mut cpu, &mut mem::Empty, Operand::Accumulator).unwrap();
+        lsr::exec(&mut cpu, &mut mem::Empty, Operand::Accumulator, &slog::Logger::root(slog::Discard, o!())).unwrap();
 
         assert!(!cpu.flags.intersects(Flags::SIGN()));
     }
@@ -57,7 +58,7 @@ mod test {
         cpu.flags.set(Flags::SIGN() | Flags::ZERO()); 
         cpu.registers.a = 0b10101011;
 
-        lsr::exec(&mut cpu, &mut mem::Empty, Operand::Accumulator).unwrap();
+        lsr::exec(&mut cpu, &mut mem::Empty, Operand::Accumulator, &slog::Logger::root(slog::Discard, o!())).unwrap();
 
         assert!(cpu.flags.intersects(Flags::CARRY()));
     }
@@ -68,7 +69,7 @@ mod test {
         cpu.flags.set(Flags::SIGN() | Flags::ZERO() | Flags::CARRY()); 
         cpu.registers.a = 0b10101010;
 
-        lsr::exec(&mut cpu, &mut mem::Empty, Operand::Accumulator).unwrap();
+        lsr::exec(&mut cpu, &mut mem::Empty, Operand::Accumulator, &slog::Logger::root(slog::Discard, o!())).unwrap();
 
         assert!(!cpu.flags.intersects(Flags::CARRY()));
     }
@@ -79,7 +80,7 @@ mod test {
         cpu.flags.set(Flags::SIGN() | Flags::ZERO() | Flags::CARRY()); 
         cpu.registers.a = 0b10101010;
 
-        lsr::exec(&mut cpu, &mut mem::Empty, Operand::Accumulator).unwrap();
+        lsr::exec(&mut cpu, &mut mem::Empty, Operand::Accumulator, &slog::Logger::root(slog::Discard, o!())).unwrap();
 
         assert!(!cpu.flags.intersects(Flags::ZERO()));
     }
@@ -90,7 +91,7 @@ mod test {
         cpu.flags.set(Flags::SIGN() | Flags::CARRY()); 
         cpu.registers.a = 0b00000000;
 
-        lsr::exec(&mut cpu, &mut mem::Empty, Operand::Accumulator).unwrap();
+        lsr::exec(&mut cpu, &mut mem::Empty, Operand::Accumulator, &slog::Logger::root(slog::Discard, o!())).unwrap();
 
         assert!(cpu.flags.intersects(Flags::ZERO()));
     }
@@ -100,7 +101,7 @@ mod test {
         let mut cpu = Mos6502::new();
         cpu.registers.a = 0b10101010;
 
-        lsr::exec(&mut cpu, &mut mem::Empty, Operand::Accumulator).unwrap();
+        lsr::exec(&mut cpu, &mut mem::Empty, Operand::Accumulator, &slog::Logger::root(slog::Discard, o!())).unwrap();
 
         assert_eq!(0b01010101, cpu.registers.a);
     }

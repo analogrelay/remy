@@ -110,7 +110,18 @@ pub fn dispatch<M>(inst: Instruction, cpu: &mut Mos6502, mem: &mut M, logger: Op
         Instruction::ALR(op) => { try_log!(and::exec(cpu, mem, op, true, &log), log); lsr::exec(cpu, mem, operand::Operand::Accumulator, &log) },
         Instruction::AND(op) => and::exec(cpu, mem, op, false, &log),
         Instruction::ANC(op) => and::exec(cpu, mem, op, true, &log),
-        Instruction::ARR(op) => { try_log!(and::exec(cpu, mem, op, true, &log), log); rotate::right(cpu, mem, operand::Operand::Accumulator, &log) },
+        Instruction::ARR(op) => {
+            try_log!(and::exec(cpu, mem, op, true, &log), log);
+            try_log!(rotate::right(cpu, mem, operand::Operand::Accumulator, &log), log);
+
+            // Correct the flags
+            let val = try_log!(op.get_u8(cpu, mem), log);
+            let bit6 = val & 0x40 != 0;
+            let bit5 = val & 0x20 != 0;
+            cpu.flags.set_if(Flags::CARRY(), bit6);
+            cpu.flags.set_if(Flags::OVERFLOW(), bit6 ^ bit5);
+            Ok(())
+        },
         Instruction::ASL(op) => asl::exec(cpu, mem, op, &log),
         Instruction::AXS(op) => axs::exec(cpu, mem, op, &log),
         Instruction::BCC(op) => branch::if_clear(cpu, op, Flags::CARRY(), &log),

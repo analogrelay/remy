@@ -37,6 +37,7 @@ pub fn las<M>(cpu: &mut Mos6502, mem: &M, op: Operand, log: &slog::Logger) -> ex
 
 #[cfg(test)]
 mod test {
+    use slog;
     use mem;
     use hw::mos6502::exec::load;
     use hw::mos6502::{cpu,Mos6502,Flags,Operand};
@@ -44,14 +45,14 @@ mod test {
     #[test]
     pub fn load_sets_register_to_operand_value() {
         let mut cpu = Mos6502::new(); 
-        load::exec(&mut cpu, &mem::Empty, cpu::RegisterName::A, Operand::Immediate(42)).unwrap();
+        load::exec(&mut cpu, &mem::Empty, cpu::RegisterName::A, Operand::Immediate(42), &slog::Logger::root(slog::Discard, o!())).unwrap();
         assert_eq!(42, cpu.registers.a);
     }
 
     #[test]
     fn load_sets_sign_flag_if_new_value_is_negative() {
         let mut cpu = Mos6502::new(); 
-        load::exec(&mut cpu, &mem::Empty, cpu::RegisterName::A, Operand::Immediate(-10i8 as u8)).unwrap();
+        load::exec(&mut cpu, &mem::Empty, cpu::RegisterName::A, Operand::Immediate(-10i8 as u8), &slog::Logger::root(slog::Discard, o!())).unwrap();
         assert!(cpu.flags.intersects(Flags::SIGN()));
     }
 
@@ -59,14 +60,14 @@ mod test {
     fn load_clears_sign_flag_if_new_value_is_not_negative() {
         let mut cpu = Mos6502::new(); 
         cpu.flags.set(Flags::SIGN());
-        load::exec(&mut cpu, &mem::Empty, cpu::RegisterName::A, Operand::Immediate(0)).unwrap();
+        load::exec(&mut cpu, &mem::Empty, cpu::RegisterName::A, Operand::Immediate(0), &slog::Logger::root(slog::Discard, o!())).unwrap();
         assert!(!cpu.flags.intersects(Flags::SIGN()));
     }
 
     #[test]
     fn load_sets_zero_flag_if_new_value_is_zero() {
         let mut cpu = Mos6502::new(); 
-        load::exec(&mut cpu, &mem::Empty, cpu::RegisterName::A, Operand::Immediate(0)).unwrap();
+        load::exec(&mut cpu, &mem::Empty, cpu::RegisterName::A, Operand::Immediate(0), &slog::Logger::root(slog::Discard, o!())).unwrap();
         assert!(cpu.flags.intersects(Flags::ZERO()));
     }
 
@@ -74,7 +75,7 @@ mod test {
     fn load_clears_zero_flag_if_new_value_is_nonzero() {
         let mut cpu = Mos6502::new(); 
         cpu.flags.set(Flags::ZERO());
-        load::exec(&mut cpu, &mem::Empty, cpu::RegisterName::A, Operand::Immediate(10)).unwrap();
+        load::exec(&mut cpu, &mem::Empty, cpu::RegisterName::A, Operand::Immediate(10), &slog::Logger::root(slog::Discard, o!())).unwrap();
         assert!(!cpu.flags.intersects(Flags::ZERO()));
     }
 
@@ -82,7 +83,7 @@ mod test {
     fn las_loads_a_x_and_sp_with_operand_and_current_sp() {
         let mut cpu = Mos6502::new(); 
         cpu.registers.sp = 0x3C;
-        load::las(&mut cpu, &mem::Empty, Operand::Immediate(0xF0)).unwrap();
+        load::las(&mut cpu, &mem::Empty, Operand::Immediate(0xF0), &slog::Logger::root(slog::Discard, o!())).unwrap();
 
         assert_eq!(0x30, cpu.registers.a);
         assert_eq!(0x30, cpu.registers.x);
@@ -94,7 +95,7 @@ mod test {
         let mut cpu = Mos6502::new(); 
         cpu.registers.sp = 0xF0;
 
-        load::las(&mut cpu, &mem::Empty, Operand::Immediate(0xF0)).unwrap();
+        load::las(&mut cpu, &mem::Empty, Operand::Immediate(0xF0), &slog::Logger::root(slog::Discard, o!())).unwrap();
 
         assert_eq!(Flags::SIGN() | Flags::RESERVED(), cpu.flags);
     }
@@ -105,7 +106,7 @@ mod test {
         cpu.flags.set(Flags::SIGN());
         cpu.registers.sp = 0x70;
 
-        load::las(&mut cpu, &mem::Empty, Operand::Immediate(0xF0)).unwrap();
+        load::las(&mut cpu, &mem::Empty, Operand::Immediate(0xF0), &slog::Logger::root(slog::Discard, o!())).unwrap();
 
         assert_eq!(Flags::RESERVED(), cpu.flags);
     }
@@ -115,7 +116,7 @@ mod test {
         let mut cpu = Mos6502::new(); 
         cpu.registers.sp = 0xF0;
 
-        load::las(&mut cpu, &mem::Empty, Operand::Immediate(0x0F)).unwrap();
+        load::las(&mut cpu, &mem::Empty, Operand::Immediate(0x0F), &slog::Logger::root(slog::Discard, o!())).unwrap();
 
         assert_eq!(Flags::ZERO() | Flags::RESERVED(), cpu.flags);
     }
@@ -126,7 +127,7 @@ mod test {
         cpu.flags.set(Flags::ZERO());
         cpu.registers.sp = 0x70;
 
-        load::las(&mut cpu, &mem::Empty, Operand::Immediate(0xF0)).unwrap();
+        load::las(&mut cpu, &mem::Empty, Operand::Immediate(0xF0), &slog::Logger::root(slog::Discard, o!())).unwrap();
 
         assert_eq!(Flags::RESERVED(), cpu.flags);
     }

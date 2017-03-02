@@ -574,7 +574,7 @@ struct TestContext<'a> {
 impl<'a> TestContext<'a> {
     pub fn test(mut self, instr: Instruction, cycle_diff: u64) -> Self {
         let before = self.cpu.clock.get();
-        if let Err(e) = mos6502::dispatch(instr.clone(), &mut self.cpu, &mut self.mem) {
+        if let Err(e) = mos6502::dispatch(instr.clone(), &mut self.cpu, &mut self.mem, None) {
             panic!("Error dispatching {}: {}", instr, e)
         }
         let actual_diff = self.cpu.clock.get() - before;

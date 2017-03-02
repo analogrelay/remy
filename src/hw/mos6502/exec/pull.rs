@@ -25,6 +25,7 @@ pub fn exec<M>(cpu: &mut Mos6502, mem: &M, r: cpu::RegisterName, log: &slog::Log
 
 #[cfg(test)]
 mod test {
+    use slog;
     use mem;
     use hw::mos6502::exec::pull;
     use hw::mos6502::{cpu,Mos6502,Flags,STACK_START};
@@ -33,7 +34,7 @@ mod test {
     pub fn pull_puts_register_value_on_top_of_stack() {
         let (mut cpu, mut mem) = init_cpu();
         cpu.push(&mut mem, 42).unwrap();
-        pull::exec(&mut cpu, &mem, cpu::RegisterName::A).unwrap();
+        pull::exec(&mut cpu, &mem, cpu::RegisterName::A, &slog::Logger::root(slog::Discard, o!())).unwrap();
         assert_eq!(42, cpu.registers.a);
     }
 
@@ -42,7 +43,7 @@ mod test {
         let (mut cpu, mut mem) = init_cpu();
         cpu.flags.set(Flags::SIGN());
         cpu.push(&mut mem, 42).unwrap();
-        pull::exec(&mut cpu, &mem, cpu::RegisterName::A).unwrap();
+        pull::exec(&mut cpu, &mem, cpu::RegisterName::A, &slog::Logger::root(slog::Discard, o!())).unwrap();
         assert!(!cpu.flags.intersects(Flags::SIGN()));
     }
 
@@ -50,7 +51,7 @@ mod test {
     pub fn pull_sets_sign_flag_if_incoming_value_negative() {
         let (mut cpu, mut mem) = init_cpu();
         cpu.push(&mut mem, 0xFF).unwrap();
-        pull::exec(&mut cpu, &mem, cpu::RegisterName::A).unwrap();
+        pull::exec(&mut cpu, &mem, cpu::RegisterName::A, &slog::Logger::root(slog::Discard, o!())).unwrap();
         assert!(cpu.flags.intersects(Flags::SIGN()));
     }
 
@@ -59,7 +60,7 @@ mod test {
         let (mut cpu, mut mem) = init_cpu();
         cpu.flags.set(Flags::ZERO());
         cpu.push(&mut mem, 42).unwrap();
-        pull::exec(&mut cpu, &mem, cpu::RegisterName::A).unwrap();
+        pull::exec(&mut cpu, &mem, cpu::RegisterName::A, &slog::Logger::root(slog::Discard, o!())).unwrap();
         assert!(!cpu.flags.intersects(Flags::ZERO()));
     }
 
@@ -67,7 +68,7 @@ mod test {
     pub fn pull_sets_zero_flag_if_incoming_value_zero() {
         let (mut cpu, mut mem) = init_cpu();
         cpu.push(&mut mem, 0).unwrap();
-        pull::exec(&mut cpu, &mem, cpu::RegisterName::A).unwrap();
+        pull::exec(&mut cpu, &mem, cpu::RegisterName::A, &slog::Logger::root(slog::Discard, o!())).unwrap();
         assert!(cpu.flags.intersects(Flags::ZERO()));
     }
 
@@ -75,7 +76,7 @@ mod test {
     pub fn pull_clears_brk_flag_when_pulling_flags() {
         let (mut cpu, mut mem) = init_cpu();
         cpu.push(&mut mem, (cpu::Flags::SIGN() | cpu::Flags::BREAK()).bits).unwrap();
-        pull::exec(&mut cpu, &mem, cpu::RegisterName::P).unwrap();
+        pull::exec(&mut cpu, &mem, cpu::RegisterName::P, &slog::Logger::root(slog::Discard, o!())).unwrap();
         assert_eq!(cpu::Flags::SIGN() | cpu::Flags::RESERVED(), cpu.flags);
     }
 

@@ -43,6 +43,7 @@ pub fn exec<M>(cpu: &mut Mos6502, mem: &M, op: Operand, log: &slog::Logger) -> R
 
 #[cfg(test)]
 mod test {
+    use slog;
     use mem;
     use hw::mos6502::exec::bit;
     use hw::mos6502::{Mos6502,Flags,Operand};
@@ -52,7 +53,7 @@ mod test {
         let mut cpu = Mos6502::new();
         cpu.pc.set(0xABCD);
         cpu.registers.a = 0xFF;
-        bit::exec(&mut cpu, &mem::Empty, Operand::Immediate(0x80)).unwrap();
+        bit::exec(&mut cpu, &mem::Empty, Operand::Immediate(0x80), &slog::Logger::root(slog::Discard, o!())).unwrap();
         assert_eq!(cpu.flags, Flags::SIGN() | Flags::RESERVED());
     }
 
@@ -62,7 +63,7 @@ mod test {
         cpu.pc.set(0xABCD);
         cpu.registers.a = 0xFF;
         cpu.flags.set(Flags::SIGN() | Flags::RESERVED());
-        bit::exec(&mut cpu, &mem::Empty, Operand::Immediate(0x01)).unwrap();
+        bit::exec(&mut cpu, &mem::Empty, Operand::Immediate(0x01), &slog::Logger::root(slog::Discard, o!())).unwrap();
         assert_eq!(cpu.flags, Flags::RESERVED());
     }
 
@@ -71,7 +72,7 @@ mod test {
         let mut cpu = Mos6502::new();
         cpu.pc.set(0xABCD);
         cpu.registers.a = 0xFF;
-        bit::exec(&mut cpu, &mem::Empty, Operand::Immediate(0x40)).unwrap();
+        bit::exec(&mut cpu, &mem::Empty, Operand::Immediate(0x40), &slog::Logger::root(slog::Discard, o!())).unwrap();
         assert_eq!(cpu.flags, Flags::OVERFLOW() | Flags::RESERVED());
     }
 
@@ -81,7 +82,7 @@ mod test {
         cpu.pc.set(0xABCD);
         cpu.registers.a = 0xFF;
         cpu.flags.set(Flags::OVERFLOW() | Flags::RESERVED());
-        bit::exec(&mut cpu, &mem::Empty, Operand::Immediate(0x01)).unwrap();
+        bit::exec(&mut cpu, &mem::Empty, Operand::Immediate(0x01), &slog::Logger::root(slog::Discard, o!())).unwrap();
         assert_eq!(cpu.flags, Flags::RESERVED());
     }
 
@@ -90,7 +91,7 @@ mod test {
         let mut cpu = Mos6502::new();
         cpu.pc.set(0xABCD);
         cpu.registers.a = 0x02;
-        bit::exec(&mut cpu, &mem::Empty, Operand::Immediate(0x01)).unwrap();
+        bit::exec(&mut cpu, &mem::Empty, Operand::Immediate(0x01), &slog::Logger::root(slog::Discard, o!())).unwrap();
         assert_eq!(cpu.flags, Flags::ZERO() | Flags::RESERVED());
     }
 
@@ -100,7 +101,7 @@ mod test {
         cpu.pc.set(0xABCD);
         cpu.registers.a = 0x02;
         cpu.flags.set(Flags::ZERO() | Flags::RESERVED());
-        bit::exec(&mut cpu, &mem::Empty, Operand::Immediate(0x03)).unwrap();
+        bit::exec(&mut cpu, &mem::Empty, Operand::Immediate(0x03), &slog::Logger::root(slog::Discard, o!())).unwrap();
         assert_eq!(cpu.flags, Flags::RESERVED());
     }
 }

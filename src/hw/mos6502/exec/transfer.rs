@@ -23,6 +23,7 @@ pub fn exec(cpu: &mut Mos6502, src: cpu::RegisterName, dst: cpu::RegisterName, l
 
 #[cfg(test)]
 mod test {
+    use slog;
     use hw::mos6502::exec::transfer;
     use hw::mos6502::{cpu,Mos6502,Flags};
 
@@ -31,7 +32,7 @@ mod test {
         let mut cpu = Mos6502::new();
 
         cpu.registers.a = 42;
-        transfer::exec(&mut cpu, cpu::RegisterName::A, cpu::RegisterName::X).unwrap();
+        transfer::exec(&mut cpu, cpu::RegisterName::A, cpu::RegisterName::X, &slog::Logger::root(slog::Discard, o!())).unwrap();
 
         assert_eq!(42, cpu.registers.x);
     }
@@ -41,7 +42,7 @@ mod test {
         let mut cpu = Mos6502::new();
 
         cpu.registers.a = 0xFF;
-        transfer::exec(&mut cpu, cpu::RegisterName::A, cpu::RegisterName::X).unwrap();
+        transfer::exec(&mut cpu, cpu::RegisterName::A, cpu::RegisterName::X, &slog::Logger::root(slog::Discard, o!())).unwrap();
 
         assert!(cpu.flags.intersects(Flags::SIGN()));
         assert_eq!(0xFF, cpu.registers.x);
@@ -52,7 +53,7 @@ mod test {
         let mut cpu = Mos6502::new();
 
         cpu.registers.a = 0xFF;
-        transfer::exec(&mut cpu, cpu::RegisterName::A, cpu::RegisterName::S).unwrap();
+        transfer::exec(&mut cpu, cpu::RegisterName::A, cpu::RegisterName::S, &slog::Logger::root(slog::Discard, o!())).unwrap();
 
         assert!(!cpu.flags.intersects(Flags::SIGN()));
         assert_eq!(0xFF, cpu.registers.sp);
@@ -64,7 +65,7 @@ mod test {
 
         cpu.flags.set(Flags::SIGN());
         cpu.registers.a = 0x0F;
-        transfer::exec(&mut cpu, cpu::RegisterName::A, cpu::RegisterName::X).unwrap();
+        transfer::exec(&mut cpu, cpu::RegisterName::A, cpu::RegisterName::X, &slog::Logger::root(slog::Discard, o!())).unwrap();
 
         assert!(!cpu.flags.intersects(Flags::SIGN()));
         assert_eq!(0x0F, cpu.registers.x);
@@ -75,7 +76,7 @@ mod test {
         let mut cpu = Mos6502::new();
 
         cpu.registers.a = 0x00;
-        transfer::exec(&mut cpu, cpu::RegisterName::A, cpu::RegisterName::X).unwrap();
+        transfer::exec(&mut cpu, cpu::RegisterName::A, cpu::RegisterName::X, &slog::Logger::root(slog::Discard, o!())).unwrap();
 
         assert!(cpu.flags.intersects(Flags::ZERO()));
         assert_eq!(0x00, cpu.registers.x);
@@ -87,7 +88,7 @@ mod test {
 
         cpu.flags.set(Flags::ZERO());
         cpu.registers.a = 0x0F;
-        transfer::exec(&mut cpu, cpu::RegisterName::A, cpu::RegisterName::X).unwrap();
+        transfer::exec(&mut cpu, cpu::RegisterName::A, cpu::RegisterName::X, &slog::Logger::root(slog::Discard, o!())).unwrap();
 
         assert!(!cpu.flags.intersects(Flags::ZERO()));
         assert_eq!(0x0F, cpu.registers.x);
@@ -98,7 +99,7 @@ mod test {
         let mut cpu = Mos6502::new();
 
         cpu.registers.a = 0x00;
-        transfer::exec(&mut cpu, cpu::RegisterName::A, cpu::RegisterName::S).unwrap();
+        transfer::exec(&mut cpu, cpu::RegisterName::A, cpu::RegisterName::S, &slog::Logger::root(slog::Discard, o!())).unwrap();
 
         assert!(!cpu.flags.intersects(Flags::ZERO()));
         assert_eq!(0x00, cpu.registers.sp);

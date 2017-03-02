@@ -41,6 +41,7 @@ pub fn mem<M>(cpu: &mut Mos6502, mem: &mut M, op: Operand, log: &slog::Logger) -
 
 #[cfg(test)]
 mod test {
+    use slog;
     use mem;
     use mem::Memory;
     use hw::mos6502::exec::dec;
@@ -50,7 +51,7 @@ mod test {
     fn dec_sets_sign_flag_if_new_value_is_negative() {
         let (mut cpu, mut mem) = init_cpu();
         mem.set_u8(0, 0).unwrap();
-        dec::mem(&mut cpu, &mut mem, Operand::Absolute(0)).unwrap();
+        dec::mem(&mut cpu, &mut mem, Operand::Absolute(0), &slog::Logger::root(slog::Discard, o!())).unwrap();
         assert!(cpu.flags.intersects(Flags::SIGN()));
     }
 
@@ -59,7 +60,7 @@ mod test {
         let (mut cpu, mut mem) = init_cpu();
         mem.set_u8(0, 2).unwrap();
         cpu.flags.set(Flags::SIGN());
-        dec::mem(&mut cpu, &mut mem, Operand::Absolute(0)).unwrap();
+        dec::mem(&mut cpu, &mut mem, Operand::Absolute(0), &slog::Logger::root(slog::Discard, o!())).unwrap();
         assert!(!cpu.flags.intersects(Flags::SIGN()));
     }
 
@@ -67,7 +68,7 @@ mod test {
     fn dec_sets_zero_flag_if_new_value_is_zero() {
         let (mut cpu, mut mem) = init_cpu();
         mem.set_u8(0, 1).unwrap();
-        dec::mem(&mut cpu, &mut mem, Operand::Absolute(0)).unwrap();
+        dec::mem(&mut cpu, &mut mem, Operand::Absolute(0), &slog::Logger::root(slog::Discard, o!())).unwrap();
         assert!(cpu.flags.intersects(Flags::ZERO()));
     }
 
@@ -76,7 +77,7 @@ mod test {
         let (mut cpu, mut mem) = init_cpu();
         mem.set_u8(0, 2).unwrap();
         cpu.flags.set(Flags::ZERO());
-        dec::mem(&mut cpu, &mut mem, Operand::Absolute(0)).unwrap();
+        dec::mem(&mut cpu, &mut mem, Operand::Absolute(0), &slog::Logger::root(slog::Discard, o!())).unwrap();
         assert!(!cpu.flags.intersects(Flags::ZERO()));
     }
 
@@ -84,7 +85,7 @@ mod test {
     fn dec_sets_operand_to_original_value_minus_one() {
         let (mut cpu, mut mem) = init_cpu();
         mem.set_u8(0, 42).unwrap();
-        dec::mem(&mut cpu, &mut mem, Operand::Absolute(0)).unwrap();
+        dec::mem(&mut cpu, &mut mem, Operand::Absolute(0), &slog::Logger::root(slog::Discard, o!())).unwrap();
         assert_eq!(Ok(41), mem.get_u8(0));
     }
 

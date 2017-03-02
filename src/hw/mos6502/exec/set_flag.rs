@@ -10,6 +10,7 @@ pub fn exec(cpu: &mut Mos6502, flag_selector: Flags, log: &slog::Logger) -> Resu
 
 #[cfg(test)]
 mod test {
+    use slog;
     use hw::mos6502::exec::set_flag;
     use hw::mos6502::{Mos6502,Flags};
 
@@ -18,7 +19,7 @@ mod test {
         let mut cpu = Mos6502::new();
         cpu.pc.set(0xABCD);
         cpu.flags.set(Flags::SIGN());
-        set_flag::exec(&mut cpu, Flags::CARRY()).unwrap();
+        set_flag::exec(&mut cpu, Flags::CARRY(), &slog::Logger::root(slog::Discard, o!())).unwrap();
         assert!(cpu.flags.intersects(Flags::CARRY()));
         assert!(cpu.flags.intersects(Flags::SIGN()));
     }

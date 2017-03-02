@@ -47,6 +47,7 @@ fn calc_target_and_tick_clock(cpu: &mut Mos6502, offset: i8, log: &slog::Logger)
 
 #[cfg(test)]
 mod test {
+    use slog;
     use hw::mos6502::exec::branch;
     use hw::mos6502::{Mos6502,Flags,Operand};
 
@@ -55,7 +56,7 @@ mod test {
         let mut cpu = Mos6502::new();
         cpu.pc.set(0xABCD);
         cpu.flags.set(Flags::CARRY() | Flags::SIGN());
-        branch::if_clear(&mut cpu, Operand::Offset(1), Flags::CARRY()).unwrap();
+        branch::if_clear(&mut cpu, Operand::Offset(1), Flags::CARRY(), &slog::Logger::root(slog::Discard, o!())).unwrap();
         assert_eq!(cpu.pc.get(), 0xABCD);
     }
 
@@ -63,7 +64,7 @@ mod test {
     pub fn if_clear_advances_pc_by_specified_amount_if_flag_clear() {
         let mut cpu = Mos6502::new();
         cpu.pc.set(0xABCD);
-        branch::if_clear(&mut cpu, Operand::Offset(1), Flags::CARRY()).unwrap();
+        branch::if_clear(&mut cpu, Operand::Offset(1), Flags::CARRY(), &slog::Logger::root(slog::Discard, o!())).unwrap();
         assert_eq!(cpu.pc.get(), 0xABCE);
     }
 
@@ -71,7 +72,7 @@ mod test {
     pub fn if_set_does_not_modify_pc_if_flag_clear() {
         let mut cpu = Mos6502::new();
         cpu.pc.set(0xABCD);
-        branch::if_set(&mut cpu, Operand::Offset(1), Flags::CARRY()).unwrap();
+        branch::if_set(&mut cpu, Operand::Offset(1), Flags::CARRY(), &slog::Logger::root(slog::Discard, o!())).unwrap();
         assert_eq!(cpu.pc.get(), 0xABCD);
     }
 
@@ -80,7 +81,7 @@ mod test {
         let mut cpu = Mos6502::new();
         cpu.pc.set(0xABCD);
         cpu.flags.set(Flags::CARRY() | Flags::SIGN());
-        branch::if_set(&mut cpu, Operand::Offset(1), Flags::CARRY()).unwrap();
+        branch::if_set(&mut cpu, Operand::Offset(1), Flags::CARRY(), &slog::Logger::root(slog::Discard, o!())).unwrap();
         assert_eq!(cpu.pc.get(), 0xABCE);
     }
 }

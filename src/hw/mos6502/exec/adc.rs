@@ -46,6 +46,7 @@ pub fn exec<M>(cpu: &mut Mos6502, mem: &M, op: Operand, log: &slog::Logger) -> R
 
 #[cfg(test)]
 mod test {
+    use slog;
     use mem;
     use hw::mos6502::exec::adc;
     use hw::mos6502::{Mos6502,Operand,Flags};
@@ -54,7 +55,7 @@ mod test {
     pub fn adc_adds_regularly_when_carry_not_set() {
         let mut cpu = Mos6502::new();
         cpu.registers.a = 42;
-        adc::exec(&mut cpu, &mem::Empty, Operand::Immediate(1)).unwrap();
+        adc::exec(&mut cpu, &mem::Empty, Operand::Immediate(1), &slog::Logger::root(slog::Discard, o!())).unwrap();
         assert_eq!(cpu.registers.a, 43);
     }
 
@@ -63,7 +64,7 @@ mod test {
         let mut cpu = Mos6502::new();
         cpu.registers.a = 42;
         cpu.flags.set(Flags::CARRY());
-        adc::exec(&mut cpu, &mem::Empty, Operand::Immediate(1)).unwrap();
+        adc::exec(&mut cpu, &mem::Empty, Operand::Immediate(1), &slog::Logger::root(slog::Discard, o!())).unwrap();
         assert_eq!(cpu.registers.a, 44);
     }
 
@@ -71,7 +72,7 @@ mod test {
     pub fn adc_sets_flags_when_overflow() {
         let mut cpu = Mos6502::new();
         cpu.registers.a = 0x7F;
-        adc::exec(&mut cpu, &mem::Empty, Operand::Immediate(0x80)).unwrap();
+        adc::exec(&mut cpu, &mem::Empty, Operand::Immediate(0x80), &slog::Logger::root(slog::Discard, o!())).unwrap();
         assert_eq!(cpu.registers.a, 0xFF);
         assert_eq!(cpu.flags, Flags::SIGN() | Flags::RESERVED());
     }

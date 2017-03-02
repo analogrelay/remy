@@ -23,6 +23,7 @@ pub fn exec<M>(cpu: &mut Mos6502, mem: &mut M, log: &slog::Logger) -> Result<(),
 
 #[cfg(test)]
 mod test {
+    use slog;
     use byteorder::LittleEndian;
 
     use mem::{self,Memory,MemoryExt};
@@ -33,7 +34,7 @@ mod test {
     #[test]
     pub fn brk_increments_and_pushes_pc_on_to_stack() {
         let (mut cpu, mut mem) = init_cpu();
-        brk::exec(&mut cpu, &mut mem).unwrap();
+        brk::exec(&mut cpu, &mut mem, &slog::Logger::root(slog::Discard, o!())).unwrap();
 
         assert_eq!(Ok(0xAB), mem.get_u8(STACK_START + 16));
         assert_eq!(Ok(0xCE), mem.get_u8(STACK_START + 15));
@@ -44,7 +45,7 @@ mod test {
         let (mut cpu, mut mem) = init_cpu();
         let flags = Flags::SIGN() | Flags::OVERFLOW() | Flags::RESERVED();
         cpu.flags.set(flags);
-        brk::exec(&mut cpu, &mut mem).unwrap();
+        brk::exec(&mut cpu, &mut mem, &slog::Logger::root(slog::Discard, o!())).unwrap();
 
         assert_eq!(Ok((flags | Flags::BREAK()).bits), mem.get_u8(STACK_START + 14));
     }
@@ -54,7 +55,7 @@ mod test {
         let (mut cpu, mut mem) = init_cpu();
         let flags = Flags::SIGN() | Flags::OVERFLOW() | Flags::RESERVED();
         cpu.flags.set(flags);
-        brk::exec(&mut cpu, &mut mem).unwrap();
+        brk::exec(&mut cpu, &mut mem, &slog::Logger::root(slog::Discard, o!())).unwrap();
 
         assert_eq!(flags, cpu.flags);
     }
@@ -62,7 +63,7 @@ mod test {
     #[test]
     pub fn brk_sets_pc_to_address_at_vector() {
         let (mut cpu, mut mem) = init_cpu();
-        brk::exec(&mut cpu, &mut mem).unwrap();
+        brk::exec(&mut cpu, &mut mem, &slog::Logger::root(slog::Discard, o!())).unwrap();
 
         assert_eq!(0xBEEF, cpu.pc.get());
     }

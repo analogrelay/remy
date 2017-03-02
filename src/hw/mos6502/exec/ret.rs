@@ -40,6 +40,7 @@ pub fn from_sub<M>(cpu: &mut Mos6502, mem: &M, log: &slog::Logger) -> Result<(),
 
 #[cfg(test)]
 mod test {
+    use slog;
     use mem;
     use hw::mos6502::exec::ret;
     use hw::mos6502::{Mos6502,STACK_START};
@@ -53,7 +54,7 @@ mod test {
         cpu.push(&mut mem, 0xCD).unwrap(); // PC Low
         cpu.push(&mut mem, 0xEF).unwrap(); // Flags
 
-        ret::from_interrupt(&mut cpu, &mem).unwrap();
+        ret::from_interrupt(&mut cpu, &mem, &slog::Logger::root(slog::Discard, o!())).unwrap();
 
         assert_eq!(cpu.flags.bits, 0xEF);
     }
@@ -67,7 +68,7 @@ mod test {
         cpu.push(&mut mem, 0xCD).unwrap(); // PC Low
         cpu.push(&mut mem, 0xEF).unwrap(); // Flags
 
-        ret::from_interrupt(&mut cpu, &mem).unwrap();
+        ret::from_interrupt(&mut cpu, &mem, &slog::Logger::root(slog::Discard, o!())).unwrap();
 
         assert_eq!(cpu.pc.get(), 0xABCD);
     }
@@ -80,7 +81,7 @@ mod test {
         cpu.push(&mut mem, 0xAB).unwrap(); // PC High
         cpu.push(&mut mem, 0xCD).unwrap(); // PC Low
 
-        ret::from_sub(&mut cpu, &mem).unwrap();
+        ret::from_sub(&mut cpu, &mem, &slog::Logger::root(slog::Discard, o!())).unwrap();
 
         assert_eq!(cpu.pc.get(), 0xABCE);
     }

@@ -47,6 +47,7 @@ pub fn xaa<M>(cpu: &mut Mos6502, mem: &M, op: Operand, log: &slog::Logger) -> ex
 
 #[cfg(test)]
 mod test {
+    use slog;
     use mem;
     use hw::mos6502::exec::and;
     use hw::mos6502::{Mos6502,Operand,Flags};
@@ -55,7 +56,7 @@ mod test {
     pub fn and_ands_value_with_accumulator() {
         let mut cpu = Mos6502::new();
         cpu.registers.a = 42;
-        and::exec(&mut cpu, &mem::Empty, Operand::Immediate(24), false).unwrap();
+        and::exec(&mut cpu, &mem::Empty, Operand::Immediate(24), false, &slog::Logger::root(slog::Discard, o!())).unwrap();
         assert_eq!(cpu.registers.a, 42 & 24);
     }
 
@@ -63,7 +64,7 @@ mod test {
     pub fn and_sets_zero_flag_if_result_is_zero() {
         let mut cpu = Mos6502::new();
         cpu.registers.a = 42;
-        and::exec(&mut cpu, &mem::Empty, Operand::Immediate(0), false).unwrap();
+        and::exec(&mut cpu, &mem::Empty, Operand::Immediate(0), false, &slog::Logger::root(slog::Discard, o!())).unwrap();
         assert_eq!(cpu.registers.a, 0);
         assert_eq!(cpu.flags, Flags::ZERO() | Flags::RESERVED());
     }
@@ -72,7 +73,7 @@ mod test {
     pub fn and_sets_sign_flag_if_result_has_bit_7_set() {
         let mut cpu = Mos6502::new();
         cpu.registers.a = 0xFF;
-        and::exec(&mut cpu, &mem::Empty, Operand::Immediate(0xFF), false).unwrap();
+        and::exec(&mut cpu, &mem::Empty, Operand::Immediate(0xFF), false, &slog::Logger::root(slog::Discard, o!())).unwrap();
         assert_eq!(cpu.registers.a, 0xFF);
         assert_eq!(cpu.flags, Flags::SIGN() | Flags::RESERVED());
     }
@@ -81,7 +82,7 @@ mod test {
     pub fn and_sets_carry_flag_if_with_carry_true_and_bit_7_set() {
         let mut cpu = Mos6502::new();
         cpu.registers.a = 0xFF;
-        and::exec(&mut cpu, &mem::Empty, Operand::Immediate(0xFF), true).unwrap();
+        and::exec(&mut cpu, &mem::Empty, Operand::Immediate(0xFF), true, &slog::Logger::root(slog::Discard, o!())).unwrap();
         assert_eq!(cpu.registers.a, 0xFF);
         assert_eq!(cpu.flags, Flags::SIGN() | Flags::RESERVED() | Flags::CARRY());
     }
@@ -90,7 +91,7 @@ mod test {
     pub fn and_does_not_set_carry_flag_if_with_carry_true_and_bit_7_not_set() {
         let mut cpu = Mos6502::new();
         cpu.registers.a = 42;
-        and::exec(&mut cpu, &mem::Empty, Operand::Immediate(0), true).unwrap();
+        and::exec(&mut cpu, &mem::Empty, Operand::Immediate(0), true, &slog::Logger::root(slog::Discard, o!())).unwrap();
         assert_eq!(cpu.registers.a, 0);
         assert_eq!(cpu.flags, Flags::ZERO() | Flags::RESERVED());
     }
@@ -99,7 +100,7 @@ mod test {
     pub fn xaa_ands_value_with_x_and_stores_in_a() {
         let mut cpu = Mos6502::new();
         cpu.registers.x = 42;
-        and::xaa(&mut cpu, &mem::Empty, Operand::Immediate(24)).unwrap();
+        and::xaa(&mut cpu, &mem::Empty, Operand::Immediate(24), &slog::Logger::root(slog::Discard, o!())).unwrap();
         assert_eq!(cpu.registers.a, 42 & 24);
     }
 
@@ -107,7 +108,7 @@ mod test {
     pub fn xaa_sets_zero_flag_if_result_is_zero() {
         let mut cpu = Mos6502::new();
         cpu.registers.x = 42;
-        and::xaa(&mut cpu, &mem::Empty, Operand::Immediate(0)).unwrap();
+        and::xaa(&mut cpu, &mem::Empty, Operand::Immediate(0), &slog::Logger::root(slog::Discard, o!())).unwrap();
         assert_eq!(cpu.registers.a, 0);
         assert_eq!(cpu.flags, Flags::ZERO() | Flags::RESERVED());
     }
@@ -116,7 +117,7 @@ mod test {
     pub fn xaa_sets_sign_flag_if_result_has_bit_7_set() {
         let mut cpu = Mos6502::new();
         cpu.registers.x = 0xFF;
-        and::xaa(&mut cpu, &mem::Empty, Operand::Immediate(0xFF)).unwrap();
+        and::xaa(&mut cpu, &mem::Empty, Operand::Immediate(0xFF), &slog::Logger::root(slog::Discard, o!())).unwrap();
         assert_eq!(cpu.registers.a, 0xFF);
         assert_eq!(cpu.flags, Flags::SIGN() | Flags::RESERVED());
     }

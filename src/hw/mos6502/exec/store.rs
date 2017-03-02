@@ -107,6 +107,7 @@ pub fn tas<M>(cpu: &mut Mos6502, mem: &mut M, op: Operand, log: &slog::Logger) -
 
 #[cfg(test)]
 mod test {
+    use slog;
     use mem;
     use mem::Memory;
     use hw::mos6502::exec::store;
@@ -118,7 +119,7 @@ mod test {
         let mut cpu = Mos6502::new(); 
 
         cpu.registers.a = 42;
-        store::exec(&mut cpu, &mut mem, cpu::RegisterName::A, Operand::Absolute(5)).unwrap();
+        store::exec(&mut cpu, &mut mem, cpu::RegisterName::A, Operand::Absolute(5), &slog::Logger::root(slog::Discard, o!())).unwrap();
 
         assert_eq!(Ok(42), mem.get_u8(5));
     }
@@ -132,7 +133,7 @@ mod test {
         let mut cpu = Mos6502::new();
 
         cpu.registers.x = 0xF0;
-        store::sh(&mut cpu, &mut vm, cpu::RegisterName::X, Operand::Absolute(0x3C01)).unwrap();
+        store::sh(&mut cpu, &mut vm, cpu::RegisterName::X, Operand::Absolute(0x3C01), &slog::Logger::root(slog::Discard, o!())).unwrap();
 
         assert_eq!(Ok(0x30), vm.get_u8(0x3C01));
     }
@@ -147,7 +148,7 @@ mod test {
 
         cpu.registers.a = 0x3F;
         cpu.registers.x = 0xF0;
-        store::tas(&mut cpu, &mut vm, Operand::Absolute(0x1C01)).unwrap();
+        store::tas(&mut cpu, &mut vm, Operand::Absolute(0x1C01), &slog::Logger::root(slog::Discard, o!())).unwrap();
 
         assert_eq!(0x30, cpu.registers.sp);
         assert_eq!(Ok(0x10), vm.get_u8(0x1C01));
@@ -163,7 +164,7 @@ mod test {
 
         cpu.registers.a = 0x3F;
         cpu.registers.x = 0xF0;
-        store::ahx(&mut cpu, &mut vm, Operand::Absolute(0x3C01)).unwrap();
+        store::ahx(&mut cpu, &mut vm, Operand::Absolute(0x3C01), &slog::Logger::root(slog::Discard, o!())).unwrap();
 
         assert_eq!(Ok(0x30), vm.get_u8(0x3C01));
     }
@@ -175,7 +176,7 @@ mod test {
 
         cpu.registers.a = 0x3F;
         cpu.registers.x = 0xF0;
-        store::sax(&mut cpu, &mut mem, Operand::Absolute(5)).unwrap();
+        store::sax(&mut cpu, &mut mem, Operand::Absolute(5), &slog::Logger::root(slog::Discard, o!())).unwrap();
 
         assert_eq!(Ok(0x30), mem.get_u8(5));
     }

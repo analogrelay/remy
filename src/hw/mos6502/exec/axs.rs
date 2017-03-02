@@ -29,6 +29,7 @@ pub fn exec<M>(cpu: &mut Mos6502, mem: &M, op: Operand, log: &slog::Logger) -> e
 
 #[cfg(test)]
 mod test {
+    use slog;
     use mem;
     use hw::mos6502::exec::axs;
     use hw::mos6502::{Mos6502,Operand,Flags};
@@ -39,7 +40,7 @@ mod test {
 
         cpu.registers.a = 0x3C;
         cpu.registers.x = 0x33;
-        axs::exec(&mut cpu, &mem::Empty, Operand::Immediate(0x01)).unwrap();
+        axs::exec(&mut cpu, &mem::Empty, Operand::Immediate(0x01), &slog::Logger::root(slog::Discard, o!())).unwrap();
         assert_eq!(0x2F, cpu.registers.x);
     }
 
@@ -49,7 +50,7 @@ mod test {
 
         cpu.registers.a = 0xFF;
         cpu.registers.x = 0xFF;
-        axs::exec(&mut cpu, &mem::Empty, Operand::Immediate(0x00)).unwrap();
+        axs::exec(&mut cpu, &mem::Empty, Operand::Immediate(0x00), &slog::Logger::root(slog::Discard, o!())).unwrap();
 
         assert_eq!(0xFF, cpu.registers.x);
         assert_eq!(Flags::CARRY() | Flags::SIGN() | Flags::RESERVED(), cpu.flags);
@@ -62,7 +63,7 @@ mod test {
 
         cpu.registers.a = 0x01;
         cpu.registers.x = 0x01;
-        axs::exec(&mut cpu, &mem::Empty, Operand::Immediate(0x00)).unwrap();
+        axs::exec(&mut cpu, &mem::Empty, Operand::Immediate(0x00), &slog::Logger::root(slog::Discard, o!())).unwrap();
 
         assert_eq!(0x01, cpu.registers.x);
         assert_eq!(Flags::RESERVED(), cpu.flags);
@@ -74,7 +75,7 @@ mod test {
 
         cpu.registers.a = 0xFF;
         cpu.registers.x = 0x01;
-        axs::exec(&mut cpu, &mem::Empty, Operand::Immediate(0x01)).unwrap();
+        axs::exec(&mut cpu, &mem::Empty, Operand::Immediate(0x01), &slog::Logger::root(slog::Discard, o!())).unwrap();
 
         assert_eq!(0x00, cpu.registers.x);
         assert_eq!(Flags::ZERO() | Flags::RESERVED(), cpu.flags);
@@ -87,7 +88,7 @@ mod test {
 
         cpu.registers.a = 0x01;
         cpu.registers.x = 0x01;
-        axs::exec(&mut cpu, &mem::Empty, Operand::Immediate(0x00)).unwrap();
+        axs::exec(&mut cpu, &mem::Empty, Operand::Immediate(0x00), &slog::Logger::root(slog::Discard, o!())).unwrap();
 
         assert_eq!(0x01, cpu.registers.x);
         assert_eq!(Flags::RESERVED(), cpu.flags);

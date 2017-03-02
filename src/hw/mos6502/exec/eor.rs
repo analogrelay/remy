@@ -22,6 +22,7 @@ pub fn exec<M>(cpu: &mut Mos6502, mem: &M, op: Operand, log: &slog::Logger) -> R
 
 #[cfg(test)]
 mod test {
+    use slog;
     use mem;
     use mem::Memory;
     use hw::mos6502::exec::eor;
@@ -32,7 +33,7 @@ mod test {
         let (mut cpu, mut mem) = init_cpu();
         mem.set_u8(0, 0b11111000).unwrap();
         cpu.registers.a = 0b00001111;
-        eor::exec(&mut cpu, &mem, Operand::Absolute(0)).unwrap();
+        eor::exec(&mut cpu, &mem, Operand::Absolute(0), &slog::Logger::root(slog::Discard, o!())).unwrap();
         assert!(cpu.flags.intersects(Flags::SIGN()));
     }
 
@@ -41,7 +42,7 @@ mod test {
         let (mut cpu, mut mem) = init_cpu();
         mem.set_u8(0, 0b11111000).unwrap();
         cpu.registers.a = 0b11111000;
-        eor::exec(&mut cpu, &mem, Operand::Absolute(0)).unwrap();
+        eor::exec(&mut cpu, &mem, Operand::Absolute(0), &slog::Logger::root(slog::Discard, o!())).unwrap();
         assert!(cpu.flags.intersects(Flags::ZERO()));
     }
 
@@ -50,7 +51,7 @@ mod test {
         let (mut cpu, mut mem) = init_cpu();
         mem.set_u8(0, 0b11111000).unwrap();
         cpu.registers.a = 0b00001111;
-        eor::exec(&mut cpu, &mem, Operand::Absolute(0)).unwrap();
+        eor::exec(&mut cpu, &mem, Operand::Absolute(0), &slog::Logger::root(slog::Discard, o!())).unwrap();
         assert_eq!(0b11110111, cpu.registers.a);
     }
 

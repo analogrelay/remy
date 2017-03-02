@@ -14,6 +14,7 @@ pub fn exec<M>(cpu: &mut Mos6502, mem: &M, op: Operand, log: &slog::Logger) -> R
 
 #[cfg(test)]
 mod test {
+    use slog;
     use byteorder::LittleEndian;
 
     use mem::{self,MemoryExt};
@@ -25,7 +26,7 @@ mod test {
         let mem = mem::Virtual::new();
         let mut cpu = Mos6502::new();
 
-        jmp::exec(&mut cpu, &mem, Operand::Absolute(0xBEEF)).unwrap();
+        jmp::exec(&mut cpu, &mem, Operand::Absolute(0xBEEF), &slog::Logger::root(slog::Discard, o!())).unwrap();
 
         assert_eq!(0xBEEF, cpu.pc.get());
     }
@@ -38,7 +39,7 @@ mod test {
         vm.attach(0, Box::new(mem)).unwrap();
         let mut cpu = Mos6502::new();
 
-        jmp::exec(&mut cpu, &vm, Operand::Indirect(5)).unwrap();
+        jmp::exec(&mut cpu, &vm, Operand::Indirect(5), &slog::Logger::root(slog::Discard, o!())).unwrap();
 
         assert_eq!(0xBEEF, cpu.pc.get());
     }

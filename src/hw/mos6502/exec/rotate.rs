@@ -51,6 +51,7 @@ fn exec<M>(cpu: &mut Mos6502, mem: &mut M, op: Operand, left: bool, log: &slog::
 
 #[cfg(test)]
 mod test {
+    use slog;
     use mem;
     use hw::mos6502::exec::rotate;
     use hw::mos6502::{Mos6502,Operand,Flags};
@@ -62,7 +63,7 @@ mod test {
         cpu.flags.set(Flags::CARRY());
         cpu.registers.a = 0b01101100;
 
-        rotate::left(&mut cpu, &mut mem::Empty, Operand::Accumulator).unwrap();
+        rotate::left(&mut cpu, &mut mem::Empty, Operand::Accumulator, &slog::Logger::root(slog::Discard, o!())).unwrap();
 
         assert_eq!(cpu.registers.a, 0b11011001);
         assert!(!cpu.flags.intersects(Flags::CARRY()));
@@ -73,10 +74,10 @@ mod test {
         let mut cpu = Mos6502::new();
 
         cpu.registers.a = 0b10000000;
-        rotate::left(&mut cpu, &mut mem::Empty, Operand::Accumulator).unwrap();
+        rotate::left(&mut cpu, &mut mem::Empty, Operand::Accumulator, &slog::Logger::root(slog::Discard, o!())).unwrap();
         assert!(cpu.flags.intersects(Flags::CARRY()));
         cpu.registers.a = 0b01111111;
-        rotate::left(&mut cpu, &mut mem::Empty, Operand::Accumulator).unwrap();
+        rotate::left(&mut cpu, &mut mem::Empty, Operand::Accumulator, &slog::Logger::root(slog::Discard, o!())).unwrap();
         assert!(!cpu.flags.intersects(Flags::CARRY()));
     }
 
@@ -85,7 +86,7 @@ mod test {
         let mut cpu = Mos6502::new();
 
         cpu.registers.a = 0b01111111;
-        rotate::left(&mut cpu, &mut mem::Empty, Operand::Accumulator).unwrap();
+        rotate::left(&mut cpu, &mut mem::Empty, Operand::Accumulator, &slog::Logger::root(slog::Discard, o!())).unwrap();
         assert!(cpu.flags.intersects(Flags::SIGN()));
     }
 
@@ -94,7 +95,7 @@ mod test {
         let mut cpu = Mos6502::new();
 
         cpu.registers.a = 0b10000000;
-        rotate::left(&mut cpu, &mut mem::Empty, Operand::Accumulator).unwrap();
+        rotate::left(&mut cpu, &mut mem::Empty, Operand::Accumulator, &slog::Logger::root(slog::Discard, o!())).unwrap();
         assert!(cpu.flags.intersects(Flags::ZERO()));
     }
 
@@ -105,7 +106,7 @@ mod test {
         cpu.flags.set(Flags::CARRY());
         cpu.registers.a = 0b01101100;
 
-        rotate::right(&mut cpu, &mut mem::Empty, Operand::Accumulator).unwrap();
+        rotate::right(&mut cpu, &mut mem::Empty, Operand::Accumulator, &slog::Logger::root(slog::Discard, o!())).unwrap();
 
         assert_eq!(cpu.registers.a, 0b10110110);
         assert!(!cpu.flags.intersects(Flags::CARRY()));
@@ -116,10 +117,10 @@ mod test {
         let mut cpu = Mos6502::new();
 
         cpu.registers.a = 0b00000001;
-        rotate::right(&mut cpu, &mut mem::Empty, Operand::Accumulator).unwrap();
+        rotate::right(&mut cpu, &mut mem::Empty, Operand::Accumulator, &slog::Logger::root(slog::Discard, o!())).unwrap();
         assert!(cpu.flags.intersects(Flags::CARRY()));
         cpu.registers.a = 0b11111110;
-        rotate::right(&mut cpu, &mut mem::Empty, Operand::Accumulator).unwrap();
+        rotate::right(&mut cpu, &mut mem::Empty, Operand::Accumulator, &slog::Logger::root(slog::Discard, o!())).unwrap();
         assert!(!cpu.flags.intersects(Flags::CARRY()));
     }
 
@@ -129,7 +130,7 @@ mod test {
 
         cpu.flags.set(Flags::CARRY());
         cpu.registers.a = 0b00000000;
-        rotate::right(&mut cpu, &mut mem::Empty, Operand::Accumulator).unwrap();
+        rotate::right(&mut cpu, &mut mem::Empty, Operand::Accumulator, &slog::Logger::root(slog::Discard, o!())).unwrap();
         assert!(cpu.flags.intersects(Flags::SIGN()));
     }
 
@@ -138,7 +139,7 @@ mod test {
         let mut cpu = Mos6502::new();
 
         cpu.registers.a = 0b00000001;
-        rotate::right(&mut cpu, &mut mem::Empty, Operand::Accumulator).unwrap();
+        rotate::right(&mut cpu, &mut mem::Empty, Operand::Accumulator, &slog::Logger::root(slog::Discard, o!())).unwrap();
         assert!(cpu.flags.intersects(Flags::ZERO()));
     }
 }

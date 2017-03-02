@@ -43,6 +43,7 @@ pub fn exec<M>(cpu: &mut Mos6502, mem: &M, op: Operand, log: &slog::Logger) -> R
 
 #[cfg(test)]
 mod test {
+    use slog;
     use mem;
     use hw::mos6502::exec::sbc;
     use hw::mos6502::{Mos6502,Operand,Flags};
@@ -55,14 +56,14 @@ mod test {
     pub fn sbc_subtracts_regularly_when_carry_set() {
         let mut cpu = init_cpu();
         cpu.flags.set(Flags::CARRY()); // Set CARRY()
-        sbc::exec(&mut cpu, &mut mem::Empty, Operand::Immediate(1)).unwrap();
+        sbc::exec(&mut cpu, &mut mem::Empty, Operand::Immediate(1), &slog::Logger::root(slog::Discard, o!())).unwrap();
         assert_eq!(cpu.registers.a, 41);
     }
 
     #[test]
     pub fn sbc_borrows_when_carry_flag_is_not_set() {
         let mut cpu = init_cpu();
-        sbc::exec(&mut cpu, &mut mem::Empty, Operand::Immediate(1)).unwrap();
+        sbc::exec(&mut cpu, &mut mem::Empty, Operand::Immediate(1), &slog::Logger::root(slog::Discard, o!())).unwrap();
         assert_eq!(cpu.registers.a, 40);
     }
 
@@ -70,7 +71,7 @@ mod test {
     pub fn sbc_sets_flags_when_overflow() {
         let mut cpu = init_cpu();
         cpu.registers.a = 0x80;
-        sbc::exec(&mut cpu, &mut mem::Empty, Operand::Immediate(0x00)).unwrap();
+        sbc::exec(&mut cpu, &mut mem::Empty, Operand::Immediate(0x00), &slog::Logger::root(slog::Discard, o!())).unwrap();
         assert_eq!(cpu.registers.a, 0x7F);
         assert_eq!(cpu.flags, Flags::CARRY() | Flags::OVERFLOW() | Flags::RESERVED());
     }

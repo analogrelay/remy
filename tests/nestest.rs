@@ -86,7 +86,7 @@ pub fn mos6502_can_run_nestest_rom() {
 
         // Dispatch the instruction, but use a clone so we can still dump the instruction to the
         // log
-        if let Err(e) = mos6502::dispatch(instr.clone(), &mut cpu, &mut memory) {
+        if let Err(e) = mos6502::dispatch(instr.clone(), &mut cpu, &mut memory, None) {
             panic!("Error at ${:04X} {}: {}", addr, instr, e)
         }
 

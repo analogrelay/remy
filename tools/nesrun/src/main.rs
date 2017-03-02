@@ -11,21 +11,6 @@ use std::{env,fs};
 
 use remy::systems::nes;
 
-fn read_test_status(nes: &nes::Nes) -> String {
-    let mut s = String::new();
-    let mut addr = 0x6004;
-    loop {
-        let x = nes.mem().get_u8(addr).expect("failed to read test status");
-        if x == 0 {
-            break;
-        }
-        let c = ::std::char::from_u32(x as u32).expect("invalid character in test status");
-        s.push(c);
-        addr += 1;
-    }
-    s
-}
-
 pub fn main() {
     // Set up console logging
     let drain = slog_term::streamer().build().fuse();

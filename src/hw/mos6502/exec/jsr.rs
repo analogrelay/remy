@@ -20,6 +20,7 @@ pub fn exec<M>(cpu: &mut Mos6502, mem: &mut M, op: Operand, log: &slog::Logger) 
 
 #[cfg(test)]
 mod test {
+    use slog;
     use mem;
     use hw::mos6502::{Mos6502,Operand,STACK_START};
     use hw::mos6502::exec::jsr;
@@ -28,7 +29,7 @@ mod test {
     pub fn jsr_sets_pc_to_address() {
         let (mut cpu, mut mem) = init_cpu();
 
-        jsr::exec(&mut cpu, &mut mem, Operand::Absolute(0xBEEF)).unwrap();
+        jsr::exec(&mut cpu, &mut mem, Operand::Absolute(0xBEEF), &slog::Logger::root(slog::Discard, o!())).unwrap();
 
         assert_eq!(0xBEEF, cpu.pc.get());
     }
@@ -37,7 +38,7 @@ mod test {
     pub fn jsr_pushes_old_pc_minus_one_to_stack() {
         let (mut cpu, mut mem) = init_cpu();
 
-        jsr::exec(&mut cpu, &mut mem, Operand::Absolute(0xBEEF)).unwrap();
+        jsr::exec(&mut cpu, &mut mem, Operand::Absolute(0xBEEF), &slog::Logger::root(slog::Discard, o!())).unwrap();
 
         assert_eq!(Ok(0xCC), cpu.pull(&mem));
         assert_eq!(Ok(0xAB), cpu.pull(&mem));

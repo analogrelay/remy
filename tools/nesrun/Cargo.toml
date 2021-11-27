@@ -1,9 +1,0 @@
-[package]
-name = "nesrun"
-version = "0.1.0"
-authors = ["Andrew Stanton-Nurse <andrew@andrewnurse.net>"]
-
-[dependencies]
-slog = { version = "1.5.2", features = ["max_level_trace"] }
-slog-term = "1.5.0"
-remy = { path = "../.." }

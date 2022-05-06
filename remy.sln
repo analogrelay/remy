@@ -1,0 +1,50 @@
+﻿
+Microsoft Visual Studio Solution File, Format Version 12.00
+# Visual Studio Version 16
+VisualStudioVersion = 16.0.30114.105
+MinimumVisualStudioVersion = 10.0.40219.1
+Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "src", "src", "{736BEC65-DC5A-40D5-9735-7FD052CCD0E3}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Remy.Core", "src\Remy.Core\Remy.Core.csproj", "{635F94D1-85EF-4104-B4BF-562010A8502F}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Remy.Nintendo.Gameboy", "src\Remy.Nintendo.Gameboy\Remy.Nintendo.Gameboy.csproj", "{A77F1A25-D5F2-4B51-88DA-4A2B5A1E6A6C}"
+EndProject
+Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "tests", "tests", "{A25D2F0E-E9E5-4CF1-917B-12B945B417EE}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Remy.Nintendo.Gameboy.Tests", "tests\Remy.Nintendo.Gameboy.Tests\Remy.Nintendo.Gameboy.Tests.csproj", "{72BE1879-6ED5-4062-A372-0E9EA7A320B0}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Remy.Generators", "src\Remy.Generators\Remy.Generators.csproj", "{484E5F8D-D17C-44D6-B2EB-325BA82DCF53}"
+EndProject
+Global
+	GlobalSection(SolutionConfigurationPlatforms) = preSolution
+		Debug|Any CPU = Debug|Any CPU
+		Release|Any CPU = Release|Any CPU
+	EndGlobalSection
+	GlobalSection(SolutionProperties) = preSolution
+		HideSolutionNode = FALSE
+	EndGlobalSection
+	GlobalSection(ProjectConfigurationPlatforms) = postSolution
+		{635F94D1-85EF-4104-B4BF-562010A8502F}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{635F94D1-85EF-4104-B4BF-562010A8502F}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{635F94D1-85EF-4104-B4BF-562010A8502F}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{635F94D1-85EF-4104-B4BF-562010A8502F}.Release|Any CPU.Build.0 = Release|Any CPU
+		{A77F1A25-D5F2-4B51-88DA-4A2B5A1E6A6C}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{A77F1A25-D5F2-4B51-88DA-4A2B5A1E6A6C}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{A77F1A25-D5F2-4B51-88DA-4A2B5A1E6A6C}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{A77F1A25-D5F2-4B51-88DA-4A2B5A1E6A6C}.Release|Any CPU.Build.0 = Release|Any CPU
+		{72BE1879-6ED5-4062-A372-0E9EA7A320B0}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{72BE1879-6ED5-4062-A372-0E9EA7A320B0}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{72BE1879-6ED5-4062-A372-0E9EA7A320B0}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{72BE1879-6ED5-4062-A372-0E9EA7A320B0}.Release|Any CPU.Build.0 = Release|Any CPU
+		{484E5F8D-D17C-44D6-B2EB-325BA82DCF53}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{484E5F8D-D17C-44D6-B2EB-325BA82DCF53}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{484E5F8D-D17C-44D6-B2EB-325BA82DCF53}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{484E5F8D-D17C-44D6-B2EB-325BA82DCF53}.Release|Any CPU.Build.0 = Release|Any CPU
+	EndGlobalSection
+	GlobalSection(NestedProjects) = preSolution
+		{635F94D1-85EF-4104-B4BF-562010A8502F} = {736BEC65-DC5A-40D5-9735-7FD052CCD0E3}
+		{A77F1A25-D5F2-4B51-88DA-4A2B5A1E6A6C} = {736BEC65-DC5A-40D5-9735-7FD052CCD0E3}
+		{72BE1879-6ED5-4062-A372-0E9EA7A320B0} = {A25D2F0E-E9E5-4CF1-917B-12B945B417EE}
+		{484E5F8D-D17C-44D6-B2EB-325BA82DCF53} = {736BEC65-DC5A-40D5-9735-7FD052CCD0E3}
+	EndGlobalSection
+EndGlobal

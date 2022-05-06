@@ -1,0 +1,142 @@
+{{- func getter(operand, bits) -}}
+    {{- case operand -}}
+    {{- when "d8", "a8", "r8" -}}
+mmu.Read8(cpu.PC + arg)
+    {{- when "d16", "a16" -}}
+mmu.Read16(cpu.PC + arg)
+    {{- else -}}
+        {{- if operand | string.starts_with "(" -}}
+mmu.Read{{ bits }}({{ operand | string.replace "(" "" | string.replace ")" "" | getter bits }})
+        {{- else if operand | string.starts_with "0x" -}}
+            {{- splat = operand | string.split "+" -}}
+({{ splat[0] }} + {{ splat[1] | getter inst.bits }})
+        {{- else -}}
+cpu.{{ operand | string.upcase }}
+        {{- end -}}
+    {{- end -}}
+{{- end -}}
+
+{{- func setter(operand, value, bits) -}}
+    {{- if operand | string.starts_with "(" -}}
+mmu.Write{{ bits }}({{ operand | string.replace "(" "" | string.replace ")" "" | getter bits }}, {{ value }})
+    {{- else -}}
+cpu.{{ operand | string.upcase }} = {{ if inst.bits == 8 }}(byte){{ else }}(ushort){{ end }}{{ value }}
+    {{- end -}}
+{{- end -}}
+
+{{- func setflag(affects, name) -}}
+    {{- case affects -}}
+    {{- when "-" -}}
+    {{- # Don't update flag -}}
+    {{- when "0" ~}}
+
+    cpu.SetFlag(Flag.{{ name | string.upcase }}, false);
+    {{- when "1" ~}}
+
+    cpu.SetFlag(Flag.{{ name | string.upcase }}, true);
+    {{- else ~}}
+
+    cpu.SetFlag(Flag.{{ name | string.upcase }}, flags.{{ name | string.upcase }});
+    {{- end -}}
+{{- end -}}
+
+{{- func load_pq(inst) ~}}
+    var p = {{ inst.operands[0] | getter inst.bits }};
+    var q = {{ inst.operands[1] | getter inst.bits }};
+{{- end -}}
+
+{{- func ld(inst) ~}}
+    var v = {{ inst.operands[1] | getter inst.bits }};
+    {{ inst.operands[0] | setter "v" inst.bits }};
+{{- end -}}
+
+{{- func inc(inst) -}}
+    {{- if inst.bits == 8 ~}}
+    {{- # 8 bit additions need to update flags. ~}}
+    var v = {{ inst.operands[0] | getter inst.bits }};
+    var (r, flags) = Arithmetic.Add8(v, (byte)1, false);
+    {{ inst.operands[0] | setter "r" inst.bits }};
+    {{- else ~}}
+    {{- # 16-bit additions don't update flags, so we can do them flat. ~}}
+    var v = {{ inst.operands[0] | getter inst.bits }} + 1;
+    {{ inst.operands[0] | setter "v" inst.bits }};
+    {{- end -}}
+{{- end -}}
+
+{{- func dec(inst) -}}
+    {{- if inst.bits == 8 -}}
+    {{- # 8 bit subtractions need to update flags. ~}}
+    var v = {{ inst.operands[0] | getter inst.bits }};
+    var (r, flags) = Arithmetic.Sub8(v, (byte)1, false);
+    {{ inst.operands[0] | setter "r" inst.bits }};
+    {{- else -}}
+    {{- # 16-bit subtractions don't update flags, so we can do them flat. ~}}
+    var v = {{ inst.operands[0] | getter inst.bits }} - 1;
+    {{ inst.operands[0] | setter "v" inst.bits }};
+    {{- end -}}
+{{- end -}}
+
+{{- func add(inst) -}}
+    {{ inst | load_pq }}
+    {{~ if inst.code == 0xE8 ~}}
+    var (r, flags) = Arithmetic.Add16Signed(p, q, false);
+    {{~ else if inst.bits == 8 ~}}
+    var (r, flags) = Arithmetic.Add8(p, q, false);
+    {{~ else ~}}
+    var (r, flags) = Arithmetic.Add16(p, q, false);
+    {{~ end ~}}
+    {{ inst.operands[0] | setter "r" inst.bits }};
+{{- end -}}
+
+{{- func sub(inst) ~}}
+    var p = cpu.A;
+    var q = {{ inst.operands[0] | getter inst.bits }};
+    var (r, flags) = Arithmetic.Sub8(p, q, false);
+    cpu.A = r;
+{{- end -}}
+
+public static ExecuteResult Op{{ inst.code | math.format "X4" }}{{ inst.operator }}(CpuState cpu, MemoryUnit mmu, ushort arg)
+{
+    {{~ case inst.operator ~}}
+
+    {{- when "nop" ~}}
+    /* No Op */
+
+    {{- when "inc" ~}}
+    {{~ inst | inc ~}}
+
+    {{- when "dec" ~}}
+    {{~ inst | dec ~}}
+
+    {{- when "ld" ~}}
+    {{~ inst | ld ~}}
+
+    {{- when "ldd" ~}}
+    {{~ inst | ld }}
+    cpu.HL -= 1;
+
+    {{- when "ldi" ~}}
+    {{~ inst | ld }}
+    cpu.HL += 1;
+
+    {{- when "ldhl" ~}}
+    {{~ inst | load_pq }}
+    var (r, flags) = Arithmetic.Add16(p, q, false);
+    cpu.HL = r;
+
+    {{- when "add" ~}}
+    {{~ inst | add ~}}
+
+    {{- when "sub" ~}}
+    {{~ inst | sub ~}}
+
+    {{- else ~}}
+    throw new NotImplementedException("Not yet implemented: {{ inst.code | math.format "X4" }} {{ inst.operator }}");
+
+    {{- end ~}}
+    {{- inst.z | setflag "z" -}}
+    {{- inst.n | setflag "n" -}}
+    {{- inst.h | setflag "h" -}}
+    {{- inst.c | setflag "c" }}
+    return new({{ inst.time.unconditional }}, {{ inst.size }});
+}

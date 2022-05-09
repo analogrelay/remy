@@ -48,7 +48,7 @@ public class GameBoyInstructionGenerator: ISourceGenerator
         var deserializer = new DeserializerBuilder()
             .WithNamingConvention(CamelCaseNamingConvention.Instance)
             .Build();
-        
+
         var files = context.AdditionalFiles.Where(f => f.Path.EndsWith(".gba.yml"));
         var insts = new List<Instruction>();
         foreach (var file in files)
@@ -60,6 +60,12 @@ public class GameBoyInstructionGenerator: ISourceGenerator
 
         insts.Sort((l, r) => l.Code.CompareTo(r.Code));
 
+        context.AddSource("GameBoy.Executors.g.cs", GenerateExecutor(insts));
+        context.AddSource("GameBoy.Decoders.g.cs", GenerateDecoder(insts));
+    }
+
+    string GenerateExecutor(IReadOnlyList<Instruction> insts)
+    {
         var builder = new IndentedStringBuilder();
         builder.AppendLine("// This file generated using Remy.Generators");
         builder.AppendLine("#nullable enable");
@@ -68,7 +74,7 @@ public class GameBoyInstructionGenerator: ISourceGenerator
         builder.AppendLine();
         builder.AppendLine("public record struct ExecuteResult(int Time, int Size);");
         builder.AppendLine();
-        builder.AppendLine("public static class Instructions");
+        builder.AppendLine("public static class Operations");
         builder.AppendLine("{");
         using (builder.Indent())
         {
@@ -81,6 +87,7 @@ public class GameBoyInstructionGenerator: ISourceGenerator
                     continue;
                 }
 
+                builder.AppendLine();
                 GenerateFunction(builder, inst);
             }
 
@@ -139,10 +146,41 @@ public class GameBoyInstructionGenerator: ISourceGenerator
 
         builder.AppendLine("}");
 
-        context.AddSource("GameBoy.Executors.g.cs", builder.ToString());
+        return builder.ToString();
     }
 
-    private void GenerateFunction(IndentedStringBuilder builder, Instruction inst)
+    string GenerateDecoder(IReadOnlyList<Instruction> insts)
+    {
+        var builder = new IndentedStringBuilder();
+        builder.AppendLine("// This file generated using Remy.Generators");
+        builder.AppendLine("#nullable enable");
+        builder.AppendLine();
+        builder.AppendLine("namespace Remy.Nintendo.GameBoy;");
+        builder.AppendLine();
+        builder.AppendLine("public static class Decoder");
+        builder.AppendLine("{");
+        using (builder.Indent())
+        {
+            builder.AppendLine("public delegate Instruction Decoder(Span<byte> inst);");
+
+            foreach (var inst in insts)
+            {
+                if (inst.Code == 0xCB)
+                {
+                    continue;
+                }
+
+                builder.AppendLine();
+                builder.AppendLine("")
+            }
+        }
+
+        builder.AppendLine("}");
+
+        return builder.ToString();
+    }
+
+    void GenerateFunction(IndentedStringBuilder builder, Instruction inst)
     {
         var model = new ScriptObject();
         model["inst"] = inst;
@@ -157,7 +195,7 @@ public class GameBoyInstructionGenerator: ISourceGenerator
         }
     }
 
-    private IList<Instruction> ParseInstructions(GeneratorExecutionContext context, IDeserializer deserializer, AdditionalText file)
+    IList<Instruction> ParseInstructions(GeneratorExecutionContext context, IDeserializer deserializer, AdditionalText file)
     {
         var content = file.GetText()?.ToString();
         if (content is null)

@@ -1,5 +1,13 @@
 {{- func getter(operand, bits) -}}
     {{- case operand -}}
+    {{- when "nz" -}}
+!cpu.IsSet(Flag.Z)
+    {{- when "nc" -}}
+!cpu.IsSet(Flag.C)
+    {{- when "z" -}}
+cpu.IsSet(Flag.Z)
+    {{- when "cf" -}}
+cpu.IsSet(Flag.C)
     {{- when "d8", "a8", "r8" -}}
 mmu.Read8(cpu.PC + arg)
     {{- when "d16", "a16" -}}
@@ -9,7 +17,9 @@ mmu.Read16(cpu.PC + arg)
 mmu.Read{{ bits }}({{ operand | string.replace "(" "" | string.replace ")" "" | getter bits }})
         {{- else if operand | string.starts_with "0x" -}}
             {{- splat = operand | string.split "+" -}}
-({{ splat[0] }} + {{ splat[1] | getter inst.bits }})
+{{ if splat.size == 1 }}{{ splat[0] }}{{ else }}({{ splat[0] }} + {{ splat[1] | getter inst.bits }}){{ end }}
+        {{- else if operand | string.to_int -}}
+{{ operand }}
         {{- else -}}
 cpu.{{ operand | string.upcase }}
         {{- end -}}
@@ -18,7 +28,7 @@ cpu.{{ operand | string.upcase }}
 
 {{- func setter(operand, value, bits) -}}
     {{- if operand | string.starts_with "(" -}}
-mmu.Write{{ bits }}({{ operand | string.replace "(" "" | string.replace ")" "" | getter bits }}, {{ value }})
+mmu.Write{{ bits }}({{ operand | string.replace "(" "" | string.replace ")" "" | getter bits }}, {{ if inst.bits == 8 }}(byte){{ else }}(ushort){{ end }}{{ value }})
     {{- else -}}
 cpu.{{ operand | string.upcase }} = {{ if inst.bits == 8 }}(byte){{ else }}(ushort){{ end }}{{ value }}
     {{- end -}}
@@ -36,8 +46,12 @@ cpu.{{ operand | string.upcase }} = {{ if inst.bits == 8 }}(byte){{ else }}(usho
     cpu.SetFlag(Flag.{{ name | string.upcase }}, true);
     {{- else ~}}
 
-    cpu.SetFlag(Flag.{{ name | string.upcase }}, flags.{{ name | string.upcase }});
+    cpu.SetFlag(Flag.{{ name | string.upcase }}, {{ name }});
     {{- end -}}
+{{- end -}}
+
+{{- func cast(bits) -}}
+    {{ if bits == 8 }}(byte){{ else }}(ushort){{ end }}
 {{- end -}}
 
 {{- func load_pq(inst) ~}}
@@ -54,7 +68,7 @@ cpu.{{ operand | string.upcase }} = {{ if inst.bits == 8 }}(byte){{ else }}(usho
     {{- if inst.bits == 8 ~}}
     {{- # 8 bit additions need to update flags. ~}}
     var v = {{ inst.operands[0] | getter inst.bits }};
-    var (r, flags) = Arithmetic.Add8(v, (byte)1, false);
+    var (r, (z, h, c)) = Arithmetic.Add8(v, (byte)1, false);
     {{ inst.operands[0] | setter "r" inst.bits }};
     {{- else ~}}
     {{- # 16-bit additions don't update flags, so we can do them flat. ~}}
@@ -67,7 +81,7 @@ cpu.{{ operand | string.upcase }} = {{ if inst.bits == 8 }}(byte){{ else }}(usho
     {{- if inst.bits == 8 -}}
     {{- # 8 bit subtractions need to update flags. ~}}
     var v = {{ inst.operands[0] | getter inst.bits }};
-    var (r, flags) = Arithmetic.Sub8(v, (byte)1, false);
+    var (r, (z, h, c)) = Arithmetic.Sub8(v, (byte)1, false);
     {{ inst.operands[0] | setter "r" inst.bits }};
     {{- else -}}
     {{- # 16-bit subtractions don't update flags, so we can do them flat. ~}}
@@ -79,11 +93,11 @@ cpu.{{ operand | string.upcase }} = {{ if inst.bits == 8 }}(byte){{ else }}(usho
 {{- func add(inst) -}}
     {{ inst | load_pq }}
     {{~ if inst.code == 0xE8 ~}}
-    var (r, flags) = Arithmetic.Add16Signed(p, q, false);
+    var (r, (z, h, c)) = Arithmetic.Add16Signed(p, q, false);
     {{~ else if inst.bits == 8 ~}}
-    var (r, flags) = Arithmetic.Add8(p, q, false);
+    var (r, (z, h, c)) = Arithmetic.Add8(p, q, false);
     {{~ else ~}}
-    var (r, flags) = Arithmetic.Add16(p, q, false);
+    var (r, (z, h, c)) = Arithmetic.Add16(p, q, false);
     {{~ end ~}}
     {{ inst.operands[0] | setter "r" inst.bits }};
 {{- end -}}
@@ -91,8 +105,260 @@ cpu.{{ operand | string.upcase }} = {{ if inst.bits == 8 }}(byte){{ else }}(usho
 {{- func sub(inst) ~}}
     var p = cpu.A;
     var q = {{ inst.operands[0] | getter inst.bits }};
-    var (r, flags) = Arithmetic.Sub8(p, q, false);
-    cpu.A = r;
+    var (r, (z, h, c)) = Arithmetic.Sub8(p, q, false);
+    cpu.A = (byte)r;
+{{- end -}}
+
+{{- func adc(inst) ~}}
+    var p = cpu.A;
+    var q = {{ inst.operands[1] | getter inst.bits }};
+    var (r, (z, h, c)) = Arithmetic.Add8(p, q, cpu.IsSet(Flag.C));
+    cpu.A = (byte)r;
+{{- end -}}
+
+{{- func sbc(inst) ~}}
+    var p = cpu.A;
+    var q = {{ inst.operands[1] | getter inst.bits }};
+    var (r, (z, h, c)) = Arithmetic.Sub8(p, q, cpu.IsSet(Flag.C));
+    cpu.A = (byte)r;
+{{- end -}}
+
+{{- func binop(inst, op) ~}}
+    var v = cpu.A {{ op }} {{ inst.operands[0] | getter inst.bits }};
+    cpu.A = (byte)v;
+    var z = cpu.A == 0;
+{{- end -}}
+
+{{- func cp(inst) ~}}
+    var p = cpu.A;
+    var q = {{ inst.operands[0] | getter inst.bits }};
+    var (_, (z, h, c)) = Arithmetic.Sub8(p, q, false);
+{{- end -}}
+
+{{- func push(inst) ~}}
+    Stack.Push(cpu, mmu, {{ inst.operands[0] | getter inst.bits }});
+{{- end -}}
+
+{{- func pop(inst) ~}}
+    var v = Stack.Pop(cpu, mmu);
+    {{ inst.operands[0] | setter "v" inst.bits }};
+{{- end -}}
+
+{{- func swap(inst) ~}}
+    var v = {{ inst.operands[0] | getter inst.bits }};
+    v = Arithmetic.RotateLeft(v, 4);
+    {{ inst.operands[0] | setter "v" inst.bits }};
+    var z = v == 0;
+{{- end -}}
+
+{{- func daa(inst) ~}}
+    var adj = 0;
+
+    var v = (int)cpu.A;
+
+    if (cpu.IsSet(Flag.H) || (!cpu.IsSet(Flag.N) && (v & 0xF) > 9))
+    {
+        adj |= 0x6;
+    }
+
+    var c = (cpu.IsSet(Flag.C) || (!cpu.IsSet(Flag.N) && v > 0x99));
+    if (c)
+    {
+        adj |= 0x60;
+    }
+
+    v = cpu.IsSet(Flag.N) ? (v - adj) : (v + adj);
+    v = (byte)(v & 0xff);
+    var z = v == 0;
+    cpu.A = (byte)v;
+{{- end -}}
+
+{{- func rlc(inst) ~}}
+    var v = {{ inst.operands[0] | getter inst.bits }};
+    var c = (v & 0x80) != 0;
+    v = Arithmetic.RotateLeft(v, 1);
+    var z = v == 0;
+    {{ inst.operands[0] | setter "v" inst.bits }};
+{{- end -}}
+
+{{- func rlca(inst) ~}}
+    var v = cpu.A;
+    var c = (v & 0x80) != 0;
+    v = Arithmetic.RotateLeft(v, 1);
+    var z = v == 0;
+    cpu.A = (byte)v;
+{{- end -}}
+
+{{- func rl(inst) ~}}
+    var v = {{ inst.operands[0] | getter inst.bits }};
+    var c = (v & 0x80) != 0;
+    v = {{ inst.bits | cast }}(v << 1);
+    if (cpu.IsSet(Flag.C))
+    {
+        v |= 1;
+    }
+    var z = v == 0;
+    {{ inst.operands[0] | setter "v" inst.bits }};
+{{- end -}}
+
+{{- func rla(inst) ~}}
+    var v = cpu.A;
+    var c = (v & 0x80) != 0;
+    v = {{ inst.bits | cast }}(v << 1);
+    if (cpu.IsSet(Flag.C))
+    {
+        v |= 1;
+    }
+    cpu.A = (byte)v;
+{{- end -}}
+
+{{- func rrc(inst) ~}}
+    var v = {{ inst.operands[0] | getter inst.bits }};
+    var c = (v & 0x80) != 0;
+    v = Arithmetic.RotateRight(v, 1);
+    var z = v == 0;
+    {{ inst.operands[0] | setter "v" inst.bits }};
+{{- end -}}
+
+{{- func rrca(inst) ~}}
+    var v = cpu.A;
+    var c = (v & 0x80) != 0;
+    v = Arithmetic.RotateRight(v, 1);
+    var z = v == 0;
+    cpu.A = (byte)v;
+{{- end -}}
+
+{{- func rr(inst) ~}}
+    var v = {{ inst.operands[0] | getter inst.bits }};
+    var c = (v & 0x80) != 0;
+    v = {{ inst.bits | cast }}(v >> 1);
+    if (cpu.IsSet(Flag.C))
+    {
+        v |= 0x80;
+    }
+    var z = v == 0;
+    {{ inst.operands[0] | setter "v" inst.bits }};
+{{- end -}}
+
+{{- func rra(inst) ~}}
+    var v = cpu.A;
+    var c = (v & 0x80) != 0;
+    v = {{ inst.bits | cast }}(v >> 1);
+    if (cpu.IsSet(Flag.C))
+    {
+        v |= 0x80;
+    }
+    cpu.A = (byte)v;
+{{- end -}}
+
+{{- func sla(inst) ~}}
+    var v = {{ inst.operands[0] | getter inst.bits }};
+    var c = (v & 0x80) != 0;
+    v = {{ inst.bits | cast }}(v << 1);
+    var z = v == 0;
+    {{ inst.operands[0] | setter "v" inst.bits }};
+{{- end -}}
+
+{{- func sra(inst) ~}}
+    var v = {{ inst.operands[0] | getter inst.bits }};
+    var c = (v & 1) != 0;
+    var msb = v & 0x80;
+    v = {{ inst.bits | cast }}(v >> 1);
+    v = {{ inst.bits | cast }}(v | msb);
+    var z = v == 0;
+    {{ inst.operands[0] | setter "v" inst.bits }};
+{{- end -}}
+
+{{- func srl(inst) ~}}
+    var v = {{ inst.operands[0] | getter inst.bits }};
+    var c = (v & 1) != 0;
+    v = {{ inst.bits | cast }}(v >> 1);
+    var z = v == 0;
+    {{ inst.operands[0] | setter "v" inst.bits }};
+{{- end -}}
+
+{{- func bit(inst) ~}}
+    {{- inst | load_pq }}
+    var z = (q & (1 << p)) == 0;
+{{- end -}}
+
+{{- func set(inst) ~}}
+    {{- inst | load_pq }}
+    var v = {{ inst.bits | cast }}(q | (1 << p));
+    {{ inst.operands[1] | setter "v" inst.bits }};
+{{- end -}}
+
+{{- func res(inst) ~}}
+    {{- inst | load_pq }}
+    var v = {{ inst.bits | cast }}(q & ~(1 << p));
+    {{ inst.operands[1] | setter "v" inst.bits }};
+{{- end -}}
+
+{{- func jr(inst) ~}}
+    {{- if inst.operands.size > 1 ~}}
+    var flg = {{ inst.operands[0] | getter inst.bits }};
+    if (flg)
+    {
+        var p = {{ inst.operands[1] | getter inst.bits }};
+        var pc = (ushort)(cpu.PC + Arithmetic.Signed(p));
+        cpu.PC = pc;
+        return new ({{ inst.time.unconditional + inst.time.jump_cost }}, {{ inst.size }});
+    }
+    {{- else ~}}
+    var p = {{ inst.operands[0] | getter inst.bits }};
+    var pc = (ushort)(cpu.PC + Arithmetic.Signed(p));
+    cpu.PC = pc;
+    {{- end -}}
+{{- end -}}
+
+{{- func jp(inst) ~}}
+    {{- if inst.operands.size > 1 ~}}
+    var flg = {{ inst.operands[0] | getter inst.bits }};
+    if (flg)
+    {
+        var pc = {{ inst.operands[1] | getter inst.bits }};
+        cpu.PC = pc;
+        return new ({{ inst.time.unconditional + inst.time.jump_cost }}, 0);
+    }
+    {{- else ~}}
+    var pc = {{ inst.operands[0] | getter inst.bits }};
+    cpu.PC = pc;
+    {{- end -}}
+{{- end -}}
+
+{{- func call(inst) ~}}
+    {{- if inst.operands.size > 1 ~}}
+    var flg = {{ inst.operands[0] | getter inst.bits }};
+    if (flg)
+    {
+        Stack.Push(cpu, mmu, (ushort)(cpu.PC + {{ inst.size }}));
+        cpu.PC = (ushort)({{ inst.operands[1] | getter inst.bits }} + {{ inst.size }});
+        return new ({{ inst.time.unconditional + inst.time.jump_cost }}, 0);
+    }
+    {{- else ~}}
+    Stack.Push(cpu, mmu, (ushort)(cpu.PC + {{ inst.size }}));
+    cpu.PC = (ushort)({{ inst.operands[0] | getter inst.bits }} + {{ inst.size }});
+    {{- end -}}
+{{- end -}}
+
+{{- func rst(inst) ~}}
+    Stack.Push(cpu, mmu, (ushort)(cpu.PC + {{ inst.size }}));
+    cpu.PC = unchecked((ushort)({{ inst.operands[0] | getter inst.bits }} - {{ inst.size }}));
+{{- end -}}
+
+{{- func ret(inst) ~}}
+    {{- if inst.operands.size > 1 ~}}
+    var flg = {{ inst.operands[0] | getter inst.bits }};
+    if (flg)
+    {
+        var pc = (ushort)(Stack.Pop(cpu, mmu) - {{ inst.size }});
+        cpu.PC = pc;
+        return new ({{ inst.time.unconditional + inst.time.jump_cost }}, 0);
+    }
+    {{- else ~}}
+    var pc = (ushort)(Stack.Pop(cpu, mmu) - {{ inst.size }});
+    cpu.PC = pc;
+    {{- end -}}
 {{- end -}}
 
 public static ExecuteResult Op{{ inst.code | math.format "X4" }}{{ inst.operator }}(CpuState cpu, MemoryUnit mmu, ushort arg)
@@ -121,7 +387,7 @@ public static ExecuteResult Op{{ inst.code | math.format "X4" }}{{ inst.operator
 
     {{- when "ldhl" ~}}
     {{~ inst | load_pq }}
-    var (r, flags) = Arithmetic.Add16(p, q, false);
+    var (r, (z, h, c)) = Arithmetic.Add16(p, q, false);
     cpu.HL = r;
 
     {{- when "add" ~}}
@@ -130,8 +396,116 @@ public static ExecuteResult Op{{ inst.code | math.format "X4" }}{{ inst.operator
     {{- when "sub" ~}}
     {{~ inst | sub ~}}
 
-    {{- else ~}}
-    throw new NotImplementedException("Not yet implemented: {{ inst.code | math.format "X4" }} {{ inst.operator }}");
+    {{- when "adc" ~}}
+    {{~ inst | adc ~}}
+
+    {{- when "sbc" ~}}
+    {{~ inst | sbc ~}}
+
+    {{- when "and" ~}}
+    {{~ inst | binop "&" ~}}
+
+    {{- when "or" ~}}
+    {{~ inst | binop "|" ~}}
+
+    {{- when "xor" ~}}
+    {{~ inst | binop "^" ~}}
+
+    {{- when "cp" ~}}
+    {{~ inst | cp ~}}
+
+    {{- when "push" ~}}
+    {{~ inst | push ~}}
+
+    {{- when "pop" ~}}
+    {{~ inst | pop ~}}
+
+    {{- when "swap" ~}}
+    {{~ inst | swap ~}}
+
+    {{- when "daa" ~}}
+    {{~ inst | daa ~}}
+
+    {{- when "cpl" ~}}
+    cpu.A = (byte)(cpu.A & 0xFF);
+
+    {{- when "ccf" ~}}
+    var c = !cpu.IsSet(Flag.C);
+
+    {{- when "scf" -}}
+
+    {{- when "ei" ~}}
+    cpu.EnableInterrupts();
+
+    {{- when "di" ~}}
+    cpu.DisableInterrupts();
+
+    {{- when "halt" ~}}
+    cpu.Halt();
+
+    {{- when "stop" ~}}
+    cpu.Stop();
+
+    {{- when "rlc" ~}}
+    {{~ inst | rlc ~}}
+
+    {{- when "rlca" ~}}
+    {{~ inst | rlca ~}}
+
+    {{- when "rl" ~}}
+    {{~ inst | rl ~}}
+
+    {{- when "rla" ~}}
+    {{~ inst | rla ~}}
+
+    {{- when "rrc" ~}}
+    {{~ inst | rrc ~}}
+
+    {{- when "rrca" ~}}
+    {{~ inst | rrca ~}}
+
+    {{- when "rr" ~}}
+    {{~ inst | rr ~}}
+
+    {{- when "rra" ~}}
+    {{~ inst | rra ~}}
+
+    {{- when "sla" ~}}
+    {{~ inst | sla ~}}
+
+    {{- when "sra" ~}}
+    {{~ inst | sra ~}}
+
+    {{- when "srl" ~}}
+    {{~ inst | srl ~}}
+
+    {{- when "bit" ~}}
+    {{~ inst | bit ~}}
+
+    {{- when "set" ~}}
+    {{~ inst | set ~}}
+
+    {{- when "res" ~}}
+    {{~ inst | res ~}}
+
+    {{- when "jr" ~}}
+    {{~ inst | jr ~}}
+
+    {{- when "jp" ~}}
+    {{~ inst | jp ~}}
+
+    {{- when "call" ~}}
+    {{~ inst | call ~}}
+
+    {{- when "rst" ~}}
+    {{~ inst | rst ~}}
+
+    {{- when "ret" ~}}
+    {{~ inst | ret ~}}
+
+    {{- when "reti" ~}}
+    {{~ inst | ret }}
+    cpu.EnableInterrupts();
 
     {{- end ~}}
     {{- inst.z | setflag "z" -}}

@@ -29,4 +29,19 @@ public static class Arithmetic
     {
         throw new NotImplementedException();
     }
+
+    public static byte RotateLeft(byte value, int amount)
+    {
+        throw new NotImplementedException();
+    }
+
+    public static byte RotateRight(byte value, int amount)
+    {
+        throw new NotImplementedException();
+    }
+
+    public static int Signed(byte value)
+    {
+        throw new NotImplementedException();
+    }
 }

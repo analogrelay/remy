@@ -65,7 +65,32 @@ public class CpuState
     public ushort SP { get; set; }
     public ushort PC { get; set; }
 
+    public bool IsSet(Flag flag)
+    {
+        throw new NotImplementedException();
+    }
+
     public void SetFlag(Flag flag, bool value)
+    {
+        throw new NotImplementedException();
+    }
+
+    public void EnableInterrupts()
+    {
+        throw new NotImplementedException();
+    }
+
+    public void DisableInterrupts()
+    {
+        throw new NotImplementedException();
+    }
+
+    public void Halt()
+    {
+        throw new NotImplementedException();
+    }
+
+    public void Stop()
     {
         throw new NotImplementedException();
     }
